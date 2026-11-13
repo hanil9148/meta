@@ -309,6 +309,10 @@ input { -webkit-user-select: text; user-select: text; }
 .fr { border: 3px solid var(--ink); border-radius: 12px; background: var(--panel3); padding: 8px; display: grid; gap: 6px; }
 .fr.me { border-color: var(--yel); }
 .fr .ft { display: flex; align-items: center; gap: 8px; }
+.fr .rk { flex: none; min-width: 34px; text-align: center; font-family: var(--display); font-size: 15px; color: var(--muted); }
+.fr .rk.top { font-size: 24px; }
+.myrank { text-align: center; font-family: var(--display); font-size: 17px; padding: 6px; border: 3px solid var(--ink); border-radius: 12px; background: var(--red); }
+.myrank b { font-weight: 400; color: var(--yel); }
 .fr .ft svg { width: 40px; height: 40px; flex: none; border: 2px solid var(--ink); border-radius: 8px; background: var(--panel2); }
 .fr .ft b { flex: 1; min-width: 0; font-family: var(--display); font-weight: 400; font-size: 16px; overflow-wrap: anywhere; }
 .fr .on { font-size: 11px; font-weight: 900; color: var(--ok); white-space: nowrap; }
@@ -447,7 +451,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261113-1934';
+  const APP_VER = 'v.261113-1940';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1185,7 +1189,7 @@ input { -webkit-user-select: text; user-select: text; }
   function mailItems() {
     const out = [];
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
-    for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · 500골드', r: { gold: 500 } });
+    for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · 10,000골드', r: { gold: WB_GIFT } });
     return out;
   }
   const mailCount = () => mailItems().length;
@@ -1206,7 +1210,7 @@ input { -webkit-user-select: text; user-select: text; }
     ['골드로 강해지기', '<p>전투가 끝나면 골드를 받아요. <b>상점</b>에서 총잡이를 뽑고, <b>총잡이</b> 탭에서 출전·<b>스타포스 강화</b>와 <b>거점 강화</b>를 해요. 단계를 <b>클리어</b>하면 다음 단계가 열려요. 막히면 강화하고 다시 도전하세요.</p>'],
     ['속성 상성', '<p>몬스터 테두리 색과 글자가 속성이에요. 아래 순서로 앞이 뒤를 이겨요. 약점이면 피해 <b>×1.6</b>, 반대면 <b>×0.6</b>.</p><div class="wheel"><i class="chip e0">불</i>›<i class="chip e4">바람</i>›<i class="chip e3">땅</i>›<i class="chip e2">번개</i>›<i class="chip e1">물</i>›<i class="chip e0">불</i></div>'],
     ['몬스터 속성 방어', '<p>몬스터마다 <b>강한 속성</b>(피해 감소)과 <b>약한 속성</b>(피해 증가)이 있어요. 예를 들어 말벌은 바람에 강하고 번개에 약해요. 홈 화면 스테이지 이름 옆 <b>?</b>를 누르면 그 단계 몬스터의 속성 방어를 볼 수 있어요. 여러 속성을 섞어 출전시키세요.</p>'],
-    ['보스와 친구', '<p><b>5단계마다</b> 보스가 나오고, 나올 때 화면이 번쩍여요. 어느 단계든 <b>1% 확률</b>로 아주 강한 <b>희귀 보스</b>가 나타나요. 못 깰 수도 있지만 잡으면 큰 보상을 줘요. <b>보스</b> 탭의 공동 보스는 <b>4시간마다</b> 새로 나타나요. 총잡이 <b>1명</b>을 지원 보내고, 친구들과 함께 쓰러뜨리면 <b>500골드</b> 선물을 받아요.</p>']
+    ['보스와 친구', '<p><b>5단계마다</b> 보스가 나오고, 나올 때 화면이 번쩍여요. 어느 단계든 <b>1% 확률</b>로 아주 강한 <b>희귀 보스</b>가 나타나요. 못 깰 수도 있지만 잡으면 큰 보상을 줘요. <b>보스</b> 탭의 공동 보스는 <b>4시간마다</b> 새로 나타나요. 총잡이 <b>1명</b>을 지원 보내고, 친구들과 함께 쓰러뜨리면 <b>10,000골드</b> 선물을 받아요.</p>']
   ];
   function tutBody(i) {
     const last = i >= TUT.length - 1;
@@ -1947,7 +1951,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
 
   /* ================= co-op world boss (every 4 h, KST) ================= */
-  const SLOT = 4 * 3600e3;
+  const SLOT = 4 * 3600e3, WB_GIFT = 10000;
   const slotNow = () => Math.floor((Date.now() + KST) / SLOT);
   const slotEnd = s => (s + 1) * SLOT - KST;
   const WB = [
@@ -1956,14 +1960,14 @@ input { -webkit-user-select: text; user-select: text; }
   ];
   const wbOf = s => WB[((s % WB.length) + WB.length) % WB.length];
   let rankDocs = [], hitDocs = [], peers = {}, bossMsg = null;
-  /* Boss HP follows the friends who played this week: about 2.2x their summed power, counting at least two players. */
+  /* Boss HP follows the friends who played this week: about 1.1x their summed power, counting at least two players. */
   function wbHp() {
     const now = Date.now();
     const act = rankDocs.filter(r => r.id !== NET.uid && now - (+r.d.t || 0) < 7 * 864e5).map(r => clamp(+r.d.pw || 0, 100, 1e9));
     act.push(Math.max(100, power()));
     let sum = act.reduce((a, b) => a + b, 0);
     if (act.length < 2) sum += sum / act.length * (2 - act.length);
-    return Math.round(sum * 2.2 / 100) * 100;
+    return Math.round(sum * 1.1 / 100) * 100;
   }
   function hitsFor(s) {
     const out = [], seen = {};
@@ -2017,8 +2021,8 @@ input { -webkit-user-select: text; user-select: text; }
     }
     h += '<div class="medals"><div class="m1"><b class="ol-s">🥇 1등</b><span>' + (list[0] ? esc(nameOf(list[0])) : '-') + '</span></div><div class="m2"><b class="ol-s">🥈 2등</b><span>' + (list[1] ? esc(nameOf(list[1])) : '-') + '</span></div><div class="m3"><b class="ol-s">🥉 3등</b><span>' + (list[2] ? esc(nameOf(list[2])) : '-') + '</span></div></div>';
     const rw = bossRewards();
-    h += '<p class="desc" style="color:#e6dcff">격파하면 지원을 보낸 모두에게 <b>500골드</b> 선물이 와요. 시간 안에 못 잡으면 보스는 도망가요.</p>';
-    if (rw.length) h += '<button class="btn y wide ol-s" data-act="bclaim">' + I.gift + ' 500골드 선물 받기' + (rw.length > 1 ? ' ×' + rw.length : '') + '</button>';
+    h += '<p class="desc" style="color:#e6dcff">격파하면 지원을 보낸 모두에게 <b>10,000골드</b> 선물이 와요. 시간 안에 못 잡으면 보스는 도망가요.</p>';
+    if (rw.length) h += '<button class="btn y wide ol-s" data-act="bclaim">' + I.gift + ' 10,000골드 선물 받기' + (rw.length > 1 ? ' ×' + rw.length : '') + '</button>';
     const p = s - 1, pl = hitsFor(p);
     if (pl.length) h += '<div class="result">🏆 지난 보스 <b>' + wbOf(p).nm + '</b> — ' + (defeated(p) ? '쓰러뜨렸어요.' : '도망갔어요.') + '<br>' + pl.slice(0, 3).map((o, i) => (i + 1) + '등 ' + esc(nameOf(o)) + ' (' + fmt(o.d) + ')').join(' · ') + '</div>';
     if (NET.mode === 'none') h += '<p class="desc" style="color:#cdb9ef">친구들과 연결되지 않은 상태예요. 혼자서는 체력을 다 깎기 어려워요.</p>';
@@ -2057,8 +2061,8 @@ input { -webkit-user-select: text; user-select: text; }
   function bossClaimAll() {
     const rw = bossRewards(); if (!rw.length) return;
     for (const r of rw) save.bossClaim.push(r.slot);
-    save.gold += 500 * rw.length;
-    Snd.coin(); toast((500 * rw.length).toLocaleString() + '골드 선물을 받았어요'); persist(); render();
+    save.gold += WB_GIFT * rw.length;
+    Snd.coin(); toast((WB_GIFT * rw.length).toLocaleString() + '골드 선물을 받았어요'); persist(); render();
   }
 
   /* ================= friends ================= */
@@ -2067,23 +2071,26 @@ input { -webkit-user-select: text; user-select: text; }
     const rows = rankDocs.map(r => ({ id: r.id, d: r.d })).filter(r => r.d && typeof r.d === 'object');
     if (!rows.some(r => r.id === me)) rows.push({ id: me || '__me', d: rankPayload() });
     else rows.forEach(r => { if (r.id === me) r.d = rankPayload(); });
-    rows.sort((a, b) => (+b.d.st || 0) - (+a.d.st || 0) || (+b.d.pw || 0) - (+a.d.pw || 0));
+    rows.sort((a, b) => (+b.d.pw || 0) - (+a.d.pw || 0) || (+b.d.st || 0) - (+a.d.st || 0));
+    const myRank = rows.findIndex(r => r.id === me || r.id === '__me') + 1;
     let h = NET.mode !== 'none' ? '<div class="row"><span class="desc grow" style="color:#fff">' + (NET.syncErr ? '⚠ 내 정보 올리기 실패 (' + esc(NET.syncErr) + ') · 다시 시도 중' : NET.syncedAt ? '내 정보 올린 시각: ' + agoTxt(NET.syncedAt) : '내 정보 올리는 중…') + '</span><button class="btn c sm ol-s" data-act="frsync">새로고침</button></div>' : '';
     if (NET.mode === 'none') h += '<p class="desc" style="color:#fff">친구 목록은 공유된 찍먹메타에서 함께 접속했을 때 보여요. 지금은 내 정보만 보여요.</p>';
-    for (const r of rows.slice(0, 50)) {
+    if (rows.length > 1) h += '<div class="myrank ol-s">⚔ 전투력 순위 <b>' + myRank + '위</b> / ' + rows.length + '명</div>';
+    rows.slice(0, 50).forEach((r, ri) => {
       const d = r.d, isMe = r.id === me || r.id === '__me', on = isMe || !!peers[r.id];
-      const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).filter(x => Array.isArray(x));
-      h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft">' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
+      const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s] : null).filter(Boolean);
+      const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
+      h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
         '<div class="fs"><div><span>레벨</span><b class="ol-s">' + clamp(+d.lv || 1, 1, 99) + '</b></div><div><span>스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 30) + '</b></div><div><span>전투력</span><b class="ol-s">' + fmt(clamp(+d.pw || 0, 0, 1e12)) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
         '<div class="desc" style="font-size:11px">' + (isMe ? '내 정보는 바뀔 때마다 자동으로 올라가요' : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">' + NMS[n] + ' ★' + clamp(+x[2] || 0, 0, 30) + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
-    }
+    });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
     return h;
   }
   function agoTxt(t) { if (!t) return '알 수 없음'; const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : Math.floor(s / 86400) + '일 전'; }
   function rankPayload() {
     return { nick: save.name, lv: save.lv, st: save.unlocked, pl: save.plays.reduce((a, b) => a + b, 0), pw: power(), hl: save.hl, dl: save.dl,
-      eq: save.slots.map(getUnit).filter(Boolean).map(u => [u.n, u.e.join(''), u.s]), t: Date.now() };
+      eq: save.slots.map(getUnit).filter(Boolean).map(u => ({ n: u.n, e: u.e.join(''), s: u.s })), t: Date.now() };
   }
 
   /* ================= network (claude.ai artifact capabilities, or Firebase build) ================= */
@@ -2139,13 +2146,15 @@ input { -webkit-user-select: text; user-select: text; }
       if (this.busy) { this.pending = true; return; }
       this.busy = true; this.pending = false;
       try {
+        const errs = [];
+        const step = async (nm, f) => { try { await f(); } catch (e) { errs.push(nm + ': ' + ((e && (e.code || e.message)) || 'error')); } };
         const rp = rankPayload(), rk = JSON.stringify(Object.assign({}, rp, { t: 0 }));
-        if (rk !== this.lastRank && (save.plays.some(Boolean) || save.name)) { await this.api.put('rank', rp); this.lastRank = rk; }
-        const hp = { h: save.boss, nick: save.name, t: Date.now() }, hk = JSON.stringify(save.boss) + save.name;
-        if (hk !== this.lastHits && Object.keys(save.boss).length) { await this.api.put('bosshits', hp); this.lastHits = hk; }
+        if (rk !== this.lastRank && (save.plays.some(Boolean) || save.name)) await step('친구 정보', async () => { await this.api.put('rank', rp); this.lastRank = rk; });
+        const hk = JSON.stringify(save.boss) + save.name;
+        if (hk !== this.lastHits && Object.keys(save.boss).length) await step('보스 기록', async () => { await this.api.put('bosshits', { h: save.boss, nick: save.name, t: Date.now() }); this.lastHits = hk; });
         const j = JSON.stringify(save);
-        if (j !== this.lastCloud) { await this.api.storeSave(j); this.lastCloud = j; }
-        this.syncedAt = Date.now(); this.syncErr = '';
+        if (j !== this.lastCloud) await step('진행 저장', async () => { await this.api.storeSave(j); this.lastCloud = j; });
+        if (errs.length) { this.syncErr = errs.join(', '); this.pending = true; } else { this.syncedAt = Date.now(); this.syncErr = ''; }
       } catch (e) { this.syncErr = (e && (e.code || e.message)) || 'error'; this.pending = true; }
       this.busy = false;
       if (this.pending) { this.pending = false; setTimeout(() => this.sync(), this.syncErr ? 5000 : 300); }
