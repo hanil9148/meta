@@ -457,7 +457,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261113-2118';
+  const APP_VER = 'v.261113-2226';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -544,8 +544,10 @@ input { -webkit-user-select: text; user-select: text; }
   /* ---------- game data ---------- */
   const NAMES = ['쉬움', '말랑', '산책', '평온', '보통', '무난', '도전', '긴장', '까다로움', '어려움',
     '매움', '거침', '험난', '가혹', '악랄', '살벌', '지독', '무자비', '공포', '악몽',
-    '절망', '파멸', '아수라', '연옥', '나락', '몰살', '종말', '지옥문', '불지옥', '헬'];
-  const NEED = 30, STAGES = 30;
+    '절망', '파멸', '아수라', '연옥', '나락', '몰살', '종말', '지옥문', '불지옥', '헬',
+    '심연', '혼돈', '광란', '붕괴', '재앙', '멸망', '암흑', '마왕성', '천벌', '심판',
+    '천재지변', '아마겟돈', '라그나로크', '무간지옥', '핏빛 달', '공허', '대참사', '신의 분노', '세계의 끝', '전설'];
+  const NEED = 30, STAGES = 50, ESTAGES = 30;
   const NMS = ['한일', '성민', '금유', '도영', '진명', '해천', '정욱', '재원'];
   const HATS = ['#c8783a', '#5a3a2a', '#e8e0cc', '#2a2a2e', '#a83a2a', '#3a5a8a', '#6a8a3a', '#8a5aa8'];
   const ENM = ['불', '물', '번개', '땅', '바람'];
@@ -567,6 +569,7 @@ input { -webkit-user-select: text; user-select: text; }
   const ELITE = { cost: 5000000, lv: 25, star: 21, nStar: 3, fort: 21, hp: 100, atk: 1.8, gold: 2, gem: 5 };
   const isElite = () => save.mode === 'e' && !!save.elOn;
   const trk = () => isElite() ? save.el : save;
+  const stMax = e => (e === undefined ? isElite() : e) ? ESTAGES : STAGES;
   function eliteReq() {
     const st = save.coll.filter(u => u.s >= ELITE.star).length;
     return [
@@ -773,7 +776,7 @@ input { -webkit-user-select: text; user-select: text; }
     s.unlocked = num(r.unlocked, 1, STAGES, 1); s.cur = num(r.cur, 1, s.unlocked, 1);
     s.plays = arr(r.plays, 1e6); s.best = arr(r.best, 100); s.reach = arr(r.reach, 7); s.claim = arr(r.claim, 7);
     s.elOn = r.elOn ? 1 : 0; s.mode = r.mode === 'e' && s.elOn ? 'e' : 'n';
-    if (r.el && typeof r.el === 'object') { const e = r.el; s.el = { unlocked: num(e.unlocked, 1, STAGES, 1), cur: 1, plays: arr(e.plays, 1e6), best: arr(e.best, 100), reach: arr(e.reach, 7), claim: arr(e.claim, 7) }; s.el.cur = num(e.cur, 1, s.el.unlocked, 1); }
+    if (r.el && typeof r.el === 'object') { const e = r.el; s.el = { unlocked: num(e.unlocked, 1, ESTAGES, 1), cur: 1, plays: arr(e.plays, 1e6), best: arr(e.best, 100), reach: arr(e.reach, 7), claim: arr(e.claim, 7) }; s.el.cur = num(e.cur, 1, s.el.unlocked, 1); }
     if (r.items && typeof r.items === 'object') for (const id in r.items) { const v = r.items[id]; if (validId(id) && v && typeof v === 'object' && v.n >= 1) s.items[id] = { n: num(v.n, 1, 1e6, 1), lv: num(v.lv, 1, GMAX[+id[2]], 1) }; }
     if (r.gear && typeof r.gear === 'object') for (const k of ['w', 'h', 'n']) { const id = r.gear[k]; if (validId(id) && KND[id.slice(0, 2)].slot === k && s.items[id]) s.gear[k] = id; }
     s.pity = num(r.pity, 0, 1000, 0);
@@ -1024,7 +1027,7 @@ input { -webkit-user-select: text; user-select: text; }
       '</div>' +
       '<div class="scene"><canvas id="hcv"></canvas>' +
         (isBossStage(n) ? '<span class="bossflag ol-s">보스 출현 스테이지</span>' : '') +
-        '<span class="plays ol-s">' + (tk.reach[i] & 1 ? '클리어 ✓ · 플레이 ' + tk.plays[i] + '번' : n < STAGES ? '클리어하면 다음 단계가 열려요' : '마지막 단계') + '</span>' +
+        '<span class="plays ol-s">' + (tk.reach[i] & 1 ? '클리어 ✓ · 플레이 ' + tk.plays[i] + '번' : n < stMax() ? '클리어하면 다음 단계가 열려요' : '마지막 단계') + '</span>' +
         '<span class="pw ol-s">' + I.sword + fmt(power()) + '</span></div>' +
       '<div class="start-row">' +
         '<button class="side" data-act="chest"><span class="ic">' + chestSvg(2, '') + '</span><span class="ol-s">스테이지 상자</span>' + (chestReady ? '<span class="bang" style="right:4px;top:-4px">!</span>' : '') + '</button>' +
@@ -1383,10 +1386,10 @@ input { -webkit-user-select: text; user-select: text; }
     const chip = (r, f) => [0, 1, 2, 3, 4].filter(f).map(a => '<i class="chip e' + a + '">' + ENM[a] + ' ' + (r[a] > 0 ? '-' : '+') + Math.round(Math.abs(r[a]) * 100) + '%</i>').join('') || '<span class="desc">없음</span>';
     let h = '<p class="desc" style="color:#fff"><b>몬스터 속성 방어</b> · 몬스터마다 강한 속성과 약한 속성이 달라요. 여러 속성 총잡이를 섞어 보내세요.</p>';
     for (const k of kinds) { const r = RES[k]; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px">' + ENAME[k] + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
-    if (isBossStage(n)) { const B = BOSSES[Math.min(5, n / 5 - 1)], r = B.res; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px;color:var(--bad)">' + B.nm + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
+    if (isBossStage(n)) { const B = BOSSES[(n / 5 - 1) % 6], r = B.res; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px;color:var(--bad)">' + B.nm + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
     return h + '<p class="desc">신입 총잡이(리더)는 무속성이라 방어 영향을 받지 않아요.</p>';
   }
-  const recPower = n => Math.round(260 * Math.pow(1.13, n - 1));
+  const recPower = n => Math.round(260 * Math.pow(1.13, Math.min(n, 30) - 1) * Math.pow(1.27, Math.max(0, n - 30)));
 
   /* ================= battle ================= */
   const BW = 400, BH = 720, FIELD0 = 104, FIELD1 = 612, GROUND = 628;
@@ -1394,8 +1397,9 @@ input { -webkit-user-select: text; user-select: text; }
   const edgeX = y => DCX - DRX * Math.sqrt(Math.max(0, 1 - ((y - DCY) / DRY) * ((y - DCY) / DRY)));
   const SPOTS = [[378, 360], [346, 236], [318, 360], [346, 484]];
   function params(n) {
-    const t = (n - 1) / 29;
-    return { hpm: Math.pow(1.071, n - 1), dm: Math.pow(1.054, n - 1), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: 1 + .18 * (n - 1), d: n - 1 };
+    const t = Math.min(1, (n - 1) / 29) + Math.max(0, n - 30) / 40;
+    const x = Math.max(0, n - 30);
+    return { hpm: Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x), d: n - 1 };
   }
   function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: P.gm * ELITE.gold }) : P; }
   const ET = {
@@ -1484,11 +1488,11 @@ input { -webkit-user-select: text; user-select: text; }
       Snd.boss();
     }
     if (isBossStage(S.n) && S.wave === 3) {
-      const bi = Math.min(5, S.n / 5 - 1), B = BOSSES[bi];
+      const bk = S.n / 5 - 1, bi = bk % 6, B = BOSSES[bi];
       const e = mkE('boss', -50, DCY, B.el);
-      e.hp = e.mh = ET.boss.hp * S.P.hpm * (1 + bi * .15); e.bi = bi; e.sumT = 3;
+      e.hp = e.mh = ET.boss.hp * S.P.hpm * (1 + bk * .15); e.bi = bi; e.sumT = bk >= 6 ? 2.2 : 3;
       S.boss = e; S.en.push(e);
-      S.alert = 3.2; S.banner = { t: 3.2, s: '보스 출현! ' + B.nm };
+      S.alert = 3.2; S.banner = { t: 3.2, s: '보스 출현! ' + (bk >= 6 ? '강화된 ' : '') + B.nm };
       Snd.boss();
     }
   }
@@ -1807,7 +1811,7 @@ input { -webkit-user-select: text; user-select: text; }
     qAdd('play'); qAdd('kill', S.kills); if (win) qAdd('win'); if (win && S.took <= 0) qAdd('perfect');
     let cardTxt = cards ? giveCards(cards) : '';
     let unl = false;
-    if (win && n === tk.unlocked && n < STAGES) { tk.unlocked++; unl = true; }
+    if (win && n === tk.unlocked && n < stMax(S.elite)) { tk.unlocked++; unl = true; }
     save.xp += xp;
     let lvUp = 0;
     while (save.xp >= lvNeed(save.lv)) { save.xp -= lvNeed(save.lv); save.lv++; save.gem += 10; lvUp++; }
