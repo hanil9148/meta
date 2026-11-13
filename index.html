@@ -457,7 +457,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0003';
+  const APP_VER = 'v.261114-0102';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1133,7 +1133,7 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="htile' + (d ? ' gr' + iG(id) : ' emp') + '" data-act="gearbag" data-s="' + k + '" role="button">' + (d ? '<span style="width:48px;height:48px;display:block">' + itemIcon(id) + '</span><span class="hn ol-s" style="font-size:12px;text-align:center">' + iK(id).nm + '</span><span class="st ol-s" style="color:' + RAR[iG(id)].c + '">' + RAR[iG(id)].nm + ' · Lv ' + d.lv + '</span>' : '<span class="ol-s">' + SLOTN[k] + '<br>비어 있음</span>') + '</div>';
     }
     h += '</div>' + (canCombine() ? '<button class="btn y wide ol-s" data-act="gearComb" data-s="" style="margin-top:8px">조합 가능한 장비 모두 조합</button>' : '') + '</div>';
-    h += '<div class="card"><h3 class="ol">출전 총잡이</h3><p class="desc">전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 아무도 없으면 신입 총잡이가 혼자 싸워요.</p><div class="slots4">';
+    h += '<div class="card"><h3 class="ol">출전 총잡이</h3><p class="desc">전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 위에 떠 있는 드론도 항상 같이 쏴요.</p><div class="slots4">';
     for (let i = 0; i < 3; i++) {
       const u = getUnit(save.slots[i]);
       h += u ? heroTile(u, ' data-act="slot" data-i="' + i + '" role="button"', i === selSlot ? 'sel' : '') : '<div class="htile emp ol-s' + (i === selSlot ? ' sel' : '') + '" data-act="slot" data-i="' + i + '" role="button">' + (i + 1) + '번 슬롯<br>비어 있음</div>';
@@ -1142,7 +1142,7 @@ input { -webkit-user-select: text; user-select: text; }
     h += '<div class="card"><div class="row"><h3 class="ol grow">펫</h3><span class="desc" style="color:#fff">' + save.pcoll.length + '/' + PCAP + '</span></div><p class="desc">출전 칸마다 펫 1마리가 총잡이 다리 위에서 같이 싸워요. 펫을 데려가면 <b>짝 총잡이</b>가 출전해 있는 한 바로 <b>공격력 +30%</b>. 같은 펫은 한 칸에만. 별 강화는 골드가 들고 <b>★2부터 실패하면 터질 수 있어요</b>.</p><div class="slots4">';
     for (let i = 0; i < 3; i++) {
       const x = slotPet(i), syn = x && save.slots.some(k => { const u = getUnit(k); return u && PAIR[x.p] === u.n; });
-      h += '<div class="htile' + (x ? '' : ' emp') + (syn ? ' sel' : '') + '" data-act="petslot" data-i="' + i + '" role="button">' + (x ? '<span style="width:46px;height:46px;display:block">' + petSvg(x.p) + '</span><span class="hn ol-s">' + PETN[x.p] + '</span><span class="st ol-s" style="color:' + PGR[x.g].c + '">' + PGR[x.g].nm + ' ★' + x.s + (syn ? ' · 시너지' : '') + '</span>' : '<span class="ol-s">' + (i + 1) + '번 펫<br>비어 있음</span>') + '</div>';
+      h += '<div class="htile' + (x ? '' : ' emp') + (syn ? ' sel' : '') + '" data-act="petslot" data-i="' + i + '" role="button">' + (x ? '<span style="width:46px;height:46px;display:block">' + petSvg(x.p) + '</span><span class="hn ol-s">' + PETN[x.p] + '</span><span class="st ol-s" style="color:' + PGR[x.g].c + '">' + PGR[x.g].nm + ' ★' + x.s + (syn ? ' · 시너지' : '') + '</span>' + '<span class="st ol-s" style="color:#fff">공격 ' + petAtk(x) + '</span>' : '<span class="ol-s">' + (i + 1) + '번 펫<br>비어 있음</span>') + '</div>';
     }
     h += '</div><p class="desc">짝: ' + PETN.map((n, p) => n + '(' + PETAN[PETA[p]] + ')-' + NMS[PAIR[p]]).join(' · ') + '</p></div>';
     h += '<div class="card dark"><div class="row"><h3 class="ol grow">보관함 ' + save.coll.length + '/' + capOf() + '</h3>' + (save.coll.length ? '<button class="btn ' + (rmMode ? 'r' : '') + ' sm ol-s" data-act="rmmode">' + (rmMode ? '제거 취소' : '유닛 제거') + '</button>' : '') + '<button class="btn o sm ol-s" data-act="tab" data-t="shop">뽑으러 가기</button></div>';
@@ -1297,6 +1297,7 @@ input { -webkit-user-select: text; user-select: text; }
 
   /* ---------- shop ---------- */
   let pulls = null, petPulls = null, petSlot = 0;
+  const petAtk = (x, nx, ps) => { const st = petStat(nx ? Object.assign({}, x, { s: x.s + 1 }) : x, null), v = ps ? st.dmg / st.iv : st.dmg; return v >= 1000 ? fmt(v) : String(Math.round(v * 10) / 10); };
   function petBody() {
     const i = petSlot, cur = slotPet(i);
     const ord = x => { const j = save.pslot.indexOf(x.id); return j < 0 ? 9 : j; };
@@ -1310,7 +1311,8 @@ input { -webkit-user-select: text; user-select: text; }
       const blocked = !on && slotOf < 0 && save.pslot.some((id, j) => j !== i && getPet(id) && getPet(id).p === x.p);
       const mx = x.s >= PET_MAX, cost = petCost(x);
       h += '<div class="shopi"><span class="ico" style="background:none;border:2px solid ' + PGR[x.g].c + '">' + petSvg(x.p) + '</span><div style="min-width:0"><b class="ol-s">' + PETN[x.p] + ' <span style="font-size:12px;color:' + PGR[x.g].c + '">' + PGR[x.g].nm + '</span> ★' + x.s + '</b>' +
-        '<p>' + PETAN[PETA[x.p]] + ' · 짝 <b style="color:#fff">' + NMS[PAIR[x.p]] + '</b>' + (partner ? ' <span style="color:var(--yel)">출전 중</span>' : '') + (slotOf >= 0 && !on ? ' · ' + (slotOf + 1) + '번 칸' : '') + '</p>' +
+        '<p>' + PETAN[PETA[x.p]] + ' · 짝 <span style="color:#fff;font-weight:900">' + NMS[PAIR[x.p]] + '</span>' + (partner ? ' <span style="color:var(--yel)">출전 중</span>' : '') + (slotOf >= 0 && !on ? ' · ' + (slotOf + 1) + '번 칸' : '') + '</p>' +
+        '<p>공격력 <span style="color:#fff;font-weight:900">' + petAtk(x) + '</span>' + (!mx ? ' → ' + petAtk(x, 1) : '') + ' · 초당 ' + petAtk(x, 0, 1) + '</p>' +
         (!mx ? '<p>강화 성공 ' + Math.round(petRate(x.s) * 100) + '%' + (petBoom(x.s) ? ' · <span style="color:var(--bad)">파괴 ' + Math.round(petBoom(x.s) * 100) + '%</span>' : '') + '</p>' : '<p>최대 강화</p>') + '</div>' +
         '<div class="buy">' + (on ? '<button class="btn sm ol-s" disabled>함께하는 중</button>' : '<button class="btn g sm ol-s" data-act="petEq" data-id="' + x.id + '"' + (blocked ? ' disabled' : '') + '>' + (blocked ? '같은 펫 있음' : slotOf >= 0 ? '옮기기' : '데려가기') + '</button>') +
         '<button class="btn y sm ol-s" data-act="petUp" data-id="' + x.id + '"' + (!mx && save.gold >= cost ? '' : ' disabled') + '>' + (mx ? 'MAX' : '강화 ' + fmt(cost)) + '</button>' +
@@ -1494,7 +1496,7 @@ input { -webkit-user-select: text; user-select: text; }
     let h = '<p class="desc" style="color:#fff"><b>몬스터 속성 방어</b> · 몬스터마다 강한 속성과 약한 속성이 달라요. 여러 속성 총잡이를 섞어 보내세요.</p>';
     for (const k of kinds) { const r = RES[k]; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px">' + ENAME[k] + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
     if (isBossStage(n)) { const B = BOSSES[(n / 5 - 1) % 6], r = B.res; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px;color:var(--bad)">' + B.nm + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
-    return h + '<p class="desc">신입 총잡이(리더)는 무속성이라 방어 영향을 받지 않아요.</p>';
+    return h + '<p class="desc">드론은 무속성이라 방어 영향을 받지 않아요.</p>';
   }
   const recPower = n => Math.round(260 * Math.pow(1.13, Math.min(n, 30) - 1) * Math.pow(1.27, Math.max(0, n - 30)));
 
@@ -1550,12 +1552,14 @@ input { -webkit-user-select: text; user-select: text; }
   let S = null, raf = 0, last = 0, speed = 1, tmode = 0;
   const cv = $('cv'), ctx = cv.getContext('2d');
   let view = { s: 1, ox: 0, oy: 0 }, visL = 40;
+  const ZOOM = .74, spawnX = d => Math.min(-20, visL - 8) - d;
   function fitBattle() {
     const r = $('battle').getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
     cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
-    const s = Math.max(cv.width / BW, cv.height / BH);
+    /* zoomed out: we see more of the desert to the left, monsters walk in from further away */
+    const s = Math.max(cv.width / BW, cv.height / BH) * ZOOM;
     view = { s, ox: cv.width - BW * s, oy: (cv.height - BH * s) / 2 };
-    visL = Math.max(-10, -view.ox / s + 8);
+    visL = Math.max(-420, -view.ox / s + 8);
   }
   const vfx = () => !!save.set.vfx;
 
@@ -1566,7 +1570,7 @@ input { -webkit-user-select: text; user-select: text; }
     persist();
     const elite = isElite(), n = trk().cur, P = eParams(n, elite);
     const units = save.slots.map(getUnit);
-    const sh = [{ x: SPOTS[0][0], y: SPOTS[0][1], st: hstat(null), u: null, cd: .3, ang: Math.PI, fl: 0, lead: true }];
+    const sh = [{ x: 364, y: 150, st: hstat(null), u: null, cd: .3, ang: Math.PI, fl: 0, robot: true }];
     units.forEach((u, i) => { if (u) { const st = hstat(u); if (synFor(u)) st.dmg *= 1 + PSYN; sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st, u, cd: .2 + i * .1, ang: Math.PI, fl: 0, syn: synFor(u) }); } });
     const avg = sh.reduce((a, b) => a + b.st.dmg, 0) / sh.length;
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
@@ -1589,7 +1593,7 @@ input { -webkit-user-select: text; user-select: text; }
     S.banner = { t: 2, s: '웨이브 ' + S.wave + '/3' };
     if (S.wave === 1) { S.rareRoll = rareForce || Math.random() < RARE_P; rareForce = false; }
     if (S.rareRoll && S.wave === 2) {
-      const e = mkE('boss', -60, DCY + rnd(-120, 120), Math.floor(Math.random() * 5));
+      const e = mkE('boss', spawnX(40), DCY + rnd(-120, 120), Math.floor(Math.random() * 5));
       e.bi = RARE_I; e.r = 48; e.hp = e.mh = ET.boss.hp * S.P.hpm * 7; e.atk *= 2.2; e.sp *= .8; e.arm *= 2; e.sumT = 2.5;
       S.rare = e; S.en.push(e);
       S.alert = 4.5; S.banner = { t: 4, s: '희귀 보스 출현! ' + BOSSES[RARE_I].nm };
@@ -1597,7 +1601,7 @@ input { -webkit-user-select: text; user-select: text; }
     }
     if (isBossStage(S.n) && S.wave === 3) {
       const bk = S.n / 5 - 1, bi = bk % 6, B = BOSSES[bi];
-      const e = mkE('boss', -50, DCY, B.el);
+      const e = mkE('boss', spawnX(30), DCY, B.el);
       e.hp = e.mh = ET.boss.hp * S.P.hpm * (1 + bk * .15); e.bi = bi; e.sumT = bk >= 6 ? 2.2 : 3;
       S.boss = e; S.en.push(e);
       S.alert = 3.2; S.banner = { t: 3.2, s: '보스 출현! ' + (bk >= 6 ? '강화된 ' : '') + B.nm };
@@ -1619,7 +1623,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function spawn() {
     const el = S.elite || Math.random() < Math.min(.8, .1 + S.P.d * .03) ? Math.floor(Math.random() * 5) : -1;
-    S.en.push(mkE(pickKind(), -20, rnd(FIELD0 + 10, FIELD1 - 10), el));
+    S.en.push(mkE(pickKind(), spawnX(rnd(0, 30)), rnd(FIELD0 + 10, FIELD1 - 10), el));
   }
   function xpNeed(l) { return 5 + l * 3; }
   function critChance() { return .05 + S.pass.crit * .06 + S.g.crit; }
@@ -1679,7 +1683,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function densest(r) {
     let b = null, bc = 0;
-    for (const e of S.en) { if (e.hp <= 0 || e.x < 0) continue; let c = 0; for (const o of S.en) if (o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < r) c++; if (c > bc) { bc = c; b = e; } }
+    for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; let c = 0; for (const o of S.en) if (o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < r) c++; if (c > bc) { bc = c; b = e; } }
     return b;
   }
   function fireAt(s, t, extra) {
@@ -1691,6 +1695,7 @@ input { -webkit-user-select: text; user-select: text; }
     const tg = front();
     const spdm = 1 + S.pass.spd * .12 + S.g.spd;
     for (const s of S.sh) {
+      if (s.robot) { s.x = S.robo.x - 14; s.y = S.robo.y + 6; }
       s.cd -= dt; s.fl -= dt;
       if (tg) s.ang = Math.atan2(tg.y - s.y, tg.x - s.x);
       if (tg && s.cd <= 0) {
@@ -1992,15 +1997,18 @@ input { -webkit-user-select: text; user-select: text; }
   function drawBg(c, t) {
     const g = c.createLinearGradient(0, 0, 0, BH);
     g.addColorStop(0, '#a63a26'); g.addColorStop(.35, '#cf5e30'); g.addColorStop(.75, '#e58d45'); g.addColorStop(1, '#d9773a');
-    c.fillStyle = g; c.fillRect(-200, -200, BW + 400, BH + 400);
+    c.fillStyle = g; c.fillRect(-900, -400, BW + 1300, BH + 800);
     c.fillStyle = 'rgba(255,214,160,.18)';
     for (let i = 0; i < 4; i++) { const x = ((i * 137 + t * 6) % (BW + 160)) - 80, y = 150 + i * 120; c.beginPath(); c.ellipse(x, y, 60, 12, 0, 0, 6.283); c.ellipse(x + 40, y - 6, 40, 10, 0, 0, 6.283); c.fill(); }
+    c.fillStyle = '#a84a24';
+    c.beginPath(); c.moveTo(-420, GROUND); c.lineTo(-420, 530); c.lineTo(-360, 520); c.lineTo(-350, 470); c.lineTo(-250, 470); c.lineTo(-240, 515); c.lineTo(-170, 525); c.lineTo(-160, GROUND); c.fill();
+    cactus(c, -120, GROUND - 3, .85); cactus(c, -300, GROUND - 2, .6);
     c.fillStyle = '#b8552a';
     c.beginPath(); c.moveTo(-40, GROUND); c.lineTo(-40, 560); c.lineTo(30, 552); c.lineTo(40, 520); c.lineTo(110, 520); c.lineTo(120, 556); c.lineTo(190, 566); c.lineTo(200, GROUND); c.fill();
     const g2 = c.createLinearGradient(0, GROUND, 0, BH);
     g2.addColorStop(0, '#9a4420'); g2.addColorStop(1, '#4e1f0e');
-    c.fillStyle = g2; c.fillRect(-200, GROUND, BW + 400, BH);
-    c.fillStyle = '#c96a33'; c.fillRect(-200, GROUND - 6, BW + 400, 10);
+    c.fillStyle = g2; c.fillRect(-900, GROUND, BW + 1300, BH);
+    c.fillStyle = '#c96a33'; c.fillRect(-900, GROUND - 6, BW + 1300, 10);
     c.strokeStyle = 'rgba(40,16,6,.35)'; c.lineWidth = 3;
     for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(i * 52 - 10, GROUND + 30 + (i % 3) * 18); c.lineTo(i * 52 + 14, GROUND + 30 + (i % 3) * 18); c.stroke(); }
     cactus(c, 26, GROUND - 4, 1); cactus(c, 250, GROUND - 2, .7);
@@ -2046,6 +2054,17 @@ input { -webkit-user-select: text; user-select: text; }
     c.beginPath(); c.moveTo(-9, 0); c.quadraticCurveTo(-9, -13, 0, -13); c.quadraticCurveTo(9, -13, 9, 0); c.closePath(); c.fill(); c.stroke();
     c.strokeStyle = band; c.lineWidth = 2.4; c.beginPath(); c.moveTo(-8.5, -3); c.lineTo(8.5, -3); c.stroke();
     c.restore(); c.strokeStyle = INK; c.lineWidth = 2.6;
+  }
+  /* synergy: glowing orbs circling the gunslinger (back half drawn behind, front half in front) */
+  function drawOrbs(c, x, y, front) {
+    const t = performance.now() / 1000, n = 3;
+    for (let k = 0; k < n; k++) {
+      const a = t * 2.6 + k * 6.283 / n, sn = Math.sin(a);
+      if ((sn > 0) !== !!front) continue;
+      const ox = x + Math.cos(a) * 22, oy = y + 2 + sn * 8 - 4, r = 3.2 + sn * .9;
+      c.save(); c.globalAlpha = .35; c.fillStyle = '#ffe14a'; c.beginPath(); c.arc(ox, oy, r * 2.2, 0, 6.283); c.fill();
+      c.globalAlpha = 1; c.fillStyle = '#fff6b0'; c.strokeStyle = '#f0a020'; c.lineWidth = 1.4; c.beginPath(); c.arc(ox, oy, r, 0, 6.283); c.fill(); c.stroke(); c.restore();
+    }
   }
   const petImg = {};
   function drawPet(c, x, y, p, ang, fl, g) {
@@ -2181,12 +2200,14 @@ input { -webkit-user-select: text; user-select: text; }
     drawBg(c, t);
     drawDome(c, t, st ? st.domeHit : 0);
     const shooters = st ? st.sh : previewShooters();
-    for (const s of shooters) if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0, s.pg || 0); else drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? EC[s.u.e[0]] : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1);
+    for (const s of shooters) if (s.syn) drawOrbs(c, s.x, s.y, 0);
+    for (const s of shooters) if (s.robot) continue; else if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0, s.pg || 0); else drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? EC[s.u.e[0]] : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1);
+    for (const s of shooters) if (s.syn) drawOrbs(c, s.x, s.y, 1);
     drawRobot(c, st ? st.robo.x : 364, st ? st.robo.y : 150 + Math.sin(t * 2) * 6);
   }
   function previewShooters() {
-    const out = [{ x: SPOTS[0][0], y: SPOTS[0][1], u: null, ang: Math.PI, lead: true }];
-    save.slots.forEach((k, i) => { const u = getUnit(k); if (u) out.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], u, ang: Math.PI }); });
+    const out = [];
+    save.slots.forEach((k, i) => { const u = getUnit(k); if (u) out.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], u, ang: Math.PI, syn: synFor(u) }); });
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) out.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, pet: x.p, pg: x.g, ang: Math.PI }); });
     return out;
   }
@@ -2233,7 +2254,7 @@ input { -webkit-user-select: text; user-select: text; }
     }
     if (S.banner && !S.over) {
       c.globalAlpha = Math.min(1, S.banner.t * 1.5);
-      c.fillStyle = 'rgba(20,32,47,.75)'; c.fillRect(-50, BH / 2 - 44, BW + 100, 56);
+      c.fillStyle = 'rgba(20,32,47,.75)'; c.fillRect(visL - 60, BH / 2 - 44, BW - visL + 120, 56);
       const vx = (visL + BW) / 2, vw = BW - visL - 24;
       c.font = "400 28px 'Black Han Sans', sans-serif";
       const tw = c.measureText(S.banner.s).width, fs = tw > vw ? Math.max(14, Math.floor(28 * vw / tw)) : 28;
