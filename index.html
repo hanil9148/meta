@@ -457,7 +457,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261113-2226';
+  const APP_VER = 'v.261113-2339';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -739,12 +739,52 @@ input { -webkit-user-select: text; user-select: text; }
   }
   const EBOX = [{ p: 60, odds: ODDS.box1 }, { p: 300, odds: ODDS.box2 }];
   function gearPow() { const o = gearAll(); return (1 + o.atk) * (1 + o.natk) * (1 + o.spd) * (1 + o.crit * .5) * (1 + o.el * .6) * (1 + o.boss * .15) * (1 + o.dbl) * (1 + o.pierce * .3 + o.boom * .5); }
+  /* Pets: one per deployed slot. Each pet has a partner gunslinger; pairing them in the same slot gives that gunslinger +30% attack. */
+  const PETN = ['현호', '승주', '해서', '현성', '해승', '기현', '태인', '성진'];
+  const PAIR = [0, 3, 1, 7, 5, 4, 2, 6];
+  const PETC = ['#f2a65a', '#8fd16a', '#6ab8f2', '#f27a9a', '#b38af2', '#f2d65a', '#5ad6c4', '#d98a5a'];
+  const PET_MAX = 10, PETP1 = 1000, PETP10 = 9000, PSYN = .3;
+  const petNeed = s => s + 1;
+  const petSyn = i => { const p = save.pslot[i], u = getUnit(save.slots[i]); return p != null && u && PAIR[p] === u.n; };
+  function petStat(p, owner) {
+    const d = save.pets[p] || { s: 0 };
+    return { dmg: 5 * (1 + .15 * d.s) * (1 + .02 * (save.lv - 1)) * (owner ? 1 + .08 * owner.s : 1), iv: .85, el: owner ? owner.e.slice(0, 1) : [], burn: 0, slow: 0, chain: 0, splash: 0, twin: 0 };
+  }
+  /* each pet is an animal (assigned once at random) */
+  const PETA = ['fox', 'panda', 'rabbit', 'frog', 'cat', 'bear', 'pig', 'dog'];
+  const PETAN = { fox: '여우', panda: '판다', rabbit: '토끼', frog: '개구리', cat: '고양이', bear: '곰', pig: '돼지', dog: '강아지' };
+  function petSvg(p) {
+    const a = PETA[p], K = ' stroke="' + INK + '" stroke-width="2.6" stroke-linejoin="round"';
+    const eyes = (y, r) => '<circle cx="21" cy="' + y + '" r="' + r + '" fill="' + INK + '"/><circle cx="35" cy="' + y + '" r="' + r + '" fill="' + INK + '"/><circle cx="22" cy="' + (y - 1) + '" r="1" fill="#fff"/><circle cx="36" cy="' + (y - 1) + '" r="1" fill="#fff"/>';
+    const head = (c, ry) => '<ellipse cx="28" cy="31" rx="17" ry="' + (ry || 15) + '" fill="' + c + '"' + K + '/>';
+    const nose = '<ellipse cx="28" cy="35" rx="3" ry="2.2" fill="' + INK + '"/><path d="M24 38q4 3 8 0" fill="none" stroke="' + INK + '" stroke-width="2" stroke-linecap="round"/>';
+    let g = '';
+    if (a === 'fox') g = '<path d="M13 22l1-14 11 9M43 22l-1-14-11 9" fill="#f08a3a"' + K + '/><path d="M11 28q17-6 34 0l-6 14q-11 6-22 0Z" fill="#f08a3a"' + K + '/><path d="M18 36q10 10 20 0q-4 8-10 9q-6-1-10-9Z" fill="#fff"/>' + eyes(30, 2.8) + '<ellipse cx="28" cy="38" rx="3" ry="2.2" fill="' + INK + '"/>';
+    else if (a === 'panda') g = '<circle cx="15" cy="17" r="6" fill="' + INK + '"/><circle cx="41" cy="17" r="6" fill="' + INK + '"/>' + head('#fafafa') + '<ellipse cx="20" cy="29" rx="5" ry="6" fill="' + INK + '" transform="rotate(-20 20 29)"/><ellipse cx="36" cy="29" rx="5" ry="6" fill="' + INK + '" transform="rotate(20 36 29)"/><circle cx="21" cy="28" r="1.6" fill="#fff"/><circle cx="35" cy="28" r="1.6" fill="#fff"/>' + nose;
+    else if (a === 'rabbit') g = '<ellipse cx="20" cy="12" rx="5" ry="12" fill="#f4f0f0"' + K + '/><ellipse cx="36" cy="12" rx="5" ry="12" fill="#f4f0f0"' + K + '/><ellipse cx="20" cy="12" rx="2" ry="8" fill="#f6a6b8"/><ellipse cx="36" cy="12" rx="2" ry="8" fill="#f6a6b8"/>' + head('#f4f0f0', 14) + eyes(30, 2.8) + '<path d="M26 35l2 2 2-2Z" fill="#f27a9a"' + K.replace('2.6', '1.4') + '/><path d="M28 37v3" stroke="' + INK + '" stroke-width="1.6"/>';
+    else if (a === 'frog') g = '<ellipse cx="28" cy="33" rx="19" ry="13" fill="#6cc04a"' + K + '/><circle cx="18" cy="20" r="7" fill="#6cc04a"' + K + '/><circle cx="38" cy="20" r="7" fill="#6cc04a"' + K + '/><circle cx="18" cy="20" r="3.4" fill="' + INK + '"/><circle cx="38" cy="20" r="3.4" fill="' + INK + '"/><path d="M17 36q11 8 22 0" fill="none" stroke="' + INK + '" stroke-width="2.4" stroke-linecap="round"/><circle cx="15" cy="34" r="2.4" fill="#f6a6b8" opacity=".7"/><circle cx="41" cy="34" r="2.4" fill="#f6a6b8" opacity=".7"/>';
+    else if (a === 'cat') g = '<path d="M13 22l2-13 10 7M43 22l-2-13-10 7" fill="#c9a27a"' + K + '/>' + head('#c9a27a') + '<path d="M28 17v6M22 18l2 5M34 18l-2 5" stroke="#9a6a3a" stroke-width="2"/>' + eyes(30, 2.8) + '<path d="M26 34l2 2 2-2Z" fill="#f27a9a"/><path d="M24 38q2 2 4 0q2 2 4 0" fill="none" stroke="' + INK + '" stroke-width="1.8"/><path d="M10 33h8M10 37l8-1M46 33h-8M46 37l-8-1" stroke="' + INK + '" stroke-width="1.4"/>';
+    else if (a === 'bear') g = '<circle cx="15" cy="18" r="6" fill="#9a6a3a"' + K + '/><circle cx="41" cy="18" r="6" fill="#9a6a3a"' + K + '/>' + head('#9a6a3a') + '<ellipse cx="28" cy="36" rx="8" ry="6" fill="#e0bf94"/>' + eyes(28, 2.6) + nose;
+    else if (a === 'pig') g = '<path d="M14 20l2-9 8 5M42 20l-2-9-8 5" fill="#f6a6b8"' + K + '/>' + head('#f6a6b8') + eyes(27, 2.6) + '<ellipse cx="28" cy="36" rx="7" ry="5" fill="#f27a9a"' + K.replace('2.6', '2') + '/><ellipse cx="25.5" cy="36" rx="1.3" ry="2" fill="' + INK + '"/><ellipse cx="30.5" cy="36" rx="1.3" ry="2" fill="' + INK + '"/>';
+    else g = head('#d8b07a') + '<ellipse cx="12" cy="28" rx="5" ry="11" fill="#8a5a3a"' + K + ' transform="rotate(15 12 28)"/><ellipse cx="44" cy="28" rx="5" ry="11" fill="#8a5a3a"' + K + ' transform="rotate(-15 44 28)"/><ellipse cx="34" cy="27" rx="5" ry="4" fill="#8a5a3a" opacity=".6"/>' + eyes(28, 2.6) + nose + '<path d="M28 40q0 4 3 4q2 0 2-4Z" fill="#f27a9a"/>';
+    return '<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
+  }
+  function addPet(p, toSlot) {
+    const ex = save.pets[p];
+    if (ex) ex.c++; else save.pets[p] = { s: 0, c: 0 };
+    if (!save.pslot.includes(p)) {
+      let i = [0, 1, 2].find(j => save.pslot[j] === null && getUnit(save.slots[j]) && PAIR[p] === getUnit(save.slots[j]).n);
+      if (i === undefined) i = save.pslot.indexOf(null);
+      if (i >= 0 && !ex) save.pslot[i] = p;
+    }
+    return !ex;
+  }
   /* ---------- save ---------- */
   const KEY = 'jm-gun-v1';
   function fresh() {
     return {
       v: 1, name: '', lv: 1, xp: 0, gold: 600, gem: 100, en: 30, enT: Date.now(),
-      unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
+      unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pets: {}, pslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0
     };
@@ -780,6 +820,9 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.items && typeof r.items === 'object') for (const id in r.items) { const v = r.items[id]; if (validId(id) && v && typeof v === 'object' && v.n >= 1) s.items[id] = { n: num(v.n, 1, 1e6, 1), lv: num(v.lv, 1, GMAX[+id[2]], 1) }; }
     if (r.gear && typeof r.gear === 'object') for (const k of ['w', 'h', 'n']) { const id = r.gear[k]; if (validId(id) && KND[id.slice(0, 2)].slot === k && s.items[id]) s.gear[k] = id; }
     s.pity = num(r.pity, 0, 1000, 0);
+    if (r.pets && typeof r.pets === 'object') for (let p = 0; p < PETN.length; p++) { const v = r.pets[p]; if (v && typeof v === 'object') s.pets[p] = { s: num(v.s, 0, PET_MAX, 0), c: num(v.c, 0, 1e6, 0) }; }
+    s.pslot = [0, 1, 2].map(i => { const p = r.pslot && r.pslot[i]; return Number.isInteger(p) && s.pets[p] ? p : null; });
+    s.pslot = s.pslot.map((p, i) => p === null || s.pslot.indexOf(p) === i ? p : null);
     s.coll = cleanColl(r.coll);
     s.capBuy = r.capBuy !== undefined ? num(r.capBuy, 0, 90, 0) : Math.max(0, num(r.cap, 10, 100, 10) - 10 - (s.unlocked - 1));
     { const over = s.coll.length - (10 + s.unlocked - 1 + s.capBuy); if (over > 0) s.capBuy = Math.min(90, s.capBuy + over); }
@@ -830,7 +873,8 @@ input { -webkit-user-select: text; user-select: text; }
   function critBonus() { let b = 0; for (const s of SK) if (save.sk[s.id] && save.lv >= s.un) b += (save.sk[s.id].lv - 1); return b; }
   function power() {
     let p = 0; const gp = gearPow(), go = gearAll();
-    for (const u of [null].concat(save.slots.map(getUnit).filter(Boolean))) p += dps(hstat(u)) * 6 * gp;
+    p += dps(hstat(null)) * 6 * gp;
+    save.slots.forEach((k, i) => { const u = getUnit(k); if (u) p += dps(hstat(u)) * 6 * gp * (petSyn(i) ? 1 + PSYN : 1); if (save.pslot[i] != null) p += dps(petStat(save.pslot[i], u)) * 6 * gp; });
     p += baseHp(save.hl) * (1 + go.hp) / (1 - defRed(save.dl)) / (1 - go.dr) / 6;
     for (const s of SK) if (save.sk[s.id] && save.lv >= s.un) p += 15 * save.sk[s.id].lv;
     return Math.round(p);
@@ -1079,6 +1123,12 @@ input { -webkit-user-select: text; user-select: text; }
       h += u ? heroTile(u, ' data-act="slot" data-i="' + i + '" role="button"', i === selSlot ? 'sel' : '') : '<div class="htile emp ol-s' + (i === selSlot ? ' sel' : '') + '" data-act="slot" data-i="' + i + '" role="button">' + (i + 1) + '번 슬롯<br>비어 있음</div>';
     }
     h += '</div></div>';
+    h += '<div class="card"><div class="row"><h3 class="ol grow">펫</h3><span class="desc" style="color:#fff">' + Object.keys(save.pets).length + '/' + PETN.length + '</span></div><p class="desc">출전 칸마다 펫 1마리가 옆에서 같이 싸워요. <b>짝 총잡이</b>와 같은 칸에 두면 그 총잡이 <b>공격력 +30%</b>. 펫은 상점에서 뽑고, 같은 펫이 또 나오면 별 강화 재료가 돼요.</p><div class="slots4">';
+    for (let i = 0; i < 3; i++) {
+      const p = save.pslot[i], d = p != null && save.pets[p], syn = petSyn(i);
+      h += '<div class="htile' + (d ? '' : ' emp') + (syn ? ' sel' : '') + '" data-act="petslot" data-i="' + i + '" role="button">' + (d ? '<span style="width:46px;height:46px;display:block">' + petSvg(p) + '</span><span class="hn ol-s">' + PETN[p] + '</span><span class="st ol-s">' + PETAN[PETA[p]] + ' ★' + d.s + (syn ? ' · 시너지' : '') + '</span>' : '<span class="ol-s">' + (i + 1) + '번 펫<br>비어 있음</span>') + '</div>';
+    }
+    h += '</div><p class="desc">짝: ' + PETN.map((n, p) => n + '-' + NMS[PAIR[p]]).join(' · ') + '</p></div>';
     h += '<div class="card dark"><div class="row"><h3 class="ol grow">보관함 ' + save.coll.length + '/' + capOf() + '</h3>' + (save.coll.length ? '<button class="btn ' + (rmMode ? 'r' : '') + ' sm ol-s" data-act="rmmode">' + (rmMode ? '제거 취소' : '유닛 제거') + '</button>' : '') + '<button class="btn o sm ol-s" data-act="tab" data-t="shop">뽑으러 가기</button></div>';
     h += capOf() < CAP_MAX ? '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">보관함 확장 +5칸</b><br><span class="desc">기본 10칸이고 스테이지를 하나 열 때마다 1칸씩 늘어나요. 골드로 늘리면 최대 ' + CAP_MAX + '칸까지 돼요.</span></span><button class="btn y sm ol-s" data-act="capup"' + (save.gold < capCost(save.capBuy) ? ' disabled' : '') + '>' + I.coin + fmt(capCost(save.capBuy)) + '</button></div>' : '<p class="desc">보관함이 최대 ' + CAP_MAX + '칸이에요.</p>';
     if (!save.coll.length) h += '<p class="empty">아직 총잡이가 없어요. 상점에서 뽑아보세요.</p>';
@@ -1087,7 +1137,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (rmMode) {
         let g = 0; for (const u of save.coll) if (rmSel.has(ukey(u))) g += sellPrice(u);
         h += '<div class="rmbar"><p class="desc" style="color:#fff">제거할 총잡이를 눌러서 고르세요. 고른 총잡이는 한 번에 사라지고 골드로 바뀌어요. 출전 중이면 자동으로 빠져요.</p>' +
-          '<div class="row"><button class="btn sm grow ol-s" data-act="rmlow">낮은 등급 모두 선택</button><button class="btn sm grow ol-s" data-act="rmnone">선택 해제</button></div>' +
+          '<div class="row"><button class="btn sm grow ol-s" data-act="rmlow">★2 이하 모두 선택</button><button class="btn sm grow ol-s" data-act="rmnone">선택 해제</button></div>' +
           (rmAsk ? '<div class="prow" style="padding:8px 10px"><span><b style="font-size:15px">' + rmSel.size + '명을 제거할까요?</b><br><span class="desc">되돌릴 수 없어요 · +' + fmt(g) + '골드</span></span><span class="row"><button class="btn r sm ol-s" data-act="rmyes">제거</button><button class="btn sm ol-s" data-act="rmno">취소</button></span></div>'
             : '<button class="btn r wide ol-s" data-act="rmgo"' + (rmSel.size ? '' : ' disabled') + '>' + (rmSel.size ? rmSel.size + '명 제거하기 · +' + fmt(g) + 'G' : '제거할 총잡이를 고르세요') + '</button>') + '</div>';
       }
@@ -1230,7 +1280,27 @@ input { -webkit-user-select: text; user-select: text; }
   }
 
   /* ---------- shop ---------- */
-  let pulls = null;
+  let pulls = null, petPulls = null, petSlot = 0;
+  function petBody() {
+    const i = petSlot, u = getUnit(save.slots[i]);
+    let h = '<p class="desc" style="color:#fff">' + (i + 1) + '번 칸' + (u ? ' · 총잡이 <b>' + NMS[u.n] + '</b> · 짝 펫은 <b>' + PETN[PAIR.indexOf(u.n)] + '</b>' : ' · 총잡이가 없어요') + '. 같은 펫을 모으면 별을 올릴 수 있어요(★' + PET_MAX + '까지).</p>';
+    for (let p = 0; p < PETN.length; p++) {
+      const d = save.pets[p], on = save.pslot[i] === p, other = !on && save.pslot.includes(p), syn = u && PAIR[p] === u.n;
+      h += '<div class="shopi" style="' + (d ? '' : 'opacity:.5') + '"><span class="ico" style="background:none;border:0">' + petSvg(p) + '</span><div style="min-width:0"><b class="ol-s">' + PETN[p] + ' <span style="font-size:12px;opacity:.8">' + PETAN[PETA[p]] + '</span>' + (d ? ' ★' + d.s : '') + (syn ? ' <span style="font-size:12px;color:var(--yel)">시너지!</span>' : '') + '</b>' +
+        '<p>짝 총잡이 <b style="color:#fff">' + NMS[PAIR[p]] + '</b>' + (other ? ' · ' + (save.pslot.indexOf(p) + 1) + '번 칸에서 사용 중' : '') + '</p>' +
+        (d ? '<div class="bar cy" style="margin-top:4px"><i style="width:' + (d.s >= PET_MAX ? 100 : Math.min(100, d.c / petNeed(d.s) * 100)) + '%"></i><b class="ol-s">' + (d.s >= PET_MAX ? 'MAX' : '★' + d.s + ' · ' + d.c + '/' + petNeed(d.s)) + '</b></div>' : '<p>아직 없어요 · 상점 펫 뽑기</p>') + '</div>' +
+        '<div class="buy">' + (d ? (on ? '<button class="btn sm ol-s" disabled>함께하는 중</button>' : '<button class="btn g sm ol-s" data-act="petEq" data-p="' + p + '">' + (other ? '옮기기' : '데려가기') + '</button>') + '<button class="btn y sm ol-s" data-act="petUp" data-p="' + p + '"' + (d.s < PET_MAX && d.c >= petNeed(d.s) ? '' : ' disabled') + '>별 강화</button>' : '') + '</div></div>';
+    }
+    if (save.pslot[i] != null) h += '<button class="btn r sm ol-s" data-act="petOff">펫 빼기</button>';
+    return h;
+  }
+  function petPull(cnt) {
+    const cost = cnt === 10 ? PETP10 : PETP1;
+    if (save.gold < cost) return;
+    save.gold -= cost; petPulls = [];
+    for (let i = 0; i < cnt; i++) { const p = Math.floor(Math.random() * PETN.length); petPulls.push({ p, isNew: addPet(p) }); }
+    qAdd('pull', 1); Snd.coin(); persist(); render();
+  }
   function rollOne() {
     const r = Math.random();
     let k = 4, acc = 0;
@@ -1263,12 +1333,19 @@ input { -webkit-user-select: text; user-select: text; }
     h += '<p class="desc" style="color:#fff">보관함 <b>' + save.coll.length + '/' + capOf() + '</b>' + (save.coll.length >= capOf() ? ' · 가득 찼어요. 새 총잡이는 ' + FULLG + '골드로 바뀌어요. 총잡이 탭에서 확장하거나 판매하세요.' : '') + '</p>';
     h += item(face('#c8783a', '#3fa9f5'), '총잡이 뽑기 1회', '한일·성민·금유·도영·진명·해천·정욱·재원 중 하나가 속성을 달고 나와요.', I.coin + fmt(PULL1), '', 'pull1', save.gold < PULL1);
     h += item(face('#8a5aa8', '#ffe14a'), '총잡이 뽑기 10회', '10번 한꺼번에 뽑아요. 이미 있는 총잡이는 ' + DUPG + '골드로 바뀌어요.', I.coin + fmt(PULL10), '', 'pull10', save.gold < PULL10);
+    h += item(petSvg(0), '펫 뽑기 1회', PETN.join('·') + ' 중 하나. 이미 있는 펫은 별 강화 재료가 돼요.', I.coin + fmt(PETP1), '', 'ppull1', save.gold < PETP1);
+    h += item(petSvg(4), '펫 뽑기 10회', '10번 한꺼번에 뽑아요.', I.coin + fmt(PETP10), '', 'ppull10', save.gold < PETP10);
     h += item(skillIcon('cannon'), '스킬 카드 상자', '열린 스킬 중에서 카드 20장이 무작위로 나와요.', I.gem + '40', (5 - save.shop.card) + '/5', 'cardbox', save.gem < 40 || save.shop.card >= 5);
     h += item(I.bolt, '에너지 충전', '에너지 30을 바로 채워요.', I.gem + '30', (3 - save.shop.en) + '/3', 'buyen', save.gem < 30 || save.shop.en >= 3);
     h += item(itemIcon('rv1'), '장비 상자', '장비 1개 · 일반 90 · 고급 6.4 · 희귀 2.8 · 영웅 0.7 · 전설 0.1%', I.gem + EBOX[0].p, '', 'ebox1', save.gem < EBOX[0].p);
     h += item(itemIcon('sg4'), '고급 장비 상자', '고급 80 · 희귀 14 · 영웅 5 · 전설 1% · ' + PITY + '번 안에 전설 확정 (남은 ' + (PITY - save.pity) + '번)', I.gem + EBOX[1].p, '', 'ebox2', save.gem < EBOX[1].p);
     h += item(I.coin, '골드 주머니', fmt(goldBag()) + ' 골드. 높은 단계를 열수록 많이 들어 있어요.', I.gem + '50', '', 'goldbag', save.gem < 50);
     h += '<p class="desc">뽑기 확률: 단일 속성 <b>' + pct(RATES[0]) + '</b> · 2속성 <b>' + pct(RATES[1]) + '</b> · 3속성 <b>' + pct(RATES[2]) + '</b> · 4속성 <b>' + pct(RATES[3]) + '</b>. 새 총잡이는 빈 슬롯에 자동으로 출전해요.</p></div>';
+    if (petPulls) {
+      h += '<div class="card dark"><h3 class="ol">펫 뽑기 결과</h3><div class="pullres">';
+      for (const r of petPulls) h += '<div class="htile">' + '<span style="width:44px;height:44px;display:block">' + petSvg(r.p) + '</span><span class="hn ol-s" style="font-size:11px">' + PETN[r.p] + '</span><span class="st ol-s">' + (r.isNew ? 'NEW!' : '+1') + '</span></div>';
+      h += '</div></div>';
+    }
     if (pulls) {
       h += '<div class="card dark"><h3 class="ol">뽑기 결과</h3><div class="pullres">';
       for (const r of pulls) h += '<div class="htile r' + r.u.e.length + '">' + face(HATS[r.u.n], EC[r.u.e[0]], { n: r.u.n }) + '<span class="hn ol-s" style="font-size:11px">' + NMS[r.u.n] + '</span><span class="chips">' + r.u.e.map(e => '<i class="chip e' + e + '" style="font-size:9px;padding:0 3px">' + EGL[e] + '</i>').join('') + '</span><span class="tag' + (r.isNew ? '' : ' dup') + '">' + (r.isNew ? 'NEW' : r.full ? '가득 +' + FULLG + 'G' : '+' + DUPG + 'G') + '</span></div>';
@@ -1399,7 +1476,7 @@ input { -webkit-user-select: text; user-select: text; }
   function params(n) {
     const t = Math.min(1, (n - 1) / 29) + Math.max(0, n - 30) / 40;
     const x = Math.max(0, n - 30);
-    return { hpm: Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x), d: n - 1 };
+    return { hpm: Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x) * (n >= 45 ? 1 + .3 * (n - 44) : 1), d: n - 1 };
   }
   function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: P.gm * ELITE.gold }) : P; }
   const ET = {
@@ -1460,8 +1537,9 @@ input { -webkit-user-select: text; user-select: text; }
     const elite = isElite(), n = trk().cur, P = eParams(n, elite);
     const units = save.slots.map(getUnit);
     const sh = [{ x: SPOTS[0][0], y: SPOTS[0][1], st: hstat(null), u: null, cd: .3, ang: Math.PI, fl: 0, lead: true }];
-    units.forEach((u, i) => { if (u) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st: hstat(u), u, cd: .2 + i * .1, ang: Math.PI, fl: 0 }); });
+    units.forEach((u, i) => { if (u) { const st = hstat(u); if (petSyn(i)) st.dmg *= 1 + PSYN; sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st, u, cd: .2 + i * .1, ang: Math.PI, fl: 0, syn: petSyn(i) }); } });
     const avg = sh.reduce((a, b) => a + b.st.dmg, 0) / sh.length;
+    save.pslot.forEach((p, i) => { if (p != null) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 19, st: petStat(p, units[i]), u: null, pet: p, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
       elite, n, P, sh, avg, g: G, hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
@@ -1806,6 +1884,8 @@ input { -webkit-user-select: text; user-select: text; }
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
     if (win && S.elite) save.gem += ELITE.gem;
+    const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
+    save.gem += sGem;
     save.gold += gold; rep.gold += gold; rep.done++; tk.plays[i]++; save.kills += S.kills;
     if (win) { save.wins++; if (hpPct > tk.best[i]) tk.best[i] = hpPct; tk.reach[i] |= 1 | (hpPct >= 50 ? 2 : 0) | (S.took <= 0 ? 4 : 0); }
     qAdd('play'); qAdd('kill', S.kills); if (win) qAdd('win'); if (win && S.took <= 0) qAdd('perfect');
@@ -1824,6 +1904,7 @@ input { -webkit-user-select: text; user-select: text; }
       (drops.length ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>장비 획득!</b></p><div class="rewards">' + drops.map(d => '<div class="rw">' + itemIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + iK(d.id).nm + '</b><span style="color:' + RAR[iG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[iG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + starBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
+      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem + '개</p>' : '') +
       (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 골드 2배 + 젬 ' + ELITE.gem + '개</p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! LV.' + save.lv + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
@@ -1935,6 +2016,14 @@ input { -webkit-user-select: text; user-select: text; }
     c.beginPath(); c.moveTo(-9, 0); c.quadraticCurveTo(-9, -13, 0, -13); c.quadraticCurveTo(9, -13, 9, 0); c.closePath(); c.fill(); c.stroke();
     c.strokeStyle = band; c.lineWidth = 2.4; c.beginPath(); c.moveTo(-8.5, -3); c.lineTo(8.5, -3); c.stroke();
     c.restore(); c.strokeStyle = INK; c.lineWidth = 2.6;
+  }
+  const petImg = {};
+  function drawPet(c, x, y, p, ang, fl) {
+    let im = petImg[p];
+    if (!im) { im = petImg[p] = new Image(); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(petSvg(p)); }
+    const bob = Math.sin(performance.now() / 170 + p) * 1.2, sz = 22 + (fl > 0 ? 2 : 0);
+    if (im.complete && im.naturalWidth) c.drawImage(im, x - sz / 2, y - sz / 2 + bob, sz, sz);
+    if (fl > 0) { c.fillStyle = '#fff3a0'; c.beginPath(); c.arc(x - 12, y + bob, 3, 0, 6.283); c.fill(); }
   }
   function drawCowboy(c, x, y, hat, band, ang, fl, lead, n) {
     if (n === undefined || n === null) n = -1;
@@ -2059,12 +2148,13 @@ input { -webkit-user-select: text; user-select: text; }
     drawBg(c, t);
     drawDome(c, t, st ? st.domeHit : 0);
     const shooters = st ? st.sh : previewShooters();
-    for (const s of shooters) drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? EC[s.u.e[0]] : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1);
+    for (const s of shooters) if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0); else drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? EC[s.u.e[0]] : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1);
     drawRobot(c, st ? st.robo.x : 364, st ? st.robo.y : 150 + Math.sin(t * 2) * 6);
   }
   function previewShooters() {
     const out = [{ x: SPOTS[0][0], y: SPOTS[0][1], u: null, ang: Math.PI, lead: true }];
     save.slots.forEach((k, i) => { const u = getUnit(k); if (u) out.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], u, ang: Math.PI }); });
+    save.pslot.forEach((p, i) => { if (p != null) out.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 19, pet: p, ang: Math.PI }); });
     return out;
   }
   function draw() {
@@ -2469,7 +2559,7 @@ input { -webkit-user-select: text; user-select: text; }
     rmmode: () => { rmMode = !rmMode; rmAsk = false; rmSel.clear(); render(); },
     rmpick: el => { const k = el.dataset.k; if (rmSel.has(k)) rmSel.delete(k); else rmSel.add(k); rmAsk = false; render(); },
     rmnone: () => { rmSel.clear(); rmAsk = false; render(); },
-    rmlow: () => { rmSel.clear(); for (const u of save.coll) if (u.e.length === 1 && u.s <= 2 && !save.slots.includes(ukey(u))) rmSel.add(ukey(u)); rmAsk = false; if (!rmSel.size) toast('낮은 등급(단일 속성 ★2 이하, 출전 안 함) 총잡이가 없어요'); render(); },
+    rmlow: () => { rmSel.clear(); for (const u of save.coll) if (u.e.length <= 2 && u.s <= 2 && !save.slots.includes(ukey(u))) rmSel.add(ukey(u)); rmAsk = false; if (!rmSel.size) toast('★2 이하(속성 1~2개, 출전 안 함) 총잡이가 없어요'); render(); },
     rmgo: () => { if (rmSel.size) { rmAsk = true; render(); } },
     rmno: () => { rmAsk = false; render(); },
     rmyes: () => {
@@ -2492,6 +2582,12 @@ input { -webkit-user-select: text; user-select: text; }
     skup: () => { const k = skOf(skSel), need = skNeed(k.lv), cost = skCost(k.lv); if (k.c < need || save.gold < cost || k.lv >= 10) return; k.c -= need; save.gold -= cost; k.lv++; Snd.lvup(); persist(); refreshPop(skillBody()); topbar(); },
     free: () => { qDay(); if (save.shop.free) return; save.shop.free = 1; const t = giveR({ gold: 200, cards: 5 }); Snd.coin(); toast(t + ' 받았어요'); persist(); render(); },
     pull1: () => pull(1),
+    ppull1: () => petPull(1),
+    ppull10: () => petPull(10),
+    petslot: el => { petSlot = +el.dataset.i; openPop('펫 · ' + (petSlot + 1) + '번 칸', petBody(), 'pet'); },
+    petEq: el => { const p = +el.dataset.p; if (!save.pets[p]) return; const j = save.pslot.indexOf(p); if (j >= 0) save.pslot[j] = null; save.pslot[petSlot] = p; Snd.click(); persist(); refreshPop(petBody()); },
+    petOff: () => { save.pslot[petSlot] = null; persist(); refreshPop(petBody()); },
+    petUp: el => { const p = +el.dataset.p, d = save.pets[p]; if (!d || d.s >= PET_MAX || d.c < petNeed(d.s)) return; d.c -= petNeed(d.s); d.s++; Snd.lvup(); toast(PETN[p] + ' ★' + d.s + '!'); persist(); refreshPop(petBody()); },
     pull10: () => pull(10),
     cardbox: () => { qDay(); if (save.gem < 40 || save.shop.card >= 5) return; save.gem -= 40; save.shop.card++; giveCards(20); Snd.coin(); toast('스킬 카드 20장 받았어요'); persist(); render(); },
     buyen: () => { qDay(); if (save.gem < 30 || save.shop.en >= 3) return; save.gem -= 30; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
@@ -2566,7 +2662,7 @@ input { -webkit-user-select: text; user-select: text; }
   last = performance.now();
   raf = requestAnimationFrame(frame);
   NET.init();
-  window.__G = { forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, dropItems, combineAll, gearAll, itemStats, fmt };
+  window.__G = { forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt };
 })();
 </script>
 <script type="module">
