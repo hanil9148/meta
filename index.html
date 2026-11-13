@@ -63,10 +63,10 @@ input { -webkit-user-select: text; user-select: text; }
 .ava .xpb { width: 52px; height: 8px; margin-left: 10px; border: 2px solid var(--ink); border-radius: 6px; background: var(--panel4); overflow: hidden; }
 .ava .xpb i { display: block; height: 100%; background: var(--yel); width: 0; }
 .ava .nm { font-family: var(--display); font-size: 10px; color: var(--cream); max-width: 70px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.pills { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1.2fr 1.3fr; gap: 6px; padding-top: 6px; }
-.pill { position: relative; height: 28px; border: 3px solid var(--ink); border-radius: 9px; background: rgba(20,32,47,.85); display: flex; align-items: center; justify-content: flex-end; padding: 0 8px 0 22px; min-width: 0; }
-.pill b { font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--fg); white-space: nowrap; font-variant-numeric: tabular-nums; overflow: hidden; }
-.pill .pi { position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; }
+.pills { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 6px; padding-top: 6px; }
+.pill { position: relative; height: 28px; border: 3px solid var(--ink); border-radius: 9px; background: rgba(20,32,47,.85); display: flex; align-items: center; justify-content: flex-end; padding: 0 5px 0 14px; min-width: 0; }
+.pill b { font-family: var(--display); font-weight: 400; font-size: 13px; letter-spacing: -.2px; color: var(--fg); white-space: nowrap; font-variant-numeric: tabular-nums; overflow: hidden; }
+.pill .pi { position: absolute; left: -9px; top: 50%; transform: translateY(-50%); width: 25px; height: 25px; }
 .pill .plus { position: absolute; right: -9px; top: -9px; width: 22px; height: 22px; border: 2px solid var(--ink); border-radius: 50%; background: var(--cya); font-family: var(--display); font-size: 15px; line-height: 16px; color: #fff; }
 .sqb { flex: none; width: 40px; height: 40px; margin-top: 4px; border: 3px solid var(--ink); border-radius: 11px; background: var(--panel2); display: grid; place-items: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,.3); position: relative; }
 .sqb svg { width: 24px; height: 24px; }
@@ -171,7 +171,10 @@ input { -webkit-user-select: text; user-select: text; }
 .htile.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--ink), 0 0 12px rgba(255,255,255,.6); }
 .htile.rmsel { border-color: var(--red); box-shadow: 0 0 0 2px var(--ink), 0 0 12px rgba(234,74,63,.8); }
 .htile.rmsel::after { content: '✓'; position: absolute; right: 4px; top: 2px; width: 20px; height: 20px; border: 2px solid var(--ink); border-radius: 50%; background: var(--red); color: #fff; font: 900 12px/16px var(--body); text-align: center; }
-.rmbar { display: grid; gap: 8px; padding: 8px; border: 3px solid var(--red); border-radius: 12px; background: rgba(234,74,63,.12); }
+.rmsel3 { display: grid; grid-template-columns: 1fr 1fr .7fr; gap: 6px; }
+.rmsel3 .btn { min-width: 0; white-space: normal; line-height: 1.15; padding: 6px 4px; font-size: 13px; }
+.rmbar > * { min-width: 0; }
+.rmbar { min-width: 0; display: grid; gap: 8px; padding: 8px; border: 3px solid var(--red); border-radius: 12px; background: rgba(234,74,63,.12); }
 .htile.r2 { background: linear-gradient(#3b6fb3, #1d3a66); }
 .htile.r3 { background: linear-gradient(#8a4fd0, #43207a); }
 .htile.r4 { background: linear-gradient(#e2a02a, #8a4a10); }
@@ -479,7 +482,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0225';
+  const APP_VER = 'v.261114-0240';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -929,7 +932,7 @@ input { -webkit-user-select: text; user-select: text; }
   const skUnlocked = s => save.lv >= s.un;
 
   /* ---------- energy ---------- */
-  const EN_MAX = 30, EN_T = 60000, RUN_COST = 1;
+  const EN_MAX = 30, EN_T = 60000, RUN_COST = 1, EN_GEM = 1;
   function tickEnergy() {
     const now = Date.now();
     if (save.en >= EN_MAX) { save.enT = now; return; }
@@ -1041,7 +1044,7 @@ input { -webkit-user-select: text; user-select: text; }
     $('avaName').textContent = save.name || '이름 없음';
     $('vGem').textContent = fmt(save.gem);
     $('vGold').textContent = fmt(save.gold);
-    $('vEn').textContent = save.en + '/' + EN_MAX;
+    $('vEn').textContent = save.en >= 100 ? String(save.en) : save.en + '/' + EN_MAX;
     badges();
   }
   function badges() {
@@ -1181,7 +1184,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (rmMode) {
         let g = 0; for (const u of save.coll) if (rmSel.has(ukey(u))) g += sellPrice(u);
         h += '<div class="rmbar"><p class="desc" style="color:#fff">제거할 총잡이를 눌러서 고르세요. 고른 총잡이는 한 번에 사라지고 골드로 바뀌어요. 출전 중이면 자동으로 빠져요.</p>' +
-          '<div class="row"><button class="btn sm grow ol-s" data-act="rmlow">속성 2개↓ ★2↓ 선택</button><button class="btn sm grow ol-s" data-act="rmlow3">속성 3개↓ ★2↓ 선택</button><button class="btn sm grow ol-s" data-act="rmnone">선택 해제</button></div>' +
+          '<div class="rmsel3"><button class="btn sm ol-s" data-act="rmlow">2속성 이하<br>★2 이하</button><button class="btn sm ol-s" data-act="rmlow3">3속성 이하<br>★2 이하</button><button class="btn sm ol-s" data-act="rmnone">선택<br>해제</button></div>' +
           (rmAsk ? '<div class="prow" style="padding:8px 10px"><span><b style="font-size:15px">' + rmSel.size + '명을 제거할까요?</b><br><span class="desc">되돌릴 수 없어요 · +' + fmt(g) + '골드</span></span><span class="row"><button class="btn r sm ol-s" data-act="rmyes">제거</button><button class="btn sm ol-s" data-act="rmno">취소</button></span></div>'
             : '<button class="btn r wide ol-s" data-act="rmgo"' + (rmSel.size ? '' : ' disabled') + '>' + (rmSel.size ? rmSel.size + '명 제거하기 · +' + fmt(g) + 'G' : '제거할 총잡이를 고르세요') + '</button>') + '</div>';
       }
@@ -1417,7 +1420,7 @@ input { -webkit-user-select: text; user-select: text; }
     h += item(petSvg(0), '펫 뽑기 1회', '일반 91.9 · 매직 5 · 유니크 3 · 전설 0.1%. 등급이 높을수록 공격이 세요.', I.coin + fmt(PETP1), '', 'ppull1', save.gold < PETP1);
     h += item(petSvg(4), '펫 뽑기 10회', '10번 한꺼번에 뽑아요.', I.coin + fmt(PETP10), '', 'ppull10', save.gold < PETP10);
     h += item(skillIcon('cannon'), '스킬 카드 상자', '열린 스킬 중에서 카드 20장이 무작위로 나와요.', I.gem + '40', (5 - save.shop.card) + '/5', 'cardbox', save.gem < 40 || save.shop.card >= 5);
-    h += item(I.bolt, '에너지 충전', '에너지 30을 바로 채워요.', I.gem + '30', (3 - save.shop.en) + '/3', 'buyen', save.gem < 30 || save.shop.en >= 3);
+    h += item(I.bolt, '에너지 충전', '에너지 30을 바로 채워요.', I.gem + EN_GEM, (3 - save.shop.en) + '/3', 'buyen', save.gem < EN_GEM || save.shop.en >= 3);
     h += item(itemIcon('rv1'), '장비 상자', '장비 1개 · 일반 90 · 고급 6.4 · 희귀 2.8 · 영웅 0.7 · 전설 0.1%', I.gem + EBOX[0].p, '', 'ebox1', save.gem < EBOX[0].p);
     h += item(itemIcon('sg4'), '고급 장비 상자', '고급 80 · 희귀 14 · 영웅 5 · 전설 1% · ' + PITY + '번 안에 전설 확정 (남은 ' + (PITY - save.pity) + '번)', I.gem + EBOX[1].p, '', 'ebox2', save.gem < EBOX[1].p);
     h += item(I.coin, '골드 주머니', fmt(goldBag()) + ' 골드. 높은 단계를 열수록 많이 들어 있어요.', I.gem + '50', '', 'goldbag', save.gem < 50);
@@ -1615,7 +1618,7 @@ input { -webkit-user-select: text; user-select: text; }
 
   function startRun() {
     tickEnergy();
-    if (save.en < RUN_COST) { openPop('에너지 부족', '<p class="desc" style="text-align:center;color:#fff">에너지가 부족해요. 1분마다 1씩 차요.<br>상점이나 상단 + 버튼에서 젬으로 충전할 수 있어요.</p><button class="btn y wide ol-s" data-act="energy">젬 30개로 30 충전</button>', 'en'); return; }
+    if (save.en < RUN_COST) { openPop('에너지 부족', '<p class="desc" style="text-align:center;color:#fff">에너지가 부족해요. 1분마다 1씩 차요.<br>상점이나 상단 + 버튼에서 젬으로 충전할 수 있어요.</p><button class="btn y wide ol-s" data-act="energy">젬 ' + EN_GEM + '개로 30 충전</button>', 'en'); return; }
     save.en -= RUN_COST; if (save.en < EN_MAX && save.en + RUN_COST >= EN_MAX) save.enT = Date.now();
     persist();
     const elite = isElite(), n = trk().cur, P = eParams(n, elite);
@@ -1965,7 +1968,7 @@ input { -webkit-user-select: text; user-select: text; }
     S.gold = Math.max(S.gold, 5 * full * P.gm);
     S.kills = Math.max(S.kills, Math.round(1.35 * full));
     if (isBossStage(S.n)) S.bossK = true;
-    S.en = []; S.bul = []; S.toSpawn = 0; S.wave = 3;
+    S.en = []; S.bul = []; S.toSpawn = 0; S.wave = 3; S.skipped = true;
     endRun(true);
   }
   const BCLR_N = 100, BCLR_G = 2000000, BCLR_MIN = 45;
@@ -2019,12 +2022,26 @@ input { -webkit-user-select: text; user-select: text; }
       '</div></div>';
     $('bpop').innerHTML = h; $('bpop').hidden = false;
     NET.presence();
+    /* skipped stage: no result screen, go straight on (repeat the same stage while repeating, otherwise the next stage) */
+    if (S.skipped && win) {
+      $('bpop').hidden = true;
+      toast(stageLabel(n) + ' 스킵 클리어 · +' + fmt(gold) + 'G' + (drops.length ? ' · 장비 ' + drops.length + '개' : '') + (unl ? ' · ' + (n + 1) + '단계 해금' : ''));
+      clearTimeout(rep.timer); rep.timer = setTimeout(skipAdvance, 120);
+      return;
+    }
     if (rep.left > 0) { clearTimeout(rep.timer); rep.timer = setTimeout(repNext, 2200); }
   }
   /* Repeat runs ("다시 5회/10회"): after each result, start the same stage again until the count runs out, energy runs out or the player stops. */
   const rep = { left: 0, tot: 1, gold: 0, done: 0, timer: 0 };
   function repStart(c) { clearTimeout(rep.timer); rep.tot = c; rep.left = c - 1; rep.gold = 0; rep.done = 0; }
   function repStop() { clearTimeout(rep.timer); rep.left = 0; }
+  function skipAdvance() {
+    if (!S || !S.over) return;
+    if (rep.left > 0) { repNext(); return; }
+    const t = trk(); if (t.cur < t.unlocked) t.cur++; persist();
+    $('bpop').hidden = true; S = null; startRun();
+    if (!S) { $('battle').hidden = true; render(); }
+  }
   function repNext() {
     if (rep.left <= 0 || !S || !S.over) return;
     rep.left--;
@@ -2037,7 +2054,7 @@ input { -webkit-user-select: text; user-select: text; }
         : (rep.tot > 1 && rep.done > 1 ? '<div class="msg ok">연속 전투 ' + rep.done + '판 끝 · 총 ' + fmt(rep.gold) + '골드</div>' : '') +
           '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button>' + (n < trk().unlocked ? '<button class="btn g grow ol-s" data-act="bnext">다음 ▶</button>' : '') + '</div>' +
           '<div class="row"><span class="ol-s" style="font-family:var(--display);white-space:nowrap">다시 ' + I.bolt.replace('<svg', '<svg style="width:18px;height:18px;vertical-align:-3px"') + '</span>' +
-          [1, 5, 10].map(c => '<button class="btn y sm grow ol-s" data-act="again" data-c="' + c + '"' + (save.en < RUN_COST ? ' disabled' : '') + '>' + c + '회</button>').join('') + '</div>');
+          [10, 20, 30].map(c => '<button class="btn y sm grow ol-s" data-act="again" data-c="' + c + '"' + (save.en < RUN_COST ? ' disabled' : '') + '>' + c + '회</button>').join('') + '</div>');
   }
   function leaveBattle() { repStop(); S = null; $('battle').hidden = true; $('bpop').hidden = true; render(); if (window.__jmReload) window.__jmReload(); }
 
@@ -2704,8 +2721,8 @@ input { -webkit-user-select: text; user-select: text; }
     logout: () => NET.logout && NET.logout(),
     savenow: () => { persist(true); toast('저장했어요'); refreshPop(profileBody()); },
     energy: () => {
-      if (save.gem < 30) { toast('젬이 부족해요'); return; }
-      save.gem -= 30; save.en += 30; Snd.coin(); persist(); toast('에너지 30 충전!'); if (popKind === 'en') closePop(); topbar();
+      if (save.gem < EN_GEM) { toast('젬이 부족해요'); return; }
+      save.gem -= EN_GEM; save.en += 30; Snd.coin(); persist(); toast('에너지 30 충전!'); if (popKind === 'en') closePop(); topbar();
     },
     elite: () => openPop('정예 모드', eliteBody(), 'elite'),
     prev: () => { const t = trk(); if (t.cur > 1) { t.cur--; persist(); render(); } },
@@ -2810,7 +2827,7 @@ input { -webkit-user-select: text; user-select: text; }
     petJunk: () => { const j = save.pcoll.filter(x => x.g === 0 && x.s === 0 && !save.pslot.includes(x.id)); if (!j.length) return; const g = j.reduce((a, x) => a + petSell(x), 0); save.pcoll = save.pcoll.filter(x => !j.includes(x)); save.gold += g; Snd.coin(); toast(j.length + '마리 판매 · +' + fmt(g) + 'G'); persist(); topbar(); refreshPop(petBody()); },
     pull10: () => pull(10),
     cardbox: () => { qDay(); if (save.gem < 40 || save.shop.card >= 5) return; save.gem -= 40; save.shop.card++; giveCards(20); Snd.coin(); toast('스킬 카드 20장 받았어요'); persist(); render(); },
-    buyen: () => { qDay(); if (save.gem < 30 || save.shop.en >= 3) return; save.gem -= 30; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
+    buyen: () => { qDay(); if (save.gem < EN_GEM || save.shop.en >= 3) return; save.gem -= EN_GEM; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
     goldbag: () => { if (save.gem < 50) return; save.gem -= 50; save.gold += goldBag(); Snd.coin(); toast(fmt(goldBag()) + ' 골드 받았어요'); persist(); render(); },
     bpick: el => { bossSel = el.dataset.k; bossMsg = null; render(); },
     bsend: () => bossSend(),
