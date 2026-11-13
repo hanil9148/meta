@@ -451,7 +451,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261113-1940';
+  const APP_VER = 'v.261113-2011';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1155,8 +1155,10 @@ input { -webkit-user-select: text; user-select: text; }
     { b: 4, nm: '100% HP', r: n => ({ gem: 20, cards: 10 + Math.floor(n / 2) }) }
   ];
   const chestAny = () => { for (let i = 0; i < save.unlocked; i++) if (save.reach[i] & ~save.claim[i] & 7) return true; return false; };
+  function chestReadyCount() { let c = 0; for (let i = 0; i < save.unlocked; i++) { const r = save.reach[i] & ~save.claim[i] & 7; c += (r & 1 ? 1 : 0) + (r & 2 ? 1 : 0) + (r & 4 ? 1 : 0); } return c; }
   function chestBody() {
-    let h = '';
+    const rc = chestReadyCount();
+    let h = rc ? '<button class="btn y wide ol-s" data-act="claimall">' + I.gift + ' 모두 받기 (' + rc + '개)</button>' : '<p class="desc" style="text-align:center;color:#fff">지금 받을 상자가 없어요.</p>';
     for (let n = 1; n <= save.unlocked; n++) {
       const i = n - 1, got = save.reach[i], cl = save.claim[i];
       const stars = (got & 1 ? 1 : 0) + (got & 2 ? 1 : 0) + (got & 4 ? 1 : 0);
@@ -1638,7 +1640,7 @@ input { -webkit-user-select: text; user-select: text; }
     const xp = 2 + Math.floor(n / 3) + (win ? 3 : 0);
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
-    save.gold += gold; save.plays[i]++; save.kills += S.kills;
+    save.gold += gold; rep.gold += gold; rep.done++; save.plays[i]++; save.kills += S.kills;
     if (win) { save.wins++; if (hpPct > save.best[i]) save.best[i] = hpPct; save.reach[i] |= 1 | (hpPct >= 50 ? 2 : 0) | (S.took <= 0 ? 4 : 0); }
     qAdd('play'); qAdd('kill', S.kills); if (win) qAdd('win'); if (win && S.took <= 0) qAdd('perfect');
     let cardTxt = cards ? giveCards(cards) : '';
@@ -1659,11 +1661,31 @@ input { -webkit-user-select: text; user-select: text; }
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! LV.' + save.lv + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + stageLabel(n + 1) + ' · ' + NAMES[n] + '</b> 해금! · 보관함 +1칸 (' + capOf() + '칸)</p>' : '<p class="desc" style="text-align:center">' + (n === save.unlocked && n < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + save.plays[i] + '번') + '</p>') +
       (!win && power() < recPower(n) ? '<p class="desc" style="text-align:center">추천 전투력 ' + fmt(recPower(n)) + ' · 내 전투력 ' + fmt(power()) + '. 총잡이 탭에서 강화해 보세요.</p>' : '') +
-      '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button><button class="btn y grow ol-s" data-act="again">다시 ' + I.bolt + RUN_COST + '</button>' + (n < save.unlocked ? '<button class="btn g grow ol-s" data-act="bnext">다음 ▶</button>' : '') + '</div></div></div>';
+      '<div id="resBtns" style="display:grid;gap:10px">' + resButtons(n) + '</div>' +
+      '</div></div>';
     $('bpop').innerHTML = h; $('bpop').hidden = false;
     NET.presence();
+    if (rep.left > 0) { clearTimeout(rep.timer); rep.timer = setTimeout(repNext, 2200); }
   }
-  function leaveBattle() { S = null; $('battle').hidden = true; $('bpop').hidden = true; render(); }
+  /* Repeat runs ("다시 5회/10회"): after each result, start the same stage again until the count runs out, energy runs out or the player stops. */
+  const rep = { left: 0, tot: 1, gold: 0, done: 0, timer: 0 };
+  function repStart(c) { clearTimeout(rep.timer); rep.tot = c; rep.left = c - 1; rep.gold = 0; rep.done = 0; }
+  function repStop() { clearTimeout(rep.timer); rep.left = 0; }
+  function repNext() {
+    if (rep.left <= 0 || !S || !S.over) return;
+    rep.left--;
+    $('bpop').hidden = true; S = null;
+    startRun();
+    if (!S) { repStop(); $('battle').hidden = true; render(); toast('에너지가 부족해서 연속 전투를 멈췄어요'); }
+  }
+  function resButtons(n) {
+    return (rep.left > 0 ? '<div class="msg ok" id="repMsg">연속 전투 ' + (rep.tot - rep.left) + '/' + rep.tot + ' 끝 · 잠시 뒤 다음 판을 시작해요</div><button class="btn r wide ol-s" data-act="rstop">연속 전투 멈추기</button>'
+        : (rep.tot > 1 && rep.done > 1 ? '<div class="msg ok">연속 전투 ' + rep.done + '판 끝 · 총 ' + fmt(rep.gold) + '골드</div>' : '') +
+          '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button>' + (n < save.unlocked ? '<button class="btn g grow ol-s" data-act="bnext">다음 ▶</button>' : '') + '</div>' +
+          '<div class="row"><span class="ol-s" style="font-family:var(--display);white-space:nowrap">다시 ' + I.bolt.replace('<svg', '<svg style="width:18px;height:18px;vertical-align:-3px"') + '</span>' +
+          [1, 5, 10].map(c => '<button class="btn y sm grow ol-s" data-act="again" data-c="' + c + '"' + (save.en < RUN_COST ? ' disabled' : '') + '>' + c + '회</button>').join('') + '</div>');
+  }
+  function leaveBattle() { repStop(); S = null; $('battle').hidden = true; $('bpop').hidden = true; render(); if (window.__jmReload) window.__jmReload(); }
 
   /* ---------- HUD ---------- */
   let hudKey = '';
@@ -1676,7 +1698,7 @@ input { -webkit-user-select: text; user-select: text; }
     $('bTime').textContent = '⏱ ' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
     $('bLv').textContent = 'LV. ' + S.lv;
     $('bXp').style.width = clamp(S.xp / xpNeed(S.lv) * 100, 0, 100) + '%';
-    $('bWave').textContent = '웨이브 ' + S.wave + '/3' + (isBossStage(S.n) ? ' · 보스 스테이지' : '');
+    $('bWave').textContent = '웨이브 ' + S.wave + '/3' + (isBossStage(S.n) ? ' · 보스 스테이지' : '') + (rep.tot > 1 ? ' · 연속 ' + (rep.tot - rep.left) + '/' + rep.tot : '');
     $('bHp').style.width = clamp(S.hp / S.mh * 100, 0, 100) + '%';
     $('bHpT').textContent = fmt(Math.ceil(S.hp));
     const ks = Object.keys(S.sk);
@@ -2082,6 +2104,7 @@ input { -webkit-user-select: text; user-select: text; }
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
       h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
         '<div class="fs"><div><span>레벨</span><b class="ol-s">' + clamp(+d.lv || 1, 1, 99) + '</b></div><div><span>스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 30) + '</b></div><div><span>전투력</span><b class="ol-s">' + fmt(clamp(+d.pw || 0, 0, 1e12)) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
+        (!isMe && String(d.v || '') < APP_VER ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(d.v || '아주 예전') + ') · 새로고침하면 정보가 갱신돼요</div>' : '') +
         '<div class="desc" style="font-size:11px">' + (isMe ? '내 정보는 바뀔 때마다 자동으로 올라가요' : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">' + NMS[n] + ' ★' + clamp(+x[2] || 0, 0, 30) + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
     });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
@@ -2090,7 +2113,7 @@ input { -webkit-user-select: text; user-select: text; }
   function agoTxt(t) { if (!t) return '알 수 없음'; const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : Math.floor(s / 86400) + '일 전'; }
   function rankPayload() {
     return { nick: save.name, lv: save.lv, st: save.unlocked, pl: save.plays.reduce((a, b) => a + b, 0), pw: power(), hl: save.hl, dl: save.dl,
-      eq: save.slots.map(getUnit).filter(Boolean).map(u => ({ n: u.n, e: u.e.join(''), s: u.s })), t: Date.now() };
+      v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => ({ n: u.n, e: u.e.join(''), s: u.s })), t: Date.now() };
   }
 
   /* ================= network (claude.ai artifact capabilities, or Firebase build) ================= */
@@ -2227,6 +2250,16 @@ input { -webkit-user-select: text; user-select: text; }
     stageinfo: () => openPop('스테이지 정보', stageInfoBody(), 'info'),
     start: () => startRun(),
     chest: () => openPop('스테이지 상자', chestBody(), 'chest'),
+    claimall: () => {
+      const tot = { gold: 0, gem: 0, cards: 0 };
+      let k = 0;
+      for (let n = 1; n <= save.unlocked; n++) {
+        const i = n - 1;
+        for (const c of CHEST) if ((save.reach[i] & c.b) && !(save.claim[i] & c.b)) { save.claim[i] |= c.b; const r = c.r(n); for (const x in r) tot[x] += r[x]; k++; }
+      }
+      if (!k) return;
+      const t = giveR(tot); Snd.coin(); toast('상자 ' + k + '개 · ' + t + ' 받았어요'); persist(); refreshPop(chestBody()); topbar();
+    },
     claim: el => {
       const n = +el.dataset.n, b = +el.dataset.b, i = n - 1;
       if (!(save.reach[i] & b) || save.claim[i] & b) return;
@@ -2288,8 +2321,9 @@ input { -webkit-user-select: text; user-select: text; }
     bcards: () => openCards(),
     choose: el => choose(+el.dataset.i),
     bhome: () => { leaveBattle(); setTab('home'); },
-    again: () => { $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } },
-    bnext: () => { if (save.cur < save.unlocked) save.cur++; persist(); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } }
+    rstop: () => { repStop(); toast('연속 전투를 멈췄어요'); if (S && S.over && $('resBtns')) $('resBtns').innerHTML = resButtons(S.n); },
+    again: el => { repStart(+(el && el.dataset.c) || 1); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } },
+    bnext: () => { repStart(1); if (save.cur < save.unlocked) save.cur++; persist(); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } }
   };
   $('app').addEventListener('click', e => {
     Snd.unlock();
@@ -2324,6 +2358,22 @@ input { -webkit-user-select: text; user-select: text; }
   }
   new ResizeObserver(() => { if (S) fitBattle(); sizeHome(); }).observe($('app'));
   $('lVer').textContent = '버전 ' + APP_VER;
+  /* Hosted build: check for a newer index.html every 3 minutes and reload into it (after a battle if one is running). */
+  if (window.jmReady && /^https?:$/.test(location.protocol)) {
+    let pendingVer = null;
+    const go = v => { try { persist(true); } catch (e) {} setTimeout(() => location.replace(location.pathname + '?v=' + encodeURIComponent(v)), 1200); };
+    window.__jmReload = () => { if (pendingVer && !S) { toast('새 버전 ' + pendingVer + '으로 업데이트할게요'); go(pendingVer); } };
+    const check = async () => {
+      try {
+        const t = await (await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store' })).text();
+        const m = t.match(/APP_VER = '(v\.\d{6}-\d{4})'/);
+        if (m && m[1] > APP_VER) { pendingVer = m[1]; if (!S) window.__jmReload(); }
+      } catch (e) {}
+    };
+    setTimeout(check, 15000);
+    setInterval(check, 180000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+  }
   qDay();
   render();
   if (!save.tut) openTut(0);
