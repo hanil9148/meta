@@ -482,7 +482,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0240';
+  const APP_VER = 'v.261114-0303';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -777,6 +777,9 @@ input { -webkit-user-select: text; user-select: text; }
   const getPet = id => id == null ? null : save.pcoll.find(x => x.id === id) || null;
   const slotPet = i => getPet(save.pslot[i]);
   /* synergy: a deployed pet boosts its partner gunslinger wherever that gunslinger is deployed */
+  /* synergy strength by pet star: ★0~3 +30%, ★4 +60%, ★6 +100%, ★8 +150%, ★10 +200% */
+  const synOf = st => st >= 10 ? 2 : st >= 8 ? 1.5 : st >= 6 ? 1 : st >= 4 ? .6 : .3;
+  const synVal = u => { if (!u) return 0; let v = 0; for (const id of save.pslot) { const x = getPet(id); if (x && PAIR[x.p] === u.n) v = Math.max(v, synOf(x.s)); } return v; };
   const synFor = u => !!u && save.pslot.some(id => { const x = getPet(id); return x && PAIR[x.p] === u.n; });
   function petStat(x, owner) {
     return { dmg: 5 * PGR[x.g].m * (1 + .15 * x.s) * (1 + .02 * (save.lv - 1)) * (owner ? 1 + .08 * owner.s : 1), iv: .85, el: owner ? owner.e.slice(0, 1) : [], burn: 0, slow: 0, chain: 0, splash: 0, twin: 0 };
@@ -922,7 +925,7 @@ input { -webkit-user-select: text; user-select: text; }
   function power() {
     let p = 0; const gp = gearPow(), go = gearAll();
     p += dps(hstat(null)) * 6 * gp;
-    save.slots.forEach((k, i) => { const u = getUnit(k); if (u) p += dps(hstat(u)) * 6 * gp * (synFor(u) ? 1 + PSYN : 1); const x = slotPet(i); if (x) p += dps(petStat(x, u)) * 6 * gp; });
+    save.slots.forEach((k, i) => { const u = getUnit(k); if (u) p += dps(hstat(u)) * 6 * gp * (1 + synVal(u)); const x = slotPet(i); if (x) p += dps(petStat(x, u)) * 6 * gp; });
     p += baseHp(save.hl) * (1 + go.hp) / (1 - defRed(save.dl)) / (1 - go.dr) / 6;
     for (const s of SK) if (save.sk[s.id] && save.lv >= s.un) p += 15 * save.sk[s.id].lv;
     return Math.round(p);
@@ -1170,10 +1173,10 @@ input { -webkit-user-select: text; user-select: text; }
       h += u ? heroTile(u, ' data-act="slot" data-i="' + i + '" role="button"', i === selSlot ? 'sel' : '') : '<div class="htile emp ol-s' + (i === selSlot ? ' sel' : '') + '" data-act="slot" data-i="' + i + '" role="button">' + (i + 1) + '번 슬롯<br>비어 있음</div>';
     }
     h += '</div></div>';
-    h += '<div class="card"><div class="row"><h3 class="ol grow">펫</h3><span class="desc" style="color:#fff">' + save.pcoll.length + '/' + PCAP + '</span></div><p class="desc">출전 칸마다 펫 1마리가 총잡이 다리 위에서 같이 싸워요. 펫을 데려가면 <b>짝 총잡이</b>가 출전해 있는 한 바로 <b>공격력 +30%</b>. 같은 펫은 한 칸에만. 별 강화는 골드가 들고 <b>★2부터 실패하면 터질 수 있어요</b>.</p><div class="slots4">';
+    h += '<div class="card"><div class="row"><h3 class="ol grow">펫</h3><span class="desc" style="color:#fff">' + save.pcoll.length + '/' + PCAP + '</span></div><p class="desc">출전 칸마다 펫 1마리가 총잡이 다리 위에서 같이 싸워요. 펫을 데려가면 <b>짝 총잡이</b>가 출전해 있는 한 바로 <b>공격력 증가</b>(★0~3 +30% · ★4 +60% · ★6 +100% · ★8 +150% · ★10 +200%). 같은 펫은 한 칸에만. 별 강화는 골드가 들고 <b>★2부터 실패하면 터질 수 있어요</b>.</p><div class="slots4">';
     for (let i = 0; i < 3; i++) {
       const x = slotPet(i), syn = x && save.slots.some(k => { const u = getUnit(k); return u && PAIR[x.p] === u.n; });
-      h += '<div class="htile' + (x ? '' : ' emp') + (syn ? ' sel' : '') + '" data-act="petslot" data-i="' + i + '" role="button">' + (x ? '<span style="width:46px;height:46px;display:block">' + petSvg(x.p) + '</span><span class="hn ol-s">' + PETN[x.p] + '</span><span class="st ol-s" style="color:' + PGR[x.g].c + '">' + PGR[x.g].nm + ' ★' + x.s + (syn ? ' · 시너지' : '') + '</span>' + '<span class="st ol-s" style="color:#fff">공격 ' + petAtk(x) + '</span>' : '<span class="ol-s">' + (i + 1) + '번 펫<br>비어 있음</span>') + '</div>';
+      h += '<div class="htile' + (x ? '' : ' emp') + (syn ? ' sel' : '') + '" data-act="petslot" data-i="' + i + '" role="button">' + (x ? '<span style="width:46px;height:46px;display:block">' + petSvg(x.p) + '</span><span class="hn ol-s">' + PETN[x.p] + '</span><span class="st ol-s" style="color:' + PGR[x.g].c + '">' + PGR[x.g].nm + ' ★' + x.s + (syn ? ' · +' + Math.round(synOf(x.s) * 100) + '%' : '') + '</span>' + '<span class="st ol-s" style="color:#fff">공격 ' + petAtk(x) + '</span>' : '<span class="ol-s">' + (i + 1) + '번 펫<br>비어 있음</span>') + '</div>';
     }
     h += '</div><p class="desc">짝: ' + PETN.map((n, p) => n + '(' + PETAN[PETA[p]] + ')-' + NMS[PAIR[p]]).join(' · ') + '</p></div>';
     h += '<div class="card dark"><div class="row"><h3 class="ol grow">보관함 ' + save.coll.length + '/' + capOf() + '</h3>' + (save.coll.length ? '<button class="btn ' + (rmMode ? 'r' : '') + ' sm ol-s" data-act="rmmode">' + (rmMode ? '제거 취소' : '유닛 제거') + '</button>' : '') + '<button class="btn o sm ol-s" data-act="tab" data-t="shop">뽑으러 가기</button></div>';
@@ -1363,7 +1366,7 @@ input { -webkit-user-select: text; user-select: text; }
       const blocked = !on && slotOf < 0 && save.pslot.some((id, j) => j !== i && getPet(id) && getPet(id).p === x.p);
       const mx = x.s >= PET_MAX, cost = petCost(x);
       h += '<div class="shopi"><span class="ico" style="background:none;border:2px solid ' + PGR[x.g].c + '">' + petSvg(x.p) + '</span><div style="min-width:0"><b class="ol-s">' + PETN[x.p] + ' <span style="font-size:12px;color:' + PGR[x.g].c + '">' + PGR[x.g].nm + '</span> ★' + x.s + (grp.n > 1 ? ' <span style="color:var(--yel)">×' + grp.n + '</span>' : '') + '</b>' +
-        '<p>' + PETAN[PETA[x.p]] + ' · 짝 <span style="color:#fff;font-weight:900">' + NMS[PAIR[x.p]] + '</span>' + (partner ? ' <span style="color:var(--yel)">출전 중</span>' : '') + (slotOf >= 0 && !on ? ' · ' + (slotOf + 1) + '번 칸' : '') + '</p>' +
+        '<p>' + PETAN[PETA[x.p]] + ' · 짝 <span style="color:#fff;font-weight:900">' + NMS[PAIR[x.p]] + '</span>' + (partner ? ' <span style="color:var(--yel)">출전 중</span>' : '') + '</p><p>시너지 <span style="color:var(--yel);font-weight:900">+' + Math.round(synOf(x.s) * 100) + '%</span>' + (x.s < 10 ? ' · 다음 ★' + [4, 4, 4, 4, 6, 6, 8, 8, 10, 10][x.s] + '에서 +' + Math.round(synOf([4, 4, 4, 4, 6, 6, 8, 8, 10, 10][x.s]) * 100) + '%' : '') + (slotOf >= 0 && !on ? ' · ' + (slotOf + 1) + '번 칸' : '') + '</p>' +
         '<p>공격력 <span style="color:#fff;font-weight:900">' + petAtk(x) + '</span>' + (!mx ? ' → ' + petAtk(x, 1) : '') + ' · 초당 ' + petAtk(x, 0, 1) + '</p>' +
         (!mx ? '<p>강화 성공 ' + Math.round(petRate(x.s) * 100) + '%' + (petBoom(x.s) ? ' · <span style="color:var(--bad)">파괴 ' + Math.round(petBoom(x.s) * 100) + '%</span>' : '') + '</p>' : '<p>최대 강화</p>') + '</div>' +
         '<div class="buy">' + (on ? '<button class="btn sm ol-s" disabled>함께하는 중</button>' : '<button class="btn g sm ol-s" data-act="petEq" data-id="' + x.id + '"' + (blocked ? ' disabled' : '') + '>' + (blocked ? '같은 펫 있음' : slotOf >= 0 ? '옮기기' : '데려가기') + '</button>') +
@@ -1545,7 +1548,8 @@ input { -webkit-user-select: text; user-select: text; }
   function monsterGuide(n) {
     const kinds = ['bug', 'rock'].concat(n >= 2 ? ['bandit'] : [], n >= 4 ? ['golem'] : [], n >= 6 ? ['lizard'] : [], n >= 8 ? ['cactus'] : []);
     const chip = (r, f) => [0, 1, 2, 3, 4].filter(f).map(a => '<i class="chip e' + a + '">' + ENM[a] + ' ' + (r[a] > 0 ? '-' : '+') + Math.round(Math.abs(r[a]) * 100) + '%</i>').join('') || '<span class="desc">없음</span>';
-    let h = '<p class="desc" style="color:#fff"><b>몬스터 속성 방어</b> · 몬스터마다 강한 속성과 약한 속성이 달라요. 여러 속성 총잡이를 섞어 보내세요.</p>';
+    let h = '<p class="desc" style="color:#fff"><b>몬스터 속성 방어</b> · 몬스터마다 강한 속성과 약한 속성이 달라요. 여러 속성 총잡이를 섞어 보내세요.</p>' +
+      (isElite() ? '<p class="desc" style="color:#d9b8ff"><b>정예</b>: 몬스터마다 무작위 속성 방어가 더 붙어요. 45%는 <b>4속성 방어 +60%</b>(보라 방패, 한 속성만 뚫려요), 나머지는 2속성 +55%(회색 방패).</p>' : n >= 45 ? '<p class="desc" style="color:#ffd24a"><b>45단계 이상</b>: 몬스터마다 무작위 2속성 방어가 +' + Math.round((50 + 2 * (n - 45))) + '% 더 붙어요(회색 방패 표시).</p>' : '');
     for (const k of kinds) { const r = RES[k]; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px">' + ENAME[k] + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
     if (isBossStage(n)) { const B = BOSSES[(n / 5 - 1) % 6], r = B.res; h += '<div class="prow" style="padding:6px 10px;grid-template-columns:72px 1fr"><b style="font-size:14px;color:var(--bad)">' + B.nm + '</b><span style="display:grid;gap:3px"><span class="chips"><span class="desc">약함</span>' + chip(r, a => r[a] < 0) + '</span><span class="chips"><span class="desc">강함</span>' + chip(r, a => r[a] > 0) + '</span></span></div>'; }
     return h + '<p class="desc">드론은 무속성이라 방어 영향을 받지 않아요.</p>';
@@ -1593,7 +1597,21 @@ input { -webkit-user-select: text; user-select: text; }
     cactus: [-.5, .7, 0, .3, 0],
     sprout: [-.5, .7, 0, .3, 0]
   };
-  const resOf = e => e.k === 'boss' ? BOSSES[e.bi || 0].res : (RES[e.k] || [0, 0, 0, 0, 0]);
+  const resOf = e => e.res || (e.k === 'boss' ? BOSSES[e.bi || 0].res : (RES[e.k] || [0, 0, 0, 0, 0]));
+  /* extra random elemental defence: normal stage 45+ and every elite stage.
+     normal 45~50: 2 extra elements +50~60%. elite: 45% of monsters guard 4 elements (+60%, one element left open), the rest 2 elements +55%. */
+  function extraRes(e) {
+    if (e.k === 'boss') return;
+    const elite = S.elite, n = S.n;
+    if (!elite && n < 45) return;
+    const base = (RES[e.k] || [0, 0, 0, 0, 0]).slice(), pool = [0, 1, 2, 3, 4];
+    for (let i = 4; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    let cnt, add;
+    if (elite) { if (Math.random() < .45) { cnt = 4; add = .6; } else { cnt = 2; add = .55; } }
+    else { cnt = 2; add = .5 + .02 * (n - 45); }
+    for (let k = 0; k < cnt; k++) base[pool[k]] = Math.min(.85, base[pool[k]] + add);
+    e.res = base; e.xres = cnt;
+  }
   /* best element of the attacker against this monster: wheel x elemental defence */
   function emul(els, e) {
     if (!els || !els.length) return 1;
@@ -1624,7 +1642,7 @@ input { -webkit-user-select: text; user-select: text; }
     const elite = isElite(), n = trk().cur, P = eParams(n, elite);
     const units = save.slots.map(getUnit);
     const sh = [{ x: 364, y: 150, st: hstat(null), u: null, cd: .3, ang: Math.PI, fl: 0, robot: true }];
-    units.forEach((u, i) => { if (u) { const st = hstat(u); if (synFor(u)) st.dmg *= 1 + PSYN; sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st, u, cd: .2 + i * .1, ang: Math.PI, fl: 0, syn: synFor(u) }); } });
+    units.forEach((u, i) => { if (u) { const st = hstat(u); st.dmg *= 1 + synVal(u); sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st, u, cd: .2 + i * .1, ang: Math.PI, fl: 0, syn: synFor(u) }); } });
     const avg = sh.reduce((a, b) => a + b.st.dmg, 0) / sh.length;
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
@@ -1664,7 +1682,9 @@ input { -webkit-user-select: text; user-select: text; }
   function mkE(k, x, y, el) {
     const T = ET[k], P = S.P;
     const hp = T.hp * P.hpm * (1 + .08 * (S.wave - 1));
-    return { k, x, y, r: T.r, hp, mh: hp, sp: T.sp * P.spm * rnd(.9, 1.1), atk: T.atk * P.dm, el, arm: T.arm ? Math.round(T.arm * (1 + P.d * .12)) : 0, fl: 0, slow: 0, sf: 0, frz: 0, burn: 0, bd: 0, pois: 0, pd: 0, at: false, atkT: 0, ph: Math.random() * 6 };
+    const e = { k, x, y, r: T.r, hp, mh: hp, sp: T.sp * P.spm * rnd(.9, 1.1), atk: T.atk * P.dm, el, arm: T.arm ? Math.round(T.arm * (1 + P.d * .12)) : 0, fl: 0, slow: 0, sf: 0, frz: 0, burn: 0, bd: 0, pois: 0, pd: 0, at: false, atkT: 0, ph: Math.random() * 6 };
+    extraRes(e);
+    return e;
   }
   function pickKind() {
     const n = S.n, w = S.wave;
@@ -2355,6 +2375,7 @@ input { -webkit-user-select: text; user-select: text; }
       c.strokeStyle = EC[e.el]; c.lineWidth = 2.6; c.beginPath(); c.arc(0, 0, r + 4, 0, 6.283); c.stroke();
       if (r >= 12) { c.font = '700 ' + Math.round(Math.min(r * .8, 22)) + "px 'Black Han Sans', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; strokeT(c, EGL[e.el], -r * .15, 1, EC[e.el], 3); }
     }
+    if (e.xres) { const sx = r * .75, sy = -r * .75, w = e.xres >= 4 ? 7 : 5.5; c.fillStyle = e.xres >= 4 ? '#c27bff' : '#8fb4d8'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(sx, sy - w); c.lineTo(sx + w, sy - w * .5); c.lineTo(sx + w * .8, sy + w * .4); c.lineTo(sx, sy + w); c.lineTo(sx - w * .8, sy + w * .4); c.lineTo(sx - w, sy - w * .5); c.closePath(); c.fill(); c.stroke(); }
     if (e.burn > 0) { c.fillStyle = '#ff6a3d'; c.beginPath(); c.arc(-r * .5, -r - 4, 3, 0, 6.283); c.fill(); }
     if (e.pois > 0) { c.fillStyle = '#7fff6a'; c.beginPath(); c.arc(0, -r - 4, 3, 0, 6.283); c.fill(); }
     if (e.slow > 0) { c.strokeStyle = '#3fa9f5'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, r + 7, 0, 6.283); c.stroke(); }
