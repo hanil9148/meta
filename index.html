@@ -482,7 +482,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0303';
+  const APP_VER = 'v.261114-0325';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -572,7 +572,7 @@ input { -webkit-user-select: text; user-select: text; }
     '절망', '파멸', '아수라', '연옥', '나락', '몰살', '종말', '지옥문', '불지옥', '헬',
     '심연', '혼돈', '광란', '붕괴', '재앙', '멸망', '암흑', '마왕성', '천벌', '심판',
     '천재지변', '아마겟돈', '라그나로크', '무간지옥', '핏빛 달', '공허', '대참사', '신의 분노', '세계의 끝', '전설'];
-  const NEED = 30, STAGES = 50, ESTAGES = 30;
+  const NEED = 30, STAGES = 50, ESTAGES = 50;
   const NMS = ['한일', '성민', '금유', '도영', '진명', '해천', '정욱', '재원'];
   const HATS = ['#c8783a', '#5a3a2a', '#e8e0cc', '#2a2a2e', '#a83a2a', '#3a5a8a', '#6a8a3a', '#8a5aa8'];
   const ENM = ['불', '물', '번개', '땅', '바람'];
@@ -591,7 +591,7 @@ input { -webkit-user-select: text; user-select: text; }
   const capCost = bought => 2000 + bought / 5 * 1000;
   /* 10 base slots, +1 for every stage opened, +5 per gold purchase, 100 at most. */
   /* Elite mode: its own 1..30 track (same fields as the normal one), unlocked once with gold after meeting the requirements. */
-  const ELITE = { cost: 5000000, lv: 25, star: 21, nStar: 3, fort: 21, hp: 100, atk: 1.8, gold: 2, gem: 5 };
+  const ELITE = { cost: 5000000, lv: 25, star: 21, nStar: 3, fort: 21, hp: 10000, cnt: 1.15, spd: 1.15, atk: 1.8, gold: 2, gem: 5 };
   const isElite = () => save.mode === 'e' && !!save.elOn;
   const trk = () => isElite() ? save.el : save;
   const stMax = e => (e === undefined ? isElite() : e) ? ESTAGES : STAGES;
@@ -889,6 +889,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.boss && typeof r.boss === 'object') for (const k of Object.keys(r.boss).slice(-6)) { const b = r.boss[k]; if (b && isFinite(+k)) s.boss[k] = { d: num(b.d, 0, 1e9, 0), u: Array.isArray(b.u) ? b.u.slice(0, 3) : null }; }
     s.bossClaim = Array.isArray(r.bossClaim) ? r.bossClaim.map(Number).filter(isFinite).slice(-20) : [];
     s.mail = { welcome: r.mail && r.mail.welcome ? 1 : 0 };
+    if (r.mail && typeof r.mail === 'object') for (const k in r.mail) if (/^n\d{6}[a-z]?$/.test(k) && r.mail[k]) s.mail[k] = 1;
     if (r.set) s.set = { sfx: r.set.sfx ? 1 : 0, bgm: r.set.bgm ? 1 : 0, vfx: r.set.vfx === 0 ? 0 : 1 };
     s.tut = r.tut ? 1 : 0; s.saved = num(r.saved, 0, 1e15, 0); s.kills = num(r.kills, 0, 1e12, 0); s.wins = num(r.wins, 0, 1e9, 0); s.bclr = num(r.bclr, 0, 1e9, 0);
     return s;
@@ -1505,8 +1506,14 @@ input { -webkit-user-select: text; user-select: text; }
     }
     return h;
   }
+  /* mail sent to everyone: each one can be claimed once per account until it expires */
+  const NOTICES = [
+    { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
+  ];
+  const leftTxt = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간' : h ? h + '시간 ' + m + '분' : m + '분'; };
   function mailItems() {
     const out = [];
+    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
     for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · 10,000골드', r: { gold: WB_GIFT } });
     return out;
@@ -1520,7 +1527,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function mailGet(id) {
     const x = mailItems().find(m => m.id === id); if (!x) return;
-    if (id === 'welcome') save.mail.welcome = 1; else if (x.slot !== undefined) { save.bossClaim.push(x.slot); const d = dropItems(1, ODDS.wb)[0]; setTimeout(() => toast('장비 선물: ' + itemName(d.id)), 1300); }
+    if (x.notice) save.mail[id] = 1; else if (id === 'welcome') save.mail.welcome = 1; else if (x.slot !== undefined) { save.bossClaim.push(x.slot); const d = dropItems(1, ODDS.wb)[0]; setTimeout(() => toast('장비 선물: ' + itemName(d.id)), 1300); }
     const t = giveR(x.r); Snd.coin(); toast(t + ' 받았어요'); persist(); topbar();
   }
   const TUT = [
@@ -1567,7 +1574,10 @@ input { -webkit-user-select: text; user-select: text; }
     const x = Math.max(0, n - 30);
     return { hpm: HPK * Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x) * (n >= 45 ? 1 + .3 * (n - 44) : 1), d: n - 1 };
   }
-  function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: P.gm * ELITE.gold }) : P; }
+  /* elite rewards sit above normal 50: gold x1.3 of stage 50 at elite 1, +10% per elite stage */
+  const eGoldK = n => 1.3 + .1 * (n - 1);
+  const eGem = n => 40 + 3 * (n - 1) + (n % 5 === 0 ? 40 : 0);
+  function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: 2 * params(50).gm * params(50).cnt / (P.cnt * ELITE.cnt) * eGoldK(n), cnt: P.cnt * ELITE.cnt, spm: P.spm * ELITE.spd }) : P; }
   const ET = {
     bug:    { hp: 14,  sp: 74, r: 11, atk: 4,  xp: 1,  g: 2 },
     rock:   { hp: 34,  sp: 30, r: 13, atk: 7,  xp: 1,  g: 3 },
@@ -1997,7 +2007,8 @@ input { -webkit-user-select: text; user-select: text; }
     if (S.over) return;
     S.over = true; S.pause = true;
     const n = S.n, i = n - 1, hpPct = Math.round(Math.max(0, S.hp) / S.mh * 100);
-    let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + (win ? 40 * (1 + .25 * (n - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (n - 1)) : 0) + (S.rareK ? 3000 * (1 + .3 * (n - 1)) : 0));
+    const rn = S.elite ? 50 : n, rk = S.elite ? eGoldK(n) : 1;
+    let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
     let drops = [];
     if (win && S.elite) drops = drops.concat(dropItems(1, ODDS.eliteWin));
     if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2, ODDS.eliteBoss) : dropItems(1, ODDS.stage));
@@ -2007,7 +2018,7 @@ input { -webkit-user-select: text; user-select: text; }
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
-    if (win && S.elite) save.gem += ELITE.gem;
+    if (win && S.elite) save.gem += eGem(n);
     const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
     save.gem += sGem;
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
@@ -2033,11 +2044,11 @@ input { -webkit-user-select: text; user-select: text; }
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
       (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem + '개</p>' : '') +
-      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 골드 2배 + 젬 ' + ELITE.gem + '개</p>' : '') +
+      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) + '개</p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! LV.' + save.lv + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + stageLabel(n + 1) + ' · ' + NAMES[n] + '</b> 해금!' + (S.elite ? '' : ' · 보관함 +1칸 (' + capOf() + '칸)') + '</p>' : '<p class="desc" style="text-align:center">' + (n === tk.unlocked && n < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + save.plays[i] + '번') + '</p>') +
-      (!win && power() < recPower(n) * (S.elite ? 50 : 1) ? '<p class="desc" style="text-align:center">추천 전투력 ' + fmt(recPower(n) * (S.elite ? 50 : 1)) + ' · 내 전투력 ' + fmt(power()) + '. 총잡이 탭에서 강화해 보세요.</p>' : '') +
+      (!win && power() < recPower(n) * (S.elite ? 5000 : 1) ? '<p class="desc" style="text-align:center">추천 전투력 ' + fmt(recPower(n) * (S.elite ? 5000 : 1)) + ' · 내 전투력 ' + fmt(power()) + '. 총잡이 탭에서 강화해 보세요.</p>' : '') +
       '<div id="resBtns" style="display:grid;gap:10px">' + resButtons(n) + '</div>' +
       '</div></div>';
     $('bpop').innerHTML = h; $('bpop').hidden = false;
@@ -2608,7 +2619,7 @@ input { -webkit-user-select: text; user-select: text; }
   function agoTxt(t) { if (!t) return '알 수 없음'; const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : Math.floor(s / 86400) + '일 전'; }
   function eliteBody() {
     const req = eliteReq(), ok = req.every(r => r.ok);
-    return '<p class="desc" style="color:#fff">정예는 1~30단계를 따로 진행하는 고난도 모드예요. 몬스터 <b>체력 ' + ELITE.hp + '배</b>, 공격력 ' + ELITE.atk + '배이고 모두 속성을 갖고 나와요. 대신 <b>골드 ' + ELITE.gold + '배</b>, 클리어마다 <b>젬 ' + ELITE.gem + '개</b>를 받아요.</p>' +
+    return '<p class="desc" style="color:#fff">정예는 1~50단계를 따로 진행하는 고난도 모드예요. 몬스터 <b>체력 ' + ELITE.hp + '배</b>, 공격력 ' + ELITE.atk + '배, 수·이동 속도 +15%이고 모두 속성을 갖고 나와요. 대신 보상이 커요: 골드는 <b>일반 50단계의 130%부터 단계마다 +10%</b>, 클리어마다 <b>젬 40개부터 단계마다 +3개</b>(5단계마다 +40개 보너스).</p>' +
       req.map(r => '<div class="prow" style="padding:8px 12px"><span><b style="font-size:15px">' + (r.ok ? '✅ ' : '❌ ') + r.nm + '</b><br><span class="desc">지금: ' + r.cur + '</span></span><span></span></div>').join('') +
       '<button class="btn p wide ol-s" data-act="eliteBuy"' + (ok ? '' : ' disabled') + '>' + (ok ? '정예 모드 해금 · ' + (ELITE.cost / 1e4) + '만 골드' : '조건을 모두 채우면 해금할 수 있어요') + '</button>';
   }
