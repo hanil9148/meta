@@ -482,7 +482,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0325';
+  const APP_VER = 'v.261114-0333';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -886,7 +886,7 @@ input { -webkit-user-select: text; user-select: text; }
       for (const k of ['play', 'win', 'kill', 'perfect', 'enh', 'pull', 'boss']) { const m = r.q.m[k]; if (m) s.q.m[k] = { t: num(m.t, 1, 5, 1), p: num(m.p, 0, 1e9, 0), c: m.c ? 1 : 0 }; }
     }
     if (r.shop && typeof r.shop === 'object') s.shop = { day: String(r.shop.day || ''), free: num(r.shop.free, 0, 9, 0), card: num(r.shop.card, 0, 99, 0), en: num(r.shop.en, 0, 99, 0) };
-    if (r.boss && typeof r.boss === 'object') for (const k of Object.keys(r.boss).slice(-6)) { const b = r.boss[k]; if (b && isFinite(+k)) s.boss[k] = { d: num(b.d, 0, 1e9, 0), u: Array.isArray(b.u) ? b.u.slice(0, 3) : null }; }
+    if (r.boss && typeof r.boss === 'object') for (const k of Object.keys(r.boss).slice(-6)) { const b = r.boss[k]; if (b && isFinite(+k)) s.boss[k] = { d: num(b.d, 0, 1e10, 0), u: Array.isArray(b.u) ? b.u.slice(0, 3) : null, n: num(b.n, 1, 3, 1), k: typeof b.k === 'string' ? b.k.slice(0, 200) : '' }; }
     s.bossClaim = Array.isArray(r.bossClaim) ? r.bossClaim.map(Number).filter(isFinite).slice(-20) : [];
     s.mail = { welcome: r.mail && r.mail.welcome ? 1 : 0 };
     if (r.mail && typeof r.mail === 'object') for (const k in r.mail) if (/^n\d{6}[a-z]?$/.test(k) && r.mail[k]) s.mail[k] = 1;
@@ -1515,7 +1515,7 @@ input { -webkit-user-select: text; user-select: text; }
     const out = [];
     for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
-    for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · 10,000골드', r: { gold: WB_GIFT } });
+    for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · ' + fmt(WB_GIFT) + ' 골드', r: { gold: WB_GIFT } });
     return out;
   }
   const mailCount = () => mailItems().length;
@@ -2477,7 +2477,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
 
   /* ================= co-op world boss (every 4 h, KST) ================= */
-  const SLOT = 4 * 3600e3, WB_GIFT = 10000;
+  const SLOT = 4 * 3600e3, WB_GIFT = 990000, WB_HP = 1500000, WB_HP_UP = 50000, WB_SEND = 3;
   const slotNow = () => Math.floor((Date.now() + KST) / SLOT);
   const slotEnd = s => (s + 1) * SLOT - KST;
   const WB = [
@@ -2486,60 +2486,55 @@ input { -webkit-user-select: text; user-select: text; }
   ];
   const wbOf = s => WB[((s % WB.length) + WB.length) % WB.length];
   let rankDocs = [], hitDocs = [], peers = {}, bossMsg = null;
-  /* Boss HP follows the friends who played this week: about 1.1x their summed power, counting at least two players. */
-  function wbHp() {
-    const now = Date.now();
-    const act = rankDocs.filter(r => r.id !== NET.uid && now - (+r.d.t || 0) < 7 * 864e5).map(r => clamp(+r.d.pw || 0, 100, 1e9));
-    act.push(Math.max(100, power()));
-    let sum = act.reduce((a, b) => a + b, 0);
-    if (act.length < 2) sum += sum / act.length * (2 - act.length);
-    return Math.round(sum * 1.1 / 100) * 100;
-  }
+  /* boss HP starts at 1.5M (boss of 14 Nov 03:33 KST) and grows 50k with every new boss; up to 3 gunslingers per player per boss */
+  const WB_S0 = Math.floor((Date.UTC(2026, 10, 13, 18, 33) + KST) / SLOT);
+  const wbHp = s => WB_HP + WB_HP_UP * Math.max(0, (s == null ? slotNow() : s) - WB_S0);
   function hitsFor(s) {
     const out = [], seen = {};
-    for (const r of hitDocs) { const h = r.d && r.d.h && r.d.h[s]; if (h && +h.d > 0) { out.push({ id: r.id, d: Math.min(1e7, +h.d), u: Array.isArray(h.u) ? h.u : null, nick: r.d.nick }); seen[r.id] = 1; } }
+    for (const r of hitDocs) { const h = r.d && r.d.h && r.d.h[s]; if (h && +h.d > 0) { out.push({ id: r.id, d: Math.min(1e9, +h.d), u: Array.isArray(h.u) ? h.u : null, nick: r.d.nick }); seen[r.id] = 1; } }
     const mine = save.boss[s];
     if (mine && !seen[NET.uid || '__me']) out.push({ id: NET.uid || '__me', d: mine.d, u: mine.u, nick: save.name, me: true });
     for (const o of out) if (o.id === NET.uid) o.me = true;
     return out.sort((a, b) => b.d - a.d);
   }
   const dealt = s => hitsFor(s).reduce((a, b) => a + b.d, 0);
-  const defeated = s => dealt(s) >= wbHp();
+  const defeated = s => dealt(s) >= wbHp(s);
   function bossRewards() {
     const out = [], now = slotNow();
-    for (const k of Object.keys(save.boss)) {
-      const s = +k;
-      if (s < now - 6 || save.bossClaim.includes(s)) continue;
+    /* everyone gets the gift when a boss falls, whether they sent help or not */
+    for (let s = now - 6; s <= now; s++) {
+      if (save.bossClaim.includes(s)) continue;
       if (defeated(s)) out.push({ slot: s, name: wbOf(s).nm });
     }
     return out;
   }
-  const bossBadge = () => !save.boss[slotNow()] || bossRewards().length > 0;
+  const sentN = s => { const m = save.boss[s]; return m ? (m.n || 1) : 0; };
+  const bossBadge = () => sentN(slotNow()) < WB_SEND || bossRewards().length > 0;
   function supportDmg(u) { const b = wbOf(slotNow()); return Math.round(dps(hstat(u)) * 60 * elMul(u.e, b.el)); }
   function nameOf(o) { return (o.nick && String(o.nick).slice(0, 10)) || NET.nameOf(o.id) || (o.me ? '나' : '친구'); }
   function renderBoss() {
-    const s = slotNow(), B = wbOf(s), hp = wbHp(), d = Math.min(hp, dealt(s)), left = hp - d, list = hitsFor(s), mine = save.boss[s];
+    const s = slotNow(), B = wbOf(s), hp = wbHp(s), d = Math.min(hp, dealt(s)), left = hp - d, list = hitsFor(s), mine = save.boss[s];
     const rem = Math.max(0, slotEnd(s) - Date.now());
     const hh = Math.floor(rem / 3600e3), mm = Math.floor(rem % 3600e3 / 60e3), ss = Math.floor(rem % 60e3 / 1e3);
     let h = '<div class="scroll"><div class="boss"><div class="bh"><b class="ol">' + B.nm + '</b><span class="tagw">WORLD · ' + (B.el >= 0 ? ENM[B.el] : '무속성') + '</span></div>' +
       '<div class="hpbar"><i style="width:' + (left / hp * 100) + '%"></i><b class="ol-s">' + (left <= 0 ? '격파!' : (left / hp * 100).toFixed(1) + '%') + '</b></div>' +
       '<div class="sub"><span>남은 체력 ' + fmt(left) + ' / ' + fmt(hp) + '</span><span>참여 ' + list.length + '명</span></div>' +
       '<div class="art"><canvas id="bcv"></canvas></div>' +
-      '<div class="note">총잡이 1명을 지원 보내면 바로 피해를 줘요.<small>다음 보스까지 ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + ' · 4시간마다 새 보스가 나타나요</small></div>';
-    if (mine) {
-      const u = mine.u;
-      h += '<div class="result">✅ 이번 보스에 <b>' + (u ? NMS[u[0]] : '총잡이') + '</b>을(를) 지원 보냈어요 · 피해 <b>' + fmt(mine.d) + '</b></div>';
+      '<div class="note">총잡이를 3명까지 지원 보내면 바로 피해를 줘요.<small>다음 보스까지 ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + ' · 4시간마다 새 보스가 나타나요</small></div>';
+    if (mine) h += '<div class="result">✅ 이번 보스에 <b>' + sentN(s) + '/' + WB_SEND + '명</b> 지원 보냈어요 · 내 피해 합계 <b>' + fmt(mine.d) + '</b></div>';
+    const used = mine && mine.k ? mine.k.split(',') : [];
+    if (sentN(s) >= WB_SEND) {
     } else if (!save.coll.length) {
       h += '<div class="result">지원 보낼 총잡이가 없어요. 상점에서 먼저 뽑아보세요.</div>';
     } else {
       h += '<div class="pickrow">';
-      const list2 = save.coll.slice().sort((a, b) => supportDmg(b) - supportDmg(a)).slice(0, 8);
+      const list2 = save.coll.filter(u => !used.includes(ukey(u))).sort((a, b) => supportDmg(b) - supportDmg(a)).slice(0, 8);
       for (const u of list2) {
         const k = ukey(u), m = elMul(u.e, B.el);
         h += '<div class="htile r' + u.e.length + (k === bossSel ? ' sel' : '') + '" data-act="bpick" data-k="' + k + '" role="button">' + face(HATS[u.n], EC[u.e[0]], { n: u.n }) + '<span class="hn ol-s" style="font-size:12px">' + NMS[u.n] + ' ★' + u.s + '</span><span class="dmg">' + fmt(supportDmg(u)) + (m > 1 ? ' 약점!' : m < 1 ? ' 저항' : '') + '</span></div>';
       }
-      h += '</div><button class="btn p wide ol-s" data-act="bsend"' + (bossSel ? '' : ' disabled') + '>⚔ 지원 보내기</button>';
-      h += '<p class="desc" style="color:#cdb9ef">보스 속성의 약점을 찌르는 총잡이를 보내면 피해가 1.6배예요. 보스 하나에 한 번만 보낼 수 있어요.</p>';
+      h += '</div><button class="btn p wide ol-s" data-act="bsend"' + (bossSel ? '' : ' disabled') + '>⚔ 지원 보내기 (' + (sentN(s) + 1) + '/' + WB_SEND + ')</button>';
+      h += '<p class="desc" style="color:#cdb9ef">보스 속성의 약점을 찌르는 총잡이를 보내면 피해가 1.6배예요. 보스 하나에 총잡이 <b>3명</b>까지, 같은 총잡이는 한 번만 보낼 수 있어요.</p>';
     }
     if (bossMsg) h += '<div class="msg ok">' + esc(bossMsg) + '</div>';
     if (list.length) {
@@ -2547,8 +2542,8 @@ input { -webkit-user-select: text; user-select: text; }
     }
     h += '<div class="medals"><div class="m1"><b class="ol-s">🥇 1등</b><span>' + (list[0] ? esc(nameOf(list[0])) : '-') + '</span></div><div class="m2"><b class="ol-s">🥈 2등</b><span>' + (list[1] ? esc(nameOf(list[1])) : '-') + '</span></div><div class="m3"><b class="ol-s">🥉 3등</b><span>' + (list[2] ? esc(nameOf(list[2])) : '-') + '</span></div></div>';
     const rw = bossRewards();
-    h += '<p class="desc" style="color:#e6dcff">격파하면 지원을 보낸 모두에게 <b>10,000골드</b> 선물이 와요. 시간 안에 못 잡으면 보스는 도망가요.</p>';
-    if (rw.length) h += '<button class="btn y wide ol-s" data-act="bclaim">' + I.gift + ' 10,000골드 선물 받기' + (rw.length > 1 ? ' ×' + rw.length : '') + '</button>';
+    h += '<p class="desc" style="color:#e6dcff">격파하면 지원을 보냈든 안 보냈든 <b>모두에게 99만 골드</b> 선물이 와요. 보스 체력은 150만에서 시작해 새 보스마다 5만씩 늘어나요. 시간 안에 못 잡으면 보스는 도망가요.</p>';
+    if (rw.length) h += '<button class="btn y wide ol-s" data-act="bclaim">' + I.gift + ' ' + fmt(WB_GIFT) + ' 골드 선물 받기' + (rw.length > 1 ? ' ×' + rw.length : '') + '</button>';
     const p = s - 1, pl = hitsFor(p);
     if (pl.length) h += '<div class="result">🏆 지난 보스 <b>' + wbOf(p).nm + '</b> — ' + (defeated(p) ? '쓰러뜨렸어요.' : '도망갔어요.') + '<br>' + pl.slice(0, 3).map((o, i) => (i + 1) + '등 ' + esc(nameOf(o)) + ' (' + fmt(o.d) + ')').join(' · ') + '</div>';
     if (NET.mode === 'none') h += '<p class="desc" style="color:#cdb9ef">친구들과 연결되지 않은 상태예요. 혼자서는 체력을 다 깎기 어려워요.</p>';
@@ -2576,9 +2571,11 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function bossSend() {
     const s = slotNow(), u = getUnit(bossSel);
-    if (!u || save.boss[s]) return;
+    const m = save.boss[s], k = ukey(u || {});
+    if (!u || sentN(s) >= WB_SEND || (m && m.k && m.k.split(',').includes(k))) return;
     const d = supportDmg(u);
-    save.boss[s] = { d, u: [u.n, u.e.join(''), u.s] };
+    save.boss[s] = { d: (m ? m.d : 0) + d, u: [u.n, u.e.join(''), u.s], n: sentN(s) + 1, k: (m && m.k ? m.k + ',' : '') + k };
+    bossSel = null;
     const ks = Object.keys(save.boss).map(Number).sort((a, b) => a - b);
     while (ks.length > 6) delete save.boss[ks.shift()];
     bossMsg = NMS[u.n] + '이(가) ' + fmt(d) + ' 피해를 줬어요!';
