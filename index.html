@@ -78,13 +78,18 @@ input { -webkit-user-select: text; user-select: text; }
 
 /* home */
 .home { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 4px 12px 12px; gap: 8px; }
-.home-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.home-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sides { display: flex; gap: 6px; flex: none; }
+.side.sm { width: 58px; }
+.side.sm .ic { width: 48px; height: 48px; }
+.side.sm .ic svg { width: 32px; height: 32px; }
+.side.sm span { font-size: 11px; white-space: nowrap; }
 .side { width: 70px; flex: none; display: grid; justify-items: center; gap: 2px; position: relative; }
 .side .ic { width: 58px; height: 58px; border-radius: 50%; border: 3px solid var(--ink); background: var(--panel2); display: grid; place-items: center; box-shadow: inset 0 -5px 0 rgba(0,0,0,.3); }
 .side .ic svg { width: 40px; height: 40px; }
 .side span { font-family: var(--display); font-size: 12px; color: #fff; }
-.modes { display: flex; gap: 6px; margin-top: 4px; padding: 5px; background: rgba(20,32,47,.6); border: 3px solid var(--ink); border-radius: 14px; }
-.modes button { min-width: 76px; padding: 8px 10px; border: 3px solid var(--ink); border-radius: 10px; font-family: var(--display); font-size: 15px; background: var(--cya); box-shadow: inset 0 -4px 0 var(--cya2); }
+.modes { display: flex; gap: 6px; margin-top: 0; padding: 5px; background: rgba(20,32,47,.6); border: 3px solid var(--ink); border-radius: 14px; }
+.modes button { min-width: 64px; padding: 8px 10px; border: 3px solid var(--ink); border-radius: 10px; font-family: var(--display); font-size: 15px; background: var(--cya); box-shadow: inset 0 -4px 0 var(--cya2); }
 .modes button.elite { background: var(--pur); box-shadow: inset 0 -4px 0 var(--pur2); }
 .modes button.off { background: var(--panel4); box-shadow: none; color: var(--dim); position: relative; }
 .stage-title { display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -358,6 +363,14 @@ input { -webkit-user-select: text; user-select: text; }
 .bh-xp i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(#5fd0ff, #1f86d6); width: 0; }
 .bh-xp b { position: relative; display: block; text-align: center; font-family: var(--display); font-weight: 400; font-size: 14px; line-height: 18px; }
 .bh-wave { text-align: center; font-family: var(--display); font-size: 12px; color: var(--cream); }
+.bossbar { position: absolute; left: 10px; right: 10px; bottom: 66px; display: grid; grid-template-columns: 1fr; gap: 2px; pointer-events: none; }
+.bb-top { display: flex; justify-content: space-between; align-items: end; }
+.bb-top b { font-family: var(--display); font-weight: 400; font-size: 15px; color: #fff; }
+.bb-top .bb-x { font-size: 24px; line-height: 1; color: #fff; }
+.bb-bar { position: relative; height: 20px; border: 3px solid var(--ink); border-radius: 7px; overflow: hidden; background: #2a1820; }
+.bb-bar i { position: absolute; top: 0; bottom: 0; left: 0; }
+.bb-bar .bb-seg { right: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(20,32,47,.55) calc(10% - 2px) 10%); }
+.bb-txt { display: flex; justify-content: space-between; font-family: var(--display); font-size: 13px; color: #fff; }
 .bh-bot { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .hpb { flex: 1; min-width: 0; position: relative; height: 30px; padding-left: 20px; }
 .hpb svg { position: absolute; left: 0; top: -4px; width: 38px; height: 38px; z-index: 1; }
@@ -434,6 +447,7 @@ input { -webkit-user-select: text; user-select: text; }
       </div>
       <div class="bh-col r"><button class="ib" data-act="bcards" aria-label="획득한 스킬" id="bCards"></button><div class="bgold ol-s" id="bGold"></div></div>
     </div>
+    <div class="bossbar" id="bBoss" hidden><div class="bb-top"><b class="ol-s" id="bbName"></b><b class="ol bb-x" id="bbX"></b></div><div class="bb-bar"><i id="bbU"></i><i id="bbF"></i><i class="bb-seg"></i></div><div class="bb-txt ol-s"><span id="bbHp"></span><span id="bbPc"></span></div></div>
     <div class="bh-bot">
       <div class="hpb"><span id="bHeart"></span><div class="bar red"><i id="bHp"></i><b class="ol-s" id="bHpT">0</b></div></div>
       <div class="bslots" id="bSlots"></div>
@@ -465,7 +479,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0155';
+  const APP_VER = 'v.261114-0225';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -808,7 +822,7 @@ input { -webkit-user-select: text; user-select: text; }
       v: 1, name: '', lv: 1, xp: 0, gold: 600, gem: 100, en: 30, enT: Date.now(),
       unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
-      boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0
+      boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0
     };
   }
   const ukey = u => u.n + '|' + u.e.join('');
@@ -870,7 +884,7 @@ input { -webkit-user-select: text; user-select: text; }
     s.bossClaim = Array.isArray(r.bossClaim) ? r.bossClaim.map(Number).filter(isFinite).slice(-20) : [];
     s.mail = { welcome: r.mail && r.mail.welcome ? 1 : 0 };
     if (r.set) s.set = { sfx: r.set.sfx ? 1 : 0, bgm: r.set.bgm ? 1 : 0, vfx: r.set.vfx === 0 ? 0 : 1 };
-    s.tut = r.tut ? 1 : 0; s.saved = num(r.saved, 0, 1e15, 0); s.kills = num(r.kills, 0, 1e12, 0); s.wins = num(r.wins, 0, 1e9, 0);
+    s.tut = r.tut ? 1 : 0; s.saved = num(r.saved, 0, 1e15, 0); s.kills = num(r.kills, 0, 1e12, 0); s.wins = num(r.wins, 0, 1e9, 0); s.bclr = num(r.bclr, 0, 1e9, 0);
     return s;
   }
   let save = fresh();
@@ -1089,17 +1103,16 @@ input { -webkit-user-select: text; user-select: text; }
     qDay();
     const qr = QS.some(qReady);
     $('screen').innerHTML = '<div class="home">' +
-      '<div class="home-row">' +
-        '<button class="side" data-act="friends"><span class="ic">' + I.friends + '</span><span class="ol-s">친구</span></button>' +
-        '<div style="display:grid;justify-items:center;gap:6px;flex:1;min-width:0">' +
+      '<div class="home-row"><div class="sides">' +
+        '<button class="side sm" data-act="friends"><span class="ic">' + I.friends + '</span><span class="ol-s">랭킹</span></button>' +
+        '<button class="side sm" data-act="missions"><span class="ic">' + I.scroll + '</span><span class="ol-s">시간 미션</span>' + (qr ? '<span class="bang" style="right:4px;top:-4px">!</span>' : '') + '</button>' +
+        '</div>' +
           '<div class="modes"><button class="ol-s' + (isElite() ? ' off' : '') + '" data-act="mode" data-m="n">일반</button>' + (save.elOn ? '<button class="ol-s' + (isElite() ? ' elite' : ' off') + '" data-act="mode" data-m="e">정예</button>' : '<button class="off ol-s" data-act="elite">🔒 정예</button>') + '</div>' +
+      '</div>' +
           '<div class="stage-title"><button class="arrow ol-s" data-act="prev"' + (n <= 1 ? ' disabled' : '') + '>◀</button>' +
           '<div><b class="ol">' + stageLabel(n) + '</b><small class="ol-s">' + NAMES[i] + (isBossStage(n) ? ' · 보스' : '') + '</small></div>' +
           '<button class="qbtn ol-s" data-act="stageinfo">?</button>' +
           '<button class="arrow ol-s" data-act="next"' + (n >= tk.unlocked ? ' disabled' : '') + '>▶</button></div>' +
-        '</div>' +
-        '<button class="side" data-act="missions"><span class="ic">' + I.scroll + '</span><span class="ol-s">시간 미션</span>' + (qr ? '<span class="bang" style="right:4px;top:-4px">!</span>' : '') + '</button>' +
-      '</div>' +
       '<div class="scene"><canvas id="hcv"></canvas>' +
         (isBossStage(n) ? '<span class="bossflag ol-s">보스 출현 스테이지</span>' : '') +
         '<span class="plays ol-s">' + (tk.reach[i] & 1 ? '클리어 ✓ · 플레이 ' + tk.plays[i] + '번' : n < stMax() ? '클리어하면 다음 단계가 열려요' : '마지막 단계') + '</span>' +
@@ -1168,7 +1181,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (rmMode) {
         let g = 0; for (const u of save.coll) if (rmSel.has(ukey(u))) g += sellPrice(u);
         h += '<div class="rmbar"><p class="desc" style="color:#fff">제거할 총잡이를 눌러서 고르세요. 고른 총잡이는 한 번에 사라지고 골드로 바뀌어요. 출전 중이면 자동으로 빠져요.</p>' +
-          '<div class="row"><button class="btn sm grow ol-s" data-act="rmlow">★2 이하 모두 선택</button><button class="btn sm grow ol-s" data-act="rmnone">선택 해제</button></div>' +
+          '<div class="row"><button class="btn sm grow ol-s" data-act="rmlow">속성 2개↓ ★2↓ 선택</button><button class="btn sm grow ol-s" data-act="rmlow3">속성 3개↓ ★2↓ 선택</button><button class="btn sm grow ol-s" data-act="rmnone">선택 해제</button></div>' +
           (rmAsk ? '<div class="prow" style="padding:8px 10px"><span><b style="font-size:15px">' + rmSel.size + '명을 제거할까요?</b><br><span class="desc">되돌릴 수 없어요 · +' + fmt(g) + '골드</span></span><span class="row"><button class="btn r sm ol-s" data-act="rmyes">제거</button><button class="btn sm ol-s" data-act="rmno">취소</button></span></div>'
             : '<button class="btn r wide ol-s" data-act="rmgo"' + (rmSel.size ? '' : ' disabled') + '>' + (rmSel.size ? rmSel.size + '명 제거하기 · +' + fmt(g) + 'G' : '제거할 총잡이를 고르세요') + '</button>') + '</div>';
       }
@@ -1198,7 +1211,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
 
   /* ---------- hero detail + star force ---------- */
-  let selKey = null, smsg = null, protect = false, autoOn = false, autoT = 0, sellAsk = false;
+  let selKey = null, smsg = null, protect = false, autoOn = false, autoT = 0, sellAsk = false, autoPick = false, autoTo = 15;
   function starOdds(u, prot) {
     const n = u.s;
     if (u.dc >= 2) return { p: 1, keep: 0, drop: 0, boom: 0, chance: true };
@@ -1229,9 +1242,16 @@ input { -webkit-user-select: text; user-select: text; }
         '<div class="kv"><div class="ok"><span>성공</span><b class="ol-s">' + pct(o.p) + '</b></div><div class="mid"><span>' + (o.drop ? '실패(하락)' : '실패(유지)') + '</span><b class="ol-s">' + pct(o.keep + o.drop) + '</b></div><div class="bad"><span>파괴</span><b class="ol-s">' + pct(o.boom) + '</b></div></div>';
       h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 12성이 돼요.' : '') + '</p>';
       h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">15~21성에서 파괴를 막아요. 비용 2배</span></span><button class="tog' + (prot ? ' on' : '') + '" data-act="prot"' + (canProt ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (prot ? 'ON' : 'OFF') + '</i></button></div>';
-      h += '<div class="row"><button class="btn y grow ol-s" data-act="starup"' + (save.gold < cost ? ' disabled' : '') + '>강화하기</button><button class="btn ' + (autoOn ? 'r' : 'c') + ' grow ol-s" data-act="auto">' + (autoOn ? '자동 멈춤' : '⚡ 자동 강화') + '</button></div>';
+      if (autoOn) h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">자동 강화 중 · 목표 <b>★' + autoTo + '</b> · 지금 ★' + u.s + '</p><button class="btn r wide ol-s" data-act="auto">자동 멈춤</button></div>';
+      else if (autoPick) {
+        autoTo = clamp(autoTo, u.s + 1, 30);
+        h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">몇 성까지 자동으로 강화할까요?</p>' +
+          '<div class="row" style="justify-content:center;align-items:center"><button class="btn sm ol-s" data-act="autoTo" data-d="-5">-5</button><button class="btn sm ol-s" data-act="autoTo" data-d="-1">-1</button><b class="ol" style="font-family:var(--display);font-size:24px;min-width:70px;text-align:center">★' + autoTo + '</b><button class="btn sm ol-s" data-act="autoTo" data-d="1">+1</button><button class="btn sm ol-s" data-act="autoTo" data-d="5">+5</button></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' + [15, 18, 21, 22, 25, 30].filter(v => v > u.s).map(v => '<button class="btn sm ol-s' + (v === autoTo ? ' y' : '') + '" data-act="autoSet" data-v="' + v + '">★' + v + '</button>').join('') + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr auto;gap:8px"><button class="btn c ol-s" data-act="autoGo">⚡ ★' + autoTo + '까지 시작</button><button class="btn sm ol-s" data-act="autoNo">취소</button></div></div>';
+      } else h += '<div class="row"><button class="btn y grow ol-s" data-act="starup"' + (save.gold < cost ? ' disabled' : '') + '>강화하기</button><button class="btn c grow ol-s" data-act="auto">⚡ 자동 강화</button></div>';
       h += '<div class="msg ' + (smsg ? smsg.c : '') + '">' + (smsg ? esc(smsg.t) : '') + '</div>';
-      h += '<p class="desc">10성 미만이나 5의 배수 성에서 실패하면 그대로, 나머지는 한 단계 내려가요. 연속 2번 내려가면 다음은 찬스타임. 자동 강화는 성공하거나 골드가 떨어지면 멈춰요.</p>';
+      h += '<p class="desc">10성 미만이나 5의 배수 성에서 실패하면 그대로, 나머지는 한 단계 내려가요. 연속 2번 내려가면 다음은 찬스타임. 자동 강화는 정한 목표 별에 닿거나 골드가 떨어지면 멈춰요. 파괴 방지를 켜 두면 자동 강화에도 적용돼요.</p>';
     }
     h += '<div class="row">' + [0, 1, 2].map(i => '<button class="btn sm grow ol-s ' + (at === i ? 'g' : '') + '" data-act="equip" data-i="' + i + '">' + (i + 1) + '번</button>').join('') + (at >= 0 ? '<button class="btn r sm ol-s" data-act="unequip">해제</button>' : '') + '</div>';
     h += '<p class="desc" style="text-align:center">' + (at >= 0 ? (at + 1) + '번 슬롯에 출전 중이에요.' : '출전할 슬롯 번호를 누르세요.') + '</p>';
@@ -1239,7 +1259,7 @@ input { -webkit-user-select: text; user-select: text; }
       : '<button class="btn sm ol-s" style="background:#4a5a6e;box-shadow:inset 0 -5px 0 #34404f,0 3px 0 ' + INK + '" data-act="sell">판매하고 보관함 비우기 · ' + fmt(sellPrice(u)) + 'G</button>';
     return h;
   }
-  function openHero(k) { selKey = k; smsg = null; protect = false; autoOn = false; sellAsk = false; openPop(NMS[getUnit(k).n] + ' · 스타포스', heroBody(), 'hero'); }
+  function openHero(k) { selKey = k; smsg = null; protect = false; autoOn = false; autoPick = false; clearTimeout(autoT); autoTo = Math.min(30, getUnit(k).s + 5); sellAsk = false; openPop(NMS[getUnit(k).n] + ' · 스타포스', heroBody(), 'hero'); }
   function starUp() {
     const u = getUnit(selKey);
     if (!u || u.s >= 30) { autoOn = false; return false; }
@@ -1258,10 +1278,11 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function autoStep() {
     if (!autoOn || popKind !== 'hero') { autoOn = false; return; }
-    const ok = starUp();
-    if (ok) autoOn = false;
+    starUp();
+    const u = getUnit(selKey);
+    if (u && u.s >= autoTo && autoOn) { autoOn = false; smsg = { c: 'ok', t: '목표 ★' + autoTo + ' 달성! 자동 강화를 멈췄어요' }; }
     refreshPop(heroBody());
-    if (autoOn) autoT = setTimeout(autoStep, 260);
+    if (autoOn) autoT = setTimeout(autoStep, 200);
   }
 
   /* ---------- skill tab ---------- */
@@ -1947,6 +1968,7 @@ input { -webkit-user-select: text; user-select: text; }
     S.en = []; S.bul = []; S.toSpawn = 0; S.wave = 3;
     endRun(true);
   }
+  const BCLR_N = 100, BCLR_G = 2000000, BCLR_MIN = 45;
   /* ---------- end of run ---------- */
   function endRun(win, gaveUp) {
     if (S.over) return;
@@ -1965,6 +1987,9 @@ input { -webkit-user-select: text; user-select: text; }
     if (win && S.elite) save.gem += ELITE.gem;
     const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
     save.gem += sGem;
+    /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
+    let bclrBonus = 0; const bclrOn = win && !S.elite && n >= BCLR_MIN && isBossStage(n);
+    if (bclrOn) { save.bclr++; if (save.bclr % BCLR_N === 0) { bclrBonus = BCLR_G; save.gold += BCLR_G; rep.gold += BCLR_G; } }
     save.gold += gold; rep.gold += gold; rep.done++; tk.plays[i]++; save.kills += S.kills;
     if (win) { save.wins++; if (hpPct > tk.best[i]) tk.best[i] = hpPct; tk.reach[i] |= 1 | (hpPct >= 50 ? 2 : 0) | (S.took <= 0 ? 4 : 0); }
     qAdd('play'); qAdd('kill', S.kills); if (win) qAdd('win'); if (win && S.took <= 0) qAdd('perfect');
@@ -1983,6 +2008,7 @@ input { -webkit-user-select: text; user-select: text; }
       (drops.length ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>장비 획득!</b></p><div class="rewards">' + drops.map(d => '<div class="rw">' + itemIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + iK(d.id).nm + '</b><span style="color:' + RAR[iG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[iG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + starBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
+      (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
       (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem + '개</p>' : '') +
       (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 골드 2배 + 젬 ' + ELITE.gem + '개</p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치</b> 보너스가 포함됐어요.</p>' : '') +
@@ -2017,8 +2043,26 @@ input { -webkit-user-select: text; user-select: text; }
 
   /* ---------- HUD ---------- */
   let hudKey = '';
+  /* boss HP bar at the bottom: HP split into 10 lines (×N left), each line its own colour */
+  const BBC = ['#e2332a', '#f08a3a', '#e8c23a', '#7ac04a', '#3fb8a0', '#3fa9f5', '#5a6ef0', '#a05af0', '#e05ac0', '#ff6a8a'];
+  let bbKey = '';
+  function updBoss() {
+    const hb = S.rare && S.rare.hp > 0 ? S.rare : S.boss, el = $('bBoss');
+    if (!hb || hb.hp <= 0 || S.over) { if (!el.hidden) el.hidden = true; bbKey = ''; return; }
+    const per = hb.mh / 10, hp = Math.max(0, hb.hp), li = Math.max(0, Math.ceil(hp / per) - 1), inL = (hp - li * per) / per, B = BOSSES[hb.bi];
+    const k = li + '|' + Math.round(inL * 400) + '|' + (hb === S.rare);
+    if (k === bbKey) return; bbKey = k;
+    el.hidden = false;
+    $('bbName').textContent = (hb === S.rare ? '희귀 ' : '') + B.nm + (B.el >= 0 ? ' (' + ENM[B.el] + ')' : '');
+    $('bbX').textContent = '×' + (li + 1);
+    $('bbF').style.cssText = 'width:' + (inL * 100) + '%;background:' + BBC[li];
+    $('bbU').style.cssText = 'width:100%;background:' + (li > 0 ? BBC[li - 1] : '#2a1820');
+    $('bbHp').textContent = fmt(hp) + ' / ' + fmt(hb.mh);
+    $('bbPc').textContent = Math.ceil(hp / hb.mh * 100) + '%';
+  }
   function updHud(force) {
     if (!S) return;
+    updBoss();
     const t = Math.floor(S.t), key = [t, Math.floor(S.gold), Math.ceil(S.hp), S.lv, Math.floor(S.xp), S.wave, Object.keys(S.sk).map(k => k + S.sk[k].l).join()].join('|');
     if (!force && key === hudKey) return;
     hudKey = key;
@@ -2351,12 +2395,6 @@ input { -webkit-user-select: text; user-select: text; }
       strokeT(c, String(d.v) + (d.k === 'weak' ? '!' : ''), d.x, d.y, big ? '#ffe36a' : d.k === 'hurt' ? '#ff4a4a' : d.k === 'weak' ? '#ffcf3f' : d.k === 'res' ? '#a8b4c4' : '#fff', big ? 5 : 4);
     }
     c.globalAlpha = 1;
-    const hb = S.rare && S.rare.hp > 0 ? S.rare : S.boss;
-    if (hb && hb.hp > 0) {
-      const B = BOSSES[hb.bi];
-      c.font = "400 15px 'Black Han Sans', sans-serif"; strokeT(c, B.nm + (B.el >= 0 ? ' (' + ENM[B.el] + ')' : ''), 240, 150, '#fff', 4);
-      c.fillStyle = INK; c.fillRect(132, 156, 216, 14); c.fillStyle = '#ff4a4a'; c.fillRect(134, 158, 212 * Math.max(0, hb.hp / hb.mh), 10);
-    }
     if (S.banner && !S.over) {
       c.globalAlpha = Math.min(1, S.banner.t * 1.5);
       c.fillStyle = 'rgba(20,32,47,.75)'; c.fillRect(visL - 60, BH / 2 - 44, BW - visL + 120, 56);
@@ -2515,7 +2553,7 @@ input { -webkit-user-select: text; user-select: text; }
     rows.sort((a, b) => (+b.d.pw || 0) - (+a.d.pw || 0) || (+b.d.st || 0) - (+a.d.st || 0));
     const myRank = rows.findIndex(r => r.id === me || r.id === '__me') + 1;
     let h = NET.mode !== 'none' ? '<div class="row"><span class="desc grow" style="color:#fff">' + (NET.syncErr ? '⚠ 내 정보 올리기 실패 (' + esc(NET.syncErr) + ') · 다시 시도 중' : NET.syncedAt ? '내 정보 올린 시각: ' + agoTxt(NET.syncedAt) : '내 정보 올리는 중…') + '</span><button class="btn c sm ol-s" data-act="frsync">새로고침</button></div>' : '';
-    if (NET.mode === 'none') h += '<p class="desc" style="color:#fff">친구 목록은 공유된 찍먹메타에서 함께 접속했을 때 보여요. 지금은 내 정보만 보여요.</p>';
+    if (NET.mode === 'none') h += '<p class="desc" style="color:#fff">랭킹은 공유된 찍먹메타에서 함께 접속했을 때 보여요. 지금은 내 정보만 보여요.</p>';
     if (rows.length > 1) h += '<div class="myrank ol-s">⚔ 전투력 순위 <b>' + myRank + '위</b> / ' + rows.length + '명</div>';
     rows.slice(0, 50).forEach((r, ri) => {
       const d = r.d, isMe = r.id === me || r.id === '__me', on = isMe || !!peers[r.id];
@@ -2701,15 +2739,19 @@ input { -webkit-user-select: text; user-select: text; }
     mail: () => openPop('우편', mailBody(), 'mail'),
     mailget: el => { mailGet(el.dataset.id); refreshPop(mailBody()); },
     mailall: () => { for (const m of mailItems()) mailGet(m.id); refreshPop(mailBody()); },
-    friends: () => { NET.sync(); openPop('친구', friendsBody(), 'friends'); },
-    frsync: () => { NET.lastRank = ''; NET.sync().then(() => { if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 친구 목록을 새로 받았어요'); },
+    friends: () => { NET.sync(); openPop('랭킹', friendsBody(), 'friends'); },
+    frsync: () => { NET.lastRank = ''; NET.sync().then(() => { if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
     tab: el => setTab(el.dataset.t),
     enh: el => enhance(el.dataset.k),
     slot: el => { selSlot = +el.dataset.i; const k = save.slots[selSlot]; if (k) openHero(k); else render(); },
     hero: el => openHero(el.dataset.k),
     prot: () => { protect = !protect; refreshPop(heroBody()); },
-    starup: () => { autoOn = false; starUp(); refreshPop(heroBody()); },
-    auto: () => { autoOn = !autoOn; clearTimeout(autoT); if (autoOn) autoStep(); else refreshPop(heroBody()); },
+    starup: () => { autoOn = false; autoPick = false; starUp(); refreshPop(heroBody()); },
+    auto: () => { clearTimeout(autoT); if (autoOn) { autoOn = false; smsg = { c: 'mute', t: '자동 강화를 멈췄어요' }; } else autoPick = true; refreshPop(heroBody()); },
+    autoTo: el => { const u = getUnit(selKey); if (!u) return; autoTo = clamp(autoTo + +el.dataset.d, u.s + 1, 30); refreshPop(heroBody()); },
+    autoSet: el => { autoTo = +el.dataset.v; refreshPop(heroBody()); },
+    autoNo: () => { autoPick = false; refreshPop(heroBody()); },
+    autoGo: () => { const u = getUnit(selKey); if (!u || u.s >= autoTo) return; autoPick = false; autoOn = true; clearTimeout(autoT); autoStep(); },
     equip: el => { const i = +el.dataset.i, at = save.slots.indexOf(selKey); if (at >= 0) save.slots[at] = null; const prev = save.slots[i]; save.slots[i] = selKey; if (at >= 0 && prev && prev !== selKey) save.slots[at] = prev; persist(); refreshPop(heroBody()); },
     capup: () => { if (capOf() >= CAP_MAX || save.gold < capCost(save.capBuy)) return; save.gold -= capCost(save.capBuy); save.capBuy += Math.min(5, CAP_MAX - capOf()); Snd.lvup(); toast('보관함 ' + capOf() + '칸으로 늘었어요'); persist(); render(); },
     sell: () => { sellAsk = true; refreshPop(heroBody()); },
@@ -2719,6 +2761,7 @@ input { -webkit-user-select: text; user-select: text; }
     rmpick: el => { const k = el.dataset.k; if (rmSel.has(k)) rmSel.delete(k); else rmSel.add(k); rmAsk = false; render(); },
     rmnone: () => { rmSel.clear(); rmAsk = false; render(); },
     rmlow: () => { rmSel.clear(); for (const u of save.coll) if (u.e.length <= 2 && u.s <= 2 && !save.slots.includes(ukey(u))) rmSel.add(ukey(u)); rmAsk = false; if (!rmSel.size) toast('★2 이하(속성 1~2개, 출전 안 함) 총잡이가 없어요'); render(); },
+    rmlow3: () => { rmSel.clear(); for (const u of save.coll) if (u.e.length <= 3 && u.s <= 2 && !save.slots.includes(ukey(u))) rmSel.add(ukey(u)); rmAsk = false; if (!rmSel.size) toast('★2 이하(속성 1~3개, 출전 안 함) 총잡이가 없어요'); render(); },
     rmgo: () => { if (rmSel.size) { rmAsk = true; render(); } },
     rmno: () => { rmAsk = false; render(); },
     rmyes: () => {
