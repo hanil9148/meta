@@ -341,6 +341,13 @@ input { -webkit-user-select: text; user-select: text; }
 .bh-top { position: absolute; left: 10px; right: 10px; top: 10px; display: grid; grid-template-columns: 46px 1fr 46px; gap: 8px; align-items: start; pointer-events: none; }
 .bh-top > * { pointer-events: auto; }
 .bh-col { display: grid; gap: 8px; }
+.ib.skip { background: var(--yel); box-shadow: inset 0 -5px 0 var(--yel2), 0 3px 0 var(--ink); font: 400 13px/1.05 var(--display); color: #fff; }
+.ib.skip:disabled { filter: grayscale(.8) brightness(.8); }
+.bh-col.r { position: relative; }
+.bgold { position: absolute; right: 0; top: 54px; display: grid; justify-items: end; gap: 0; white-space: nowrap; padding: 3px 8px 3px 6px; border: 3px solid var(--ink); border-radius: 12px; background: rgba(20,32,47,.82); font: 400 15px/1.1 var(--display); color: #fff; }
+.bgold span { display: flex; align-items: center; gap: 3px; }
+.bgold svg { width: 17px; height: 17px; }
+.bgold small { font: 400 12px var(--display); color: var(--yel); }
 .ib { width: 46px; height: 46px; border: 3px solid var(--ink); border-radius: 12px; background: var(--cya); box-shadow: inset 0 -5px 0 var(--cya2), 0 3px 0 var(--ink); display: grid; place-items: center; font-family: var(--display); font-size: 12px; line-height: 1; }
 .ib svg { width: 26px; height: 26px; }
 .ib.gray { background: #9aa3ad; box-shadow: inset 0 -5px 0 #5f6770, 0 3px 0 var(--ink); }
@@ -418,13 +425,14 @@ input { -webkit-user-select: text; user-select: text; }
         <button class="ib" data-act="bpause" aria-label="일시정지" id="bPause"></button>
         <button class="ib ol-s" data-act="bspeed" id="bSpeed">▶<br>X1</button>
         <button class="ib gray" data-act="btarget" id="bTarget" aria-label="조준 방식"></button>
+        <button class="ib skip ol-s" data-act="bskip" id="bSkip" hidden>스킵</button>
       </div>
       <div class="bh-mid">
         <div class="bh-title ol-s"><span id="bStage">일반 스테이지 1</span><span id="bTime">00:00</span></div>
         <div class="bh-xp"><i id="bXp"></i><b class="ol-s" id="bLv">LV. 1</b></div>
         <div class="bh-wave ol-s" id="bWave">웨이브 1/3</div>
       </div>
-      <button class="ib" data-act="bcards" aria-label="획득한 스킬" id="bCards"></button>
+      <div class="bh-col r"><button class="ib" data-act="bcards" aria-label="획득한 스킬" id="bCards"></button><div class="bgold ol-s" id="bGold"></div></div>
     </div>
     <div class="bh-bot">
       <div class="hpb"><span id="bHeart"></span><div class="bar red"><i id="bHp"></i><b class="ol-s" id="bHpT">0</b></div></div>
@@ -457,7 +465,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-0102';
+  const APP_VER = 'v.261114-0155';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -592,6 +600,9 @@ input { -webkit-user-select: text; user-select: text; }
   }
   const baseHp = l => 400 + l * 60;
   const defRed = l => Math.min(.66, l * .022);
+  /* fort slow field: every monster on the map moves slower. Lv1 0.2%, +0.1% per level (Lv30 3.1%) */
+  const slowPct = l => l > 0 ? .002 + .001 * (l - 1) : 0;
+  const ENHK = { hp: ['hl', '체력'], dl: ['dl', '방어력'], sl: ['sll', '감속장'] };
   const FORT_N = ['나무 울타리', '모래주머니 벽', '강철 바리케이드', '보호막 발전기', '육각 실드', '전설의 요새'];
 
   /* Skills: permanent level from cards (skill tab), in-run level 1..5 from level-up picks. */
@@ -743,9 +754,9 @@ input { -webkit-user-select: text; user-select: text; }
   const PETN = ['현호', '승주', '해서', '현성', '해승', '기현', '태인', '성진'];
   const PAIR = [0, 3, 1, 7, 5, 4, 2, 6];
   const PETC = ['#f2a65a', '#8fd16a', '#6ab8f2', '#f27a9a', '#b38af2', '#f2d65a', '#5ad6c4', '#d98a5a'];
-  const PET_MAX = 10, PETP1 = 1000, PETP10 = 9000, PSYN = .3, PCAP = 30, PFULLG = 300;
+  const PBRK = 20, PET_MAX = 10, PETP1 = 1000, PETP10 = 9000, PSYN = .3, PCAP = 100, PFULLG = 300;
   const PGR = [{ nm: '일반', c: '#b4bfcc', m: 1 }, { nm: '매직', c: '#3fa9f5', m: 1.8 }, { nm: '유니크', c: '#c27bff', m: 3 }, { nm: '전설', c: '#ffb72e', m: 5 }];
-  const PODDS = [.91, .05, .03, .01];
+  const PODDS = [.919, .05, .03, .001];
   const getPet = id => id == null ? null : save.pcoll.find(x => x.id === id) || null;
   const slotPet = i => getPet(save.pslot[i]);
   /* synergy: a deployed pet boosts its partner gunslinger wherever that gunslinger is deployed */
@@ -776,6 +787,9 @@ input { -webkit-user-select: text; user-select: text; }
     else g = head('#d8b07a') + '<ellipse cx="12" cy="28" rx="5" ry="11" fill="#8a5a3a"' + K + ' transform="rotate(15 12 28)"/><ellipse cx="44" cy="28" rx="5" ry="11" fill="#8a5a3a"' + K + ' transform="rotate(-15 44 28)"/><ellipse cx="34" cy="27" rx="5" ry="4" fill="#8a5a3a" opacity=".6"/>' + eyes(28, 2.6) + nose + '<path d="M28 40q0 4 3 4q2 0 2-4Z" fill="#f27a9a"/>';
     return '<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
   }
+  /* a destroyed pet can be restored (same star) by giving up one pet of the same kind and grade */
+  const restoreMats = b => save.pcoll.filter(x => x.p === b.p && x.g === b.g && !save.pslot.includes(x.id)).sort((a, c) => a.s - c.s);
+  const restoreCost = b => Math.round(petCost({ p: b.p, g: b.g, s: Math.max(0, b.s - 1) }) / 2 / 10) * 10;
   function addPet(p, g) {
     if (save.pcoll.length >= PCAP) return null;
     const x = { id: ++save.pid, p, g, s: 0 };
@@ -792,8 +806,8 @@ input { -webkit-user-select: text; user-select: text; }
   function fresh() {
     return {
       v: 1, name: '', lv: 1, xp: 0, gold: 600, gem: 100, en: 30, enT: Date.now(),
-      unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
-      coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
+      unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
+      coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0
     };
   }
@@ -838,13 +852,14 @@ input { -webkit-user-select: text; user-select: text; }
       for (let p = 0; p < PETN.length; p++) { const v = r.pets[p]; if (!v || typeof v !== 'object') continue; const n = 1 + num(v.c, 0, 50, 0); for (let k = 0; k < n && s.pcoll.length < PCAP; k++) { const x = { id: ++s.pid, p, g: 0, s: k ? 0 : num(v.s, 0, PET_MAX, 0) }; s.pcoll.push(x); if (!k) map[p] = x.id; } }
       s.pslot = [0, 1, 2].map(i => { const p = r.pslot && r.pslot[i]; return Number.isInteger(p) && map[p] ? map[p] : null; });
     }
+    if (Array.isArray(r.pbroken)) for (const v of r.pbroken.slice(-PBRK)) if (v && Number.isInteger(v.p) && v.p >= 0 && v.p < PETN.length) s.pbroken.push({ p: v.p, g: num(v.g, 0, 3, 0), s: num(v.s, 0, PET_MAX, 0), sl: Number.isInteger(v.sl) ? num(v.sl, -1, 2, -1) : -1, t: num(v.t, 0, 1e15, 0) });
     { const seen = []; s.pslot = s.pslot.map(id => { const x = s.pcoll.find(y => y.id === id); if (!x || seen.includes(x.p)) return null; seen.push(x.p); return id; }); }
     s.coll = cleanColl(r.coll);
     s.capBuy = r.capBuy !== undefined ? num(r.capBuy, 0, 90, 0) : Math.max(0, num(r.cap, 10, 100, 10) - 10 - (s.unlocked - 1));
     { const over = s.coll.length - (10 + s.unlocked - 1 + s.capBuy); if (over > 0) s.capBuy = Math.min(90, s.capBuy + over); }
     s.slots = [0, 1, 2].map(i => { const k = r.slots && r.slots[i]; return typeof k === 'string' && s.coll.some(u => ukey(u) === k) ? k : null; });
     s.slots = s.slots.map((k, i) => s.slots.indexOf(k) === i ? k : null);
-    s.hl = num(r.hl, 0, 30, 0); s.dl = num(r.dl, 0, 30, 0);
+    s.hl = num(r.hl, 0, 30, 0); s.dl = num(r.dl, 0, 30, 0); s.sll = num(r.sll, 0, 30, 0);
     if (r.sk && typeof r.sk === 'object') for (const sk of SK) { const v = r.sk[sk.id]; if (v) s.sk[sk.id] = { lv: num(v.lv, 1, 10, 1), c: num(v.c, 0, 1e6, 0) }; }
     if (r.q && typeof r.q === 'object' && r.q.m && typeof r.q.m === 'object') {
       s.q = { hour: num(r.q.hour, 0, 1e9, 0), m: {} };
@@ -1106,8 +1121,8 @@ input { -webkit-user-select: text; user-select: text; }
   let gmsg = null, selSlot = 0, rmMode = false, rmAsk = false;
   const rmSel = new Set();
   function enhRow(k) {
-    const key = k === 'hp' ? 'hl' : 'dl', n = save[key], max = n >= 30, nm = k === 'hp' ? '체력' : '방어력';
-    const eff = k === 'hp' ? '최대 체력 ' + fmt(baseHp(n)) + (max ? '' : ' → ' + fmt(baseHp(n + 1)))
+    const [key, nm] = ENHK[k], n = save[key], max = n >= 30, sp = l => (Math.round(slowPct(l) * 1000) / 10) + '%';
+    const eff = k === 'sl' ? '맵 전체 몬스터 이동 속도 -' + sp(n) + (max ? '' : ' → -' + sp(n + 1)) : k === 'hp' ? '최대 체력 ' + fmt(baseHp(n)) + (max ? '' : ' → ' + fmt(baseHp(n + 1)))
       : '받는 피해 -' + Math.round(defRed(n) * 100) + '%' + (max ? '' : ' → -' + Math.round(defRed(n + 1) * 100) + '%');
     const o = oddsOf(n), c = enhCost(n);
     return '<div class="card dark" style="gap:6px"><div class="row"><b class="ol-s grow" style="font-family:var(--display);font-size:16px">' + nm + ' Lv ' + n + '/30</b>' +
@@ -1125,8 +1140,8 @@ input { -webkit-user-select: text; user-select: text; }
     const tier = Math.min(5, Math.floor((save.hl + save.dl) / 10));
     let h = '<div class="scroll">';
     h += '<div class="card"><div class="row"><h3 class="ol grow">거점 · ' + FORT_N[tier] + '</h3><span class="pwtag ol-s" style="font-size:15px">' + I.sword + fmt(power()) + '</span></div>' +
-      '<p class="desc">오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄여요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.</p>' +
-      enhRow('hp') + enhRow('dl') + (gmsg ? '<div class="msg ' + gmsg.c + '">' + esc(gmsg.t) + '</div>' : '') + '</div>';
+      '<p class="desc">오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.</p>' +
+      enhRow('hp') + enhRow('dl') + enhRow('sl') + (gmsg ? '<div class="msg ' + gmsg.c + '">' + esc(gmsg.t) + '</div>' : '') + '</div>';
     h += '<div class="card"><div class="row"><h3 class="ol grow">장비</h3><span class="desc" style="color:#fff">' + Object.keys(save.items).length + '/30 종</span></div><p class="desc">총·모자·목걸이를 하나씩 껴요. <b>같은 장비 3개</b>를 조합하면 다음 등급이 돼요(레벨은 Lv1부터). 레벨은 골드로 따로 올려요. 장비는 보스·정예·공동 보스 선물·상점 젬 상자에서 나와요.</p><div class="slots4">';
     for (const k of ['w', 'h', 'n']) {
       const id = save.gear[k], d = id && save.items[id];
@@ -1170,7 +1185,7 @@ input { -webkit-user-select: text; user-select: text; }
     $('screen').innerHTML = h;
   }
   function enhance(k) {
-    const key = k === 'hp' ? 'hl' : 'dl', n = save[key], nm = k === 'hp' ? '체력' : '방어력';
+    const [key, nm] = ENHK[k], n = save[key];
     if (n >= 30) return;
     const c = enhCost(n);
     if (save.gold < c) return;
@@ -1305,18 +1320,31 @@ input { -webkit-user-select: text; user-select: text; }
     const junk = save.pcoll.filter(x => x.g === 0 && x.s === 0 && !save.pslot.includes(x.id));
     let h = '<p class="desc" style="color:#fff">' + (i + 1) + '번 칸에 데려갈 펫을 골라요. 펫 보관함 ' + save.pcoll.length + '/' + PCAP + '.</p>';
     if (junk.length) h += '<button class="btn sm wide ol-s" data-act="petJunk">일반 ★0 ' + junk.length + '마리 모두 팔기 · +' + fmt(junk.reduce((a, x) => a + petSell(x), 0)) + 'G</button>';
+    if (save.pbroken.length) {
+      h += '<div class="rmbar"><p class="desc" style="color:#fff"><b>터진 펫</b> · 같은 종류·같은 등급 펫 1마리(별이 가장 낮은 것)와 골드를 쓰면 <b>터지기 전 별 그대로</b> 되살아나요.</p>';
+      save.pbroken.forEach((b, k) => {
+        const mats = restoreMats(b), c = restoreCost(b);
+        h += '<div class="shopi" style="opacity:.92"><span class="ico" style="background:none;border:2px dashed ' + PGR[b.g].c + ';filter:grayscale(.6)">' + petSvg(b.p) + '</span><div style="min-width:0"><b class="ol-s">' + PETN[b.p] + ' <span style="font-size:12px;color:' + PGR[b.g].c + '">' + PGR[b.g].nm + '</span> ★' + b.s + '</b>' +
+          '<p>재료: 같은 ' + PGR[b.g].nm + ' ' + PETN[b.p] + ' <span style="color:' + (mats.length ? 'var(--ok)' : 'var(--bad)') + ';font-weight:900">' + mats.length + '마리 보유</span></p></div>' +
+          '<div class="buy"><button class="btn g sm ol-s" data-act="petFix" data-i="' + k + '"' + (mats.length && save.gold >= c ? '' : ' disabled') + '>복구 ' + fmt(c) + '</button><button class="btn sm ol-s" data-act="petDrop" data-i="' + k + '">버리기</button></div></div>';
+      });
+      h += '</div>';
+    }
     if (!list.length) h += '<p class="empty">아직 펫이 없어요.<br>상점에서 펫을 뽑아 보세요.</p>';
-    for (const x of list) {
+    const groups = [];
+    for (const x of list) { const eq = save.pslot.includes(x.id), key = x.p + '|' + x.g + '|' + x.s, gp = !eq && groups.find(q => !q.eq && q.key === key); if (gp) gp.n++; else groups.push({ x, n: 1, eq, key }); }
+    for (const grp of groups) {
+      const x = grp.x;
       const on = save.pslot[i] === x.id, slotOf = save.pslot.indexOf(x.id), partner = save.slots.some(k => { const u = getUnit(k); return u && PAIR[x.p] === u.n; });
       const blocked = !on && slotOf < 0 && save.pslot.some((id, j) => j !== i && getPet(id) && getPet(id).p === x.p);
       const mx = x.s >= PET_MAX, cost = petCost(x);
-      h += '<div class="shopi"><span class="ico" style="background:none;border:2px solid ' + PGR[x.g].c + '">' + petSvg(x.p) + '</span><div style="min-width:0"><b class="ol-s">' + PETN[x.p] + ' <span style="font-size:12px;color:' + PGR[x.g].c + '">' + PGR[x.g].nm + '</span> ★' + x.s + '</b>' +
+      h += '<div class="shopi"><span class="ico" style="background:none;border:2px solid ' + PGR[x.g].c + '">' + petSvg(x.p) + '</span><div style="min-width:0"><b class="ol-s">' + PETN[x.p] + ' <span style="font-size:12px;color:' + PGR[x.g].c + '">' + PGR[x.g].nm + '</span> ★' + x.s + (grp.n > 1 ? ' <span style="color:var(--yel)">×' + grp.n + '</span>' : '') + '</b>' +
         '<p>' + PETAN[PETA[x.p]] + ' · 짝 <span style="color:#fff;font-weight:900">' + NMS[PAIR[x.p]] + '</span>' + (partner ? ' <span style="color:var(--yel)">출전 중</span>' : '') + (slotOf >= 0 && !on ? ' · ' + (slotOf + 1) + '번 칸' : '') + '</p>' +
         '<p>공격력 <span style="color:#fff;font-weight:900">' + petAtk(x) + '</span>' + (!mx ? ' → ' + petAtk(x, 1) : '') + ' · 초당 ' + petAtk(x, 0, 1) + '</p>' +
         (!mx ? '<p>강화 성공 ' + Math.round(petRate(x.s) * 100) + '%' + (petBoom(x.s) ? ' · <span style="color:var(--bad)">파괴 ' + Math.round(petBoom(x.s) * 100) + '%</span>' : '') + '</p>' : '<p>최대 강화</p>') + '</div>' +
         '<div class="buy">' + (on ? '<button class="btn sm ol-s" disabled>함께하는 중</button>' : '<button class="btn g sm ol-s" data-act="petEq" data-id="' + x.id + '"' + (blocked ? ' disabled' : '') + '>' + (blocked ? '같은 펫 있음' : slotOf >= 0 ? '옮기기' : '데려가기') + '</button>') +
         '<button class="btn y sm ol-s" data-act="petUp" data-id="' + x.id + '"' + (!mx && save.gold >= cost ? '' : ' disabled') + '>' + (mx ? 'MAX' : '강화 ' + fmt(cost)) + '</button>' +
-        (slotOf < 0 ? '<button class="btn sm ol-s" data-act="petSell" data-id="' + x.id + '">판매 ' + fmt(petSell(x)) + '</button>' : '') + '</div></div>';
+        (slotOf < 0 ? '<button class="btn sm ol-s" data-act="petSell" data-id="' + x.id + '">판매 ' + fmt(petSell(x)) + '</button>' : '') + (grp.n > 1 ? '<button class="btn r sm ol-s" data-act="petSellG" data-k="' + grp.key + '">' + grp.n + '마리 판매</button>' : '') + '</div></div>';
     }
     if (cur) h += '<button class="btn r sm ol-s" data-act="petOff">펫 빼기</button>';
     return h;
@@ -1365,7 +1393,7 @@ input { -webkit-user-select: text; user-select: text; }
     h += '<p class="desc" style="color:#fff">보관함 <b>' + save.coll.length + '/' + capOf() + '</b>' + (save.coll.length >= capOf() ? ' · 가득 찼어요. 새 총잡이는 ' + FULLG + '골드로 바뀌어요. 총잡이 탭에서 확장하거나 판매하세요.' : '') + '</p>';
     h += item(face('#c8783a', '#3fa9f5'), '총잡이 뽑기 1회', '한일·성민·금유·도영·진명·해천·정욱·재원 중 하나가 속성을 달고 나와요.', I.coin + fmt(PULL1), '', 'pull1', save.gold < PULL1);
     h += item(face('#8a5aa8', '#ffe14a'), '총잡이 뽑기 10회', '10번 한꺼번에 뽑아요. 이미 있는 총잡이는 ' + DUPG + '골드로 바뀌어요.', I.coin + fmt(PULL10), '', 'pull10', save.gold < PULL10);
-    h += item(petSvg(0), '펫 뽑기 1회', '일반 91 · 매직 5 · 유니크 3 · 전설 1%. 등급이 높을수록 공격이 세요.', I.coin + fmt(PETP1), '', 'ppull1', save.gold < PETP1);
+    h += item(petSvg(0), '펫 뽑기 1회', '일반 91.9 · 매직 5 · 유니크 3 · 전설 0.1%. 등급이 높을수록 공격이 세요.', I.coin + fmt(PETP1), '', 'ppull1', save.gold < PETP1);
     h += item(petSvg(4), '펫 뽑기 10회', '10번 한꺼번에 뽑아요.', I.coin + fmt(PETP10), '', 'ppull10', save.gold < PETP10);
     h += item(skillIcon('cannon'), '스킬 카드 상자', '열린 스킬 중에서 카드 20장이 무작위로 나와요.', I.gem + '40', (5 - save.shop.card) + '/5', 'cardbox', save.gem < 40 || save.shop.card >= 5);
     h += item(I.bolt, '에너지 충전', '에너지 30을 바로 채워요.', I.gem + '30', (3 - save.shop.en) + '/3', 'buyen', save.gem < 30 || save.shop.en >= 3);
@@ -1505,20 +1533,21 @@ input { -webkit-user-select: text; user-select: text; }
   const DCX = 420, DCY = 360, DRX = 132, DRY = 312;
   const edgeX = y => DCX - DRX * Math.sqrt(Math.max(0, 1 - ((y - DCY) / DRY) * ((y - DCY) / DRY)));
   const SPOTS = [[378, 360], [346, 236], [318, 360], [346, 484]];
+  const HPK = 1.3; /* compensates the wider (zoomed-out) field: monsters walk further, so they get a bit more HP */
   function params(n) {
     const t = Math.min(1, (n - 1) / 29) + Math.max(0, n - 30) / 40;
     const x = Math.max(0, n - 30);
-    return { hpm: Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x) * (n >= 45 ? 1 + .3 * (n - 44) : 1), d: n - 1 };
+    return { hpm: HPK * Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x) * (n >= 45 ? 1 + .3 * (n - 44) : 1), d: n - 1 };
   }
   function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: P.gm * ELITE.gold }) : P; }
   const ET = {
-    bug:    { hp: 14,  sp: 58, r: 11, atk: 4,  xp: 1,  g: 2 },
+    bug:    { hp: 14,  sp: 74, r: 11, atk: 4,  xp: 1,  g: 2 },
     rock:   { hp: 34,  sp: 30, r: 13, atk: 7,  xp: 1,  g: 3 },
-    bandit: { hp: 26,  sp: 36, r: 12, atk: 6,  xp: 1,  g: 3 },
+    bandit: { hp: 26,  sp: 44, r: 12, atk: 6,  xp: 1,  g: 3 },
     golem:  { hp: 150, sp: 16, r: 21, atk: 16, xp: 4,  g: 9 },
     lizard: { hp: 70,  sp: 24, r: 15, atk: 9,  xp: 2,  g: 5, arm: 4 },
     cactus: { hp: 50,  sp: 26, r: 15, atk: 8,  xp: 2,  g: 5 },
-    sprout: { hp: 12,  sp: 44, r: 8,  atk: 3,  xp: .5, g: 1 },
+    sprout: { hp: 12,  sp: 64, r: 8,  atk: 3,  xp: .5, g: 1 },
     boss:   { hp: 2600, sp: 11, r: 42, atk: 45, xp: 30, g: 150, arm: 3 }
   };
   const ENAME = { bug: '말벌', rock: '푸른 운석', bandit: '무법자', golem: '바위 골렘', lizard: '방패 도마뱀', cactus: '선인장', sprout: '새싹' };
@@ -1576,7 +1605,7 @@ input { -webkit-user-select: text; user-select: text; }
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
-      elite, n, P, sh, avg, g: G, hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
+      elite, n, P, sh, avg, g: G, fs: 1 - slowPct(save.sll), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
       lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
@@ -1689,7 +1718,7 @@ input { -webkit-user-select: text; user-select: text; }
   function fireAt(s, t, extra) {
     const st = s.st, a = Math.atan2(t.y - s.y, t.x - s.x);
     s.ang = a; s.fl = .07;
-    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.el[0]] : '#fff3a0', ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra });
+    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.el[0]] : '#fff3a0', ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? st.el[0] : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
   }
   function updShooters(dt) {
     const tg = front();
@@ -1714,6 +1743,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (d <= st + b.t.r * .6) {
         const e = b.t; b.dead = true;
         hit(e, b.dmg, b.el, true, true);
+        if (b.k >= 0 && S.nImp < 36) { S.nImp++; S.fx.push({ k: 'imp', e: b.k, x: e.x, y: e.y, r: e.r, l: .45, sd: Math.random() * 100, sm: b.sm }); }
         if (b.pierce) { const o = nearest(e.x, e.y, [e], 70); if (o) hit(o, b.dmg * .6, b.el, true, true); }
         if (b.boom && Math.random() < b.boom) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 55) hit(o, b.dmg * .8, b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 55, l: .3, c: '#ff8a3a' }); }
         if (e.hp > 0) {
@@ -1782,6 +1812,7 @@ input { -webkit-user-select: text; user-select: text; }
     }
   }
   function updFx(dt) {
+    S.nImp = 0; for (const f of S.fx) if (f.k === 'imp') S.nImp++;
     for (const f of S.fx) {
       f.l -= dt;
       if (f.k === 'missile') {
@@ -1818,7 +1849,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (e.burn > 0) { e.burn -= dt; e.hp -= e.bd * dt; }
       if (e.pois > 0) { e.pois -= dt; e.hp -= e.pd * dt; }
       if (e.hp <= 0) { kill(e); continue; }
-      let sp = e.sp;
+      let sp = e.sp * S.fs;
       if (e.slow > 0) { e.slow -= dt; sp *= 1 - e.sf; } else e.sf = 0;
       if (e.frz > 0) { e.frz -= dt; sp = 0; }
       const ex = edgeX(e.y) - e.r * .7;
@@ -1903,6 +1934,19 @@ input { -webkit-user-select: text; user-select: text; }
     $('bpop').innerHTML = h; $('bpop').hidden = false;
   }
 
+  /* stages 1~39 (normal mode): after 3 s a skip button finishes the stage at once with normal clear rewards.
+     Not offered when the 1% rare boss shows up, so that stage still has to be fought. */
+  const SKIP_N = 39, SKIP_WAIT = 3;
+  const canSkip = () => !!S && !S.over && !S.elite && S.n <= SKIP_N && !S.rareRoll;
+  function skipStage() {
+    if (!canSkip() || S.t < SKIP_WAIT) return;
+    const P = S.P, full = 54 * P.cnt;
+    S.gold = Math.max(S.gold, 5 * full * P.gm);
+    S.kills = Math.max(S.kills, Math.round(1.35 * full));
+    if (isBossStage(S.n)) S.bossK = true;
+    S.en = []; S.bul = []; S.toSpawn = 0; S.wave = 3;
+    endRun(true);
+  }
   /* ---------- end of run ---------- */
   function endRun(win, gaveUp) {
     if (S.over) return;
@@ -1975,12 +2019,14 @@ input { -webkit-user-select: text; user-select: text; }
   let hudKey = '';
   function updHud(force) {
     if (!S) return;
-    const t = Math.floor(S.t), key = [t, Math.ceil(S.hp), S.lv, Math.floor(S.xp), S.wave, Object.keys(S.sk).map(k => k + S.sk[k].l).join()].join('|');
+    const t = Math.floor(S.t), key = [t, Math.floor(S.gold), Math.ceil(S.hp), S.lv, Math.floor(S.xp), S.wave, Object.keys(S.sk).map(k => k + S.sk[k].l).join()].join('|');
     if (!force && key === hudKey) return;
     hudKey = key;
     $('bStage').textContent = stageLabel(S.n);
     $('bTime').textContent = '⏱ ' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
     $('bLv').textContent = 'LV. ' + S.lv;
+    { const ok = canSkip(), b = $('bSkip'); b.hidden = !ok; if (ok) { b.disabled = S.t < SKIP_WAIT; b.innerHTML = S.t < SKIP_WAIT ? '스킵<br>' + Math.ceil(SKIP_WAIT - S.t) : '스킵'; } }
+    $('bGold').innerHTML = '<span>' + I.coin + fmt(save.gold) + '</span><small>이번 판 +' + fmt(S.gold) + '</small>';
     $('bXp').style.width = clamp(S.xp / xpNeed(S.lv) * 100, 0, 100) + '%';
     $('bWave').textContent = '웨이브 ' + S.wave + '/3' + (isBossStage(S.n) ? ' · 보스 스테이지' : '') + (rep.tot > 1 ? ' · 연속 ' + (rep.tot - rep.left) + '/' + rep.tot : '');
     $('bHp').style.width = clamp(S.hp / S.mh * 100, 0, 100) + '%';
@@ -2064,6 +2110,64 @@ input { -webkit-user-select: text; user-select: text; }
       const ox = x + Math.cos(a) * 22, oy = y + 2 + sn * 8 - 4, r = 3.2 + sn * .9;
       c.save(); c.globalAlpha = .35; c.fillStyle = '#ffe14a'; c.beginPath(); c.arc(ox, oy, r * 2.2, 0, 6.283); c.fill();
       c.globalAlpha = 1; c.fillStyle = '#fff6b0'; c.strokeStyle = '#f0a020'; c.lineWidth = 1.4; c.beginPath(); c.arc(ox, oy, r, 0, 6.283); c.fill(); c.stroke(); c.restore();
+    }
+  }
+  /* ---- attack effects: 불 메테오탄 · 물 얼음창 · 번개 체인 라이트닝 · 땅 바위탄 · 바람 바람 칼날 ---- */
+  const HR = i => { const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+  function glowC(c, x, y, r, col, a) { c.globalAlpha = a; c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill(); c.globalAlpha = 1; }
+  function jag(c, x1, y1, x2, y2, seg, amp, seed) { c.beginPath(); c.moveTo(x1, y1); const nx = -(y2 - y1), ny = x2 - x1, dd = Math.hypot(nx, ny) || 1; for (let i = 1; i < seg; i++) { const k = i / seg, o = (HR(seed + i) - .5) * 2 * amp; c.lineTo(x1 + (x2 - x1) * k + nx / dd * o, y1 + (y2 - y1) * k + ny / dd * o); } c.lineTo(x2, y2); }
+  function drawBullet(c, b) {
+    const a = Math.atan2(b.t.y - b.y, b.t.x - b.x), z = b.sm || 1, ca = Math.cos(a), sa = Math.sin(a);
+    if (b.k === 0) {
+      const d = Math.hypot(b.t.x - b.x, b.t.y - b.y), k = Math.max(0, Math.min(1, 1 - d / b.d0)), lift = Math.sin(k * Math.PI) * Math.min(46, b.d0 * .18) * z;
+      const x = b.x, y = b.y - lift;
+      for (let i = 1; i <= 4; i++) glowC(c, x - ca * i * 6, y - sa * i * 6 + i * 1.2, (7 - i * 1.2) * z, '#ff8a3a', .45 - i * .08);
+      glowC(c, x, y, 11 * z, '#ff6a3d', .3);
+      c.fillStyle = '#ff7a2a'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.arc(x, y, 6 * z, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#ffe58a'; c.beginPath(); c.arc(x - 1.5, y - 1.5, 2.4 * z, 0, 6.283); c.fill();
+    } else if (b.k === 1) {
+      c.save(); c.translate(b.x, b.y); c.rotate(a); c.scale(z, z);
+      glowC(c, -12, 0, 3, '#bff0ff', .35); glowC(c, -19, 0, 2.4, '#bff0ff', .22);
+      c.fillStyle = '#d8f6ff'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(12, 0); c.lineTo(0, -3.6); c.lineTo(-10, 0); c.lineTo(0, 3.6); c.closePath(); c.fill(); c.stroke();
+      c.strokeStyle = '#7fd0ff'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-7, 0); c.lineTo(9, 0); c.stroke(); c.restore();
+    } else if (b.k === 2) {
+      glowC(c, b.x, b.y, 9 * z, '#ffe14a', .35);
+      c.fillStyle = '#fffbd0'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.arc(b.x, b.y, 4 * z, 0, 6.283); c.fill(); c.stroke();
+      c.strokeStyle = '#ffe14a'; c.lineWidth = 1.4; const ph = S.t * 40 + b.sp0;
+      for (let i = 0; i < 2; i++) { const q = ph + i * 3.1; jag(c, b.x + Math.cos(q) * 5 * z, b.y + Math.sin(q) * 5 * z, b.x + Math.cos(q) * 11 * z, b.y + Math.sin(q) * 11 * z, 3, 2, Math.floor(ph) + i); c.stroke(); }
+    } else if (b.k === 3) {
+      c.save(); c.translate(b.x, b.y); c.rotate(-S.t * 18 - b.sp0); c.scale(z, z);
+      c.fillStyle = '#9a7a5a'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath();
+      for (let i = 0; i < 6; i++) { const q = i / 6 * 6.283, r = 5.5 + HR(i + b.sp0) * 2.5; i ? c.lineTo(Math.cos(q) * r, Math.sin(q) * r) : c.moveTo(Math.cos(q) * r, Math.sin(q) * r); }
+      c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#c0a07a'; c.beginPath(); c.arc(-1.5, -1.5, 2, 0, 6.283); c.fill(); c.restore();
+    } else if (b.k === 4) {
+      c.save(); c.translate(b.x, b.y); c.rotate(a + Math.PI); c.scale(z, z);
+      glowC(c, 2, 0, 9, '#a0ffc8', .22);
+      c.fillStyle = '#c8ffe0'; c.strokeStyle = '#2a8a5a'; c.lineWidth = 1.3; c.beginPath(); c.arc(3, 0, 9, Math.PI * .6, Math.PI * 1.4); c.arc(7, 0, 7.4, Math.PI * 1.32, Math.PI * .68, true); c.closePath(); c.fill(); c.stroke(); c.restore();
+    } else {
+      c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - ca * 12, b.y - sa * 12); c.stroke(); c.strokeStyle = b.c; c.lineWidth = 2.6; c.stroke();
+    }
+  }
+  function drawImp(c, f) {
+    const q = Math.max(0, Math.min(1, 1 - f.l / .45)), z = f.sm || 1, x = f.x, y = f.y, sd = f.sd;
+    if (f.e === 0) {
+      c.strokeStyle = 'rgba(255,170,60,' + (1 - q) + ')'; c.lineWidth = 4 * (1 - q) + 1; c.beginPath(); c.ellipse(x, y + 6, (8 + q * 30) * z, (3 + q * 10) * z, 0, 0, 6.283); c.stroke();
+      glowC(c, x, y, 18 * z * (1 - q * .6), '#ffd24a', .45 * (1 - q));
+      for (let i = 0; i < 5; i++) glowC(c, x + (HR(sd + i) - .5) * 28 * z, y - q * (14 + HR(sd + i + 7) * 22) * z, 1.8, '#ffb02e', 1 - q);
+    } else if (f.e === 1) {
+      for (let i = 0; i < 5; i++) { const a = HR(sd + i) * 6.283, d = (4 + q * 22) * z; c.save(); c.translate(x + Math.cos(a) * d, y + Math.sin(a) * d); c.rotate(a + q * 4); c.globalAlpha = 1 - q; c.fillStyle = '#d8f6ff'; c.strokeStyle = '#5fb8e8'; c.lineWidth = 1; c.beginPath(); c.moveTo(-3.5, 0); c.lineTo(0, -1.8); c.lineTo(4, 0); c.lineTo(0, 1.8); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+      c.globalAlpha = .45 * (1 - q); c.fillStyle = '#bfefff'; c.beginPath(); c.arc(x, y, (f.r || 12) * .95, 0, 6.283); c.fill(); c.globalAlpha = 1;
+    } else if (f.e === 2) {
+      glowC(c, x, y, 14 * z * (1 - q), '#fffbd0', .55 * (1 - q));
+      c.strokeStyle = 'rgba(255,230,80,' + (1 - q) + ')'; c.lineWidth = 1.8;
+      for (let i = 0; i < 4; i++) { const a = HR(sd + i) * 6.283, d = (10 + q * 12) * z; jag(c, x, y, x + Math.cos(a) * d, y + Math.sin(a) * d, 3, 2.5, sd + i * 5); c.stroke(); }
+    } else if (f.e === 3) {
+      for (let i = 0; i < 4; i++) { const a = (HR(sd + i) - .5) * 2.6, d = q * (16 + HR(sd + i + 1) * 12) * z; glowC(c, x + Math.cos(a) * d, y + 6 + Math.sin(a) * d * .4 - q * 5, (5 + q * 7) * z, '#c8a882', .5 * (1 - q)); }
+      for (let i = 0; i < 3; i++) { const a = -Math.PI * (.2 + HR(sd + i + 5) * .6), v = 30 * z; c.fillStyle = '#7a5a3a'; c.beginPath(); c.arc(x + Math.cos(a) * v * q, y + Math.sin(a) * v * q + 40 * q * q, 1.8, 0, 6.283); c.fill(); }
+    } else if (f.e === 4) {
+      const o = HR(sd) > .5 ? 1 : -1, r = (f.r || 12) + 4;
+      c.strokeStyle = 'rgba(230,255,240,' + (1 - q) + ')'; c.lineWidth = 2.4 * (1 - q) + .4; c.beginPath(); c.moveTo(x - r, y - r * .8 * o); c.lineTo(x + r, y + r * .8 * o); c.stroke();
+      c.strokeStyle = 'rgba(126,224,160,' + (1 - q) * .8 + ')'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - r + 3, y - r * .8 * o + 4); c.lineTo(x + r + 3, y + r * .8 * o + 4); c.stroke();
     }
   }
   const petImg = {};
@@ -2225,14 +2329,15 @@ input { -webkit-user-select: text; user-select: text; }
     }
     for (const e of S.en) drawEnemy(c, e, S.t);
     c.lineCap = 'round';
-    for (const b of S.bul) { const a = Math.atan2(b.t.y - b.y, b.t.x - b.x); c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - Math.cos(a) * 12, b.y - Math.sin(a) * 12); c.stroke(); c.strokeStyle = b.c; c.lineWidth = 2.6; c.stroke(); }
+    for (const b of S.bul) drawBullet(c, b);
     for (const f of S.fx) {
       if (f.k === 'missile') { c.fillStyle = '#9aff8a'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(f.x, f.y, 5, 0, 6.283); c.fill(); c.stroke(); c.fillStyle = 'rgba(160,255,140,.4)'; c.beginPath(); c.arc(f.x - f.vx * .03, f.y - f.vy * .03, 4, 0, 6.283); c.fill(); }
       else if (f.k === 'shell') { c.fillStyle = '#3a3a44'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(f.x, f.y, 8, 0, 6.283); c.fill(); c.stroke(); }
       else if (f.k === 'orb') { c.save(); if (vfx()) { c.shadowColor = '#9fe8ff'; c.shadowBlur = 16; } c.fillStyle = '#c8f4ff'; c.strokeStyle = '#1a4a8a'; c.lineWidth = 3; c.beginPath(); c.arc(f.x, f.y, f.r, 0, 6.283); c.fill(); c.stroke(); c.restore(); }
       else if (f.k === 'shuri') { c.save(); c.translate(f.x, f.y); c.rotate(f.rot); c.fillStyle = '#ffd0a0'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = k % 2 ? 3 : 10; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); c.fill(); c.stroke(); c.restore(); }
       else if (f.k === 'beam') { c.save(); c.globalAlpha = Math.min(1, f.l * 3); const g = c.createLinearGradient(0, f.y - f.w, 0, f.y + f.w); g.addColorStop(0, 'rgba(255,200,60,0)'); g.addColorStop(.5, '#fff6c8'); g.addColorStop(1, 'rgba(255,200,60,0)'); c.fillStyle = g; c.fillRect(-20, f.y - f.w, f.x0 + 20, f.w * 2); c.restore(); }
-      else if (f.k === 'zap') { c.strokeStyle = '#fff6a0'; c.lineWidth = 3; c.beginPath(); c.moveTo(f.x1, f.y1); const mx = (f.x1 + f.x2) / 2 + rnd(-10, 10), my = (f.y1 + f.y2) / 2 + rnd(-10, 10); c.lineTo(mx, my); c.lineTo(f.x2, f.y2); c.stroke(); }
+      else if (f.k === 'zap') { const sd = Math.floor(S.t * 30); for (const [w, col] of [[7, 'rgba(255,225,74,.4)'], [3, '#ffe14a'], [1.3, '#fff']]) { c.strokeStyle = col; c.lineWidth = w; jag(c, f.x1, f.y1, f.x2, f.y2, 6, 7, sd); c.stroke(); } glowC(c, f.x2, f.y2, 12, '#fffbd0', .5); }
+      else if (f.k === 'imp') drawImp(c, f);
       else if (f.k === 'ring') { c.save(); c.globalAlpha = Math.max(0, f.l * 3); c.strokeStyle = f.c; c.lineWidth = 5; c.beginPath(); c.arc(f.x, f.y, f.r * (1.2 - f.l * 2), 0, 6.283); c.stroke(); c.restore(); }
     }
     for (const d of S.drones) { c.fillStyle = '#e8e8ff'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(d.x - 9, d.y - 6, 18, 12, 4); c.fill(); c.stroke(); c.fillStyle = '#ff4a4a'; c.fillRect(d.x - 2, d.y - 2, 4, 4); }
@@ -2645,11 +2750,20 @@ input { -webkit-user-select: text; user-select: text; }
       const x = getPet(+el.dataset.id); if (!x || x.s >= PET_MAX) return; const c = petCost(x); if (save.gold < c) return;
       save.gold -= c; const r = Math.random(), ok = petRate(x.s), bm = petBoom(x.s);
       if (r < ok) { x.s++; Snd.lvup(); toast(PETN[x.p] + ' ★' + x.s + ' 강화 성공!'); }
-      else if (r < ok + bm) { save.pcoll = save.pcoll.filter(y => y !== x); save.pslot = save.pslot.map(id => id === x.id ? null : id); Snd.boom(); toast('펑! ' + PETN[x.p] + '(' + PGR[x.g].nm + ' ★' + x.s + ')이(가) 터졌어요…'); }
+      else if (r < ok + bm) { const sl = save.pslot.indexOf(x.id); save.pcoll = save.pcoll.filter(y => y !== x); save.pslot = save.pslot.map(id => id === x.id ? null : id); save.pbroken.push({ p: x.p, g: x.g, s: x.s, sl, t: Date.now() }); if (save.pbroken.length > PBRK) save.pbroken.shift(); Snd.boom(); toast('펑! ' + PETN[x.p] + '(' + PGR[x.g].nm + ' ★' + x.s + ') 터짐! 같은 펫으로 복구 가능'); }
       else { Snd.click(); toast('강화 실패 · ★' + x.s + ' 유지'); }
       persist(); topbar(); refreshPop(petBody());
     },
     petSell: el => { const x = getPet(+el.dataset.id); if (!x || save.pslot.includes(x.id)) return; save.gold += petSell(x); save.pcoll = save.pcoll.filter(y => y !== x); Snd.coin(); persist(); topbar(); refreshPop(petBody()); },
+    petSellG: el => { const k = el.dataset.k, j = save.pcoll.filter(x => !save.pslot.includes(x.id) && x.p + '|' + x.g + '|' + x.s === k); if (!j.length) return; const g = j.reduce((a, x) => a + petSell(x), 0); save.pcoll = save.pcoll.filter(x => !j.includes(x)); save.gold += g; Snd.coin(); toast(j.length + '마리 판매 · +' + fmt(g) + 'G'); persist(); topbar(); refreshPop(petBody()); },
+    petFix: el => {
+      const b = save.pbroken[+el.dataset.i]; if (!b) return; const m = restoreMats(b)[0], c = restoreCost(b); if (!m || save.gold < c) return;
+      save.gold -= c; save.pcoll = save.pcoll.filter(y => y !== m);
+      const x = { id: ++save.pid, p: b.p, g: b.g, s: b.s }; save.pcoll.push(x); save.pbroken.splice(+el.dataset.i, 1);
+      if (b.sl >= 0 && !getPet(save.pslot[b.sl]) && !save.pslot.some(id => { const y = getPet(id); return y && y.p === x.p; })) save.pslot[b.sl] = x.id;
+      Snd.lvup(); toast(PETN[x.p] + ' ' + PGR[x.g].nm + ' ★' + x.s + ' 복구 완료!'); persist(); topbar(); refreshPop(petBody());
+    },
+    petDrop: el => { save.pbroken.splice(+el.dataset.i, 1); persist(); refreshPop(petBody()); },
     petJunk: () => { const j = save.pcoll.filter(x => x.g === 0 && x.s === 0 && !save.pslot.includes(x.id)); if (!j.length) return; const g = j.reduce((a, x) => a + petSell(x), 0); save.pcoll = save.pcoll.filter(x => !j.includes(x)); save.gold += g; Snd.coin(); toast(j.length + '마리 판매 · +' + fmt(g) + 'G'); persist(); topbar(); refreshPop(petBody()); },
     pull10: () => pull(10),
     cardbox: () => { qDay(); if (save.gem < 40 || save.shop.card >= 5) return; save.gem -= 40; save.shop.card++; giveCards(20); Snd.coin(); toast('스킬 카드 20장 받았어요'); persist(); render(); },
@@ -2659,6 +2773,7 @@ input { -webkit-user-select: text; user-select: text; }
     bsend: () => bossSend(),
     bclaim: () => bossClaimAll(),
     bpause: () => openPause(),
+    bskip: () => skipStage(),
     resume: () => { $('bpop').hidden = true; if (S) S.pause = false; },
     giveup: () => { if (S) endRun(false, true); },
     bspeed: () => { speed = speed >= 3 ? 1 : speed + 1; updHud(true); toast(speed + '배속'); },
