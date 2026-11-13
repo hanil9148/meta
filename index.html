@@ -447,7 +447,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261113-1927';
+  const APP_VER = 'v.261113-1934';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -844,8 +844,17 @@ input { -webkit-user-select: text; user-select: text; }
     for (const b of document.querySelectorAll('.nav button')) b.classList.toggle('on', b.dataset.tab === t);
     render();
   }
+  /* Re-rendering a tab keeps its scroll position; switching tabs starts at the top. */
+  let shownTab = null;
   function render() {
     topbar();
+    const old = document.querySelector('#screen .scroll'), y = old && shownTab === tab ? old.scrollTop : 0;
+    shownTab = tab;
+    drawTab();
+    const nw = document.querySelector('#screen .scroll');
+    if (nw && y) nw.scrollTop = y;
+  }
+  function drawTab() {
     if (tab === 'home') renderHome();
     else if (tab === 'hero') renderHero();
     else if (tab === 'skill') renderSkill();
