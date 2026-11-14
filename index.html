@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0245';
+  const APP_VER = 'v.261115-0308';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1482,7 +1482,7 @@ input { -webkit-user-select: text; user-select: text; }
   function starOdds(u, prot) {
     const n = u.s;
     if (u.dc >= 2) return { p: 1, keep: 0, drop: 0, boom: 0, chance: true };
-    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || (n < 17 && n % 5 === 0); return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false }; }
+    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0; return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false }; }
     const boom = (prot && n >= 15 && n <= 21) ? 0 : STAR_B[n];
     const p = STAR_P[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0;
     return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false };
@@ -1564,7 +1564,7 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="row" style="justify-content:space-between"><b class="ol" style="font-family:var(--display);font-size:20px">' + u.s + '성 → ' + (u.s + 1) + '성</b><span class="ol-s" style="font-family:var(--display);display:flex;align-items:center;gap:3px">' + I.coin + fmt(save.gold) + '</span></div>';
       h += o.chance ? '<div class="msg ok">찬스타임! 이번 강화는 100% 성공해요.</div>' :
         '<div class="kv"><div class="ok"><span>성공</span><b class="ol-s">' + pct(o.p) + '</b></div><div class="mid"><span>' + (o.drop ? '실패(하락)' : '실패(유지)') + '</span><b class="ol-s">' + pct(o.keep + o.drop) + '</b></div><div class="bad"><span>파괴</span><b class="ol-s">' + pct(o.boom) + '</b></div></div>';
-      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 성공 15% · 파괴(★15로) · 나머지는 하락, 파괴 방지 없음</span>' : '') + '</p>';
+      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 성공 15% · 파괴(★15로) · 나머지는 하락 (★20·25는 유지), 파괴 방지 없음</span>' : '') + '</p>';
       h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">미리 켜둘 수 있어요 · 15~21성에서만 파괴를 막고 그때만 비용 2배</span></span><button class="tog' + (protect && !u.m ? ' on' : '') + '" data-act="prot"' + (!u.m && u.s <= 21 ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (protect && !u.m ? 'ON' : 'OFF') + '</i></button></div>';
       if (autoWarn && !autoOn) h += '<div class="rmbar"><p class="desc" style="color:#fff;text-align:center"><b>' + esc(autoWarn.t) + '</b></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn r ol-s" data-act="autoRisk">위험 감수하고 계속</button><button class="btn ol-s" data-act="autoWarnNo">여기서 그만</button></div></div>';
       if (autoOn) h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">자동 강화 중 · 목표 <b>★' + autoTo + '</b> · 지금 ★' + u.s + '</p><button class="btn r wide ol-s" data-act="auto">자동 멈춤</button></div>';
@@ -1659,8 +1659,11 @@ input { -webkit-user-select: text; user-select: text; }
     if (save.gear[gearSlot]) h += '<button class="btn r sm ol-s" data-act="gearOff">장착 해제</button>';
     return h;
   }
+  /* bulk upgrade: how many upgrades every unlocked skill can take right now with the cards and gold on hand */
+  function skAllPlan() { let gold = save.gold, n = 0, g = 0; for (const s of SK) { if (!skUnlocked(s)) continue; const k = skOf(s.id); let lv = k.lv, c = k.c; while (lv < 10 && c >= skNeed(lv) && gold >= skCost(lv)) { c -= skNeed(lv); gold -= skCost(lv); g += skCost(lv); lv++; n++; } } return { n, g }; }
   function renderSkill() {
     let h = '<div class="scroll"><div class="robo">' + robotSvg + '<div class="bonus"><small class="ol-s">총 치명타 피해 증가</small><b class="ol">+' + critBonus() + '%</b><span>스킬을 업그레이드하면 전투에서 더 세지고 치명타 피해도 올라가요.</span></div></div>';
+    { const pl = skAllPlan(); h += '<button class="btn y wide ol-s" data-act="skupAll"' + (pl.n ? '' : ' disabled') + '>⬆ 전체 업그레이드' + (pl.n ? ' · ' + pl.n + '회 · ' + I.coin + fmt(pl.g) : ' · 가능한 스킬 없음') + '</button>'; }
     h += '<p class="desc" style="color:#fff">전투 중 레벨이 오르면 열린 스킬 중 1~2개(프로필 Lv80부터는 항상 2개)를 자동으로 얻어요. 스킬 카드는 스테이지 보상·상자·상점에서 모아요. 카드를 다 모으면 골드로 업그레이드해요.</p><div class="sgrid">';
     for (const s of SK) {
       const open = skUnlocked(s), k = skOf(s.id), need = skNeed(k.lv), ready = open && k.c >= need && k.lv < 10;
@@ -3767,6 +3770,7 @@ input { -webkit-user-select: text; user-select: text; }
     ebox2: () => { const b = EBOX[1]; if (save.gem < b.p) return; save.gem -= b.p; save.pity++; const d = dropItems(1, b.odds, save.pity >= PITY ? 4 : null)[0]; if (iG(d.id) === 4) save.pity = 0; Snd.coin(); toast((d.isNew ? 'NEW ' : '+1 ') + itemName(d.id)); persist(); render(); if (iG(d.id) === 4) legendFlash(itemIcon(d.id), '전설 장비!', itemName(d.id)); },
     unequip: () => { const at = save.slots.indexOf(selKey); if (at >= 0) save.slots[at] = null; persist(); refreshPop(heroBody()); },
     skill: el => { skSel = el.dataset.id; openPop(SKM[skSel].nm, skillBody(), 'skill'); },
+    skupAll: () => { let n = 0; for (const s of SK) { if (!skUnlocked(s)) continue; const k = skOf(s.id); while (k.lv < 10 && k.c >= skNeed(k.lv) && save.gold >= skCost(k.lv)) { k.c -= skNeed(k.lv); save.gold -= skCost(k.lv); k.lv++; n++; } } if (!n) return; Snd.lvup(); toast('스킬 ' + n + '회 업그레이드 · 치명타 피해 +' + critBonus() + '%'); persist(); topbar(); render(); },
     skup: () => { const k = skOf(skSel), need = skNeed(k.lv), cost = skCost(k.lv); if (k.c < need || save.gold < cost || k.lv >= 10) return; k.c -= need; save.gold -= cost; k.lv++; Snd.lvup(); persist(); refreshPop(skillBody()); topbar(); },
     free: () => { qDay(); if (save.shop.free) return; save.shop.free = 1; const t = giveR({ gold: 200, cards: 5 }); Snd.coin(); toast(t + ' 받았어요'); persist(); render(); },
     pull1: () => pull(1),
