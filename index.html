@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-2256';
+  const APP_VER = 'v.261114-2334';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -988,8 +988,8 @@ input { -webkit-user-select: text; user-select: text; }
      Made from five ★22+ gunslingers (random name + strong element), starting again from ★0. */
   const MYTH_NEED = 5, MYTH_STAR = 22;
   const MYTHT = [
-    { nm: '백발백중', d: '치명타 확률 +25%' }, { nm: '속사포', d: '공격 속도 +40%' }, { nm: '거인 사냥꾼', d: '보스 피해 +60%' }, { nm: '대지 분쇄', d: '범위 피해 반경 2배 · 범위 피해 100%' },
-    { nm: '지옥불', d: '화상 피해 3배' }, { nm: '절대 영도', d: '10% 확률로 1초 빙결' }, { nm: '폭풍 연사', d: '2연사 → 3연사' }, { nm: '천둥 사슬', d: '연쇄 5회 · 연쇄 피해 100%' }
+    { nm: '백발백중', d: '치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통' }, { nm: '속사포', d: '공격 속도 +40%' }, { nm: '거인 사냥꾼', d: '보스 피해 +80% · 모든 피해 +15%' }, { nm: '대지 분쇄', d: '범위 피해 반경 1.8배 · 범위 피해 85%' },
+    { nm: '지옥불', d: '화상 피해 6배 · 주변 적에게 화상이 번짐' }, { nm: '절대 영도', d: '25% 확률로 1초 빙결 · 얼어 있는 적에게 피해 +80% · 언 적을 때리면 주변에 얼음 파편' }, { nm: '폭풍 연사', d: '2연사 → 65% 확률로 3연사' }, { nm: '천둥 사슬', d: '연쇄 4회 · 연쇄 피해 80%' }
   ];
   const uCol = u => EC[u.m ? u.se : u.e[0]];
   const uRar = u => u.m ? 5 : u.e.length;
@@ -1086,8 +1086,8 @@ input { -webkit-user-select: text; user-select: text; }
     const el = u.e.slice(), o = { dmg, iv, el, burn, slow, chain, splash, twin };
     if (u.m) {
       o.dmg *= 1.3; el.se = u.se; o.se = u.se; if (u.xb != null) el.xb = u.xb;
-      if (u.n === 0) el.cb = .25; else if (u.n === 1) o.iv /= 1.4; else if (u.n === 2) el.boss = .6; else if (u.n === 3) { o.splash = 68; o.spm = 1; }
-      else if (u.n === 4) o.burn = 1.2; else if (u.n === 5) o.frz = .1; else if (u.n === 6) o.twin = 2; else if (u.n === 7) { o.chain = 5; o.chm = 1; }
+      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; } else if (u.n === 1) o.iv /= 1.4; else if (u.n === 2) { el.boss = .8; o.dmg *= 1.15; } else if (u.n === 3) { o.splash = 61; o.spm = .85; }
+      else if (u.n === 4) { o.burn = 2.4; o.bsp = 60; } else if (u.n === 5) { o.frz = .25; el.fzb = .8; el.shat = 1; } else if (u.n === 6) o.twin = 2; else if (u.n === 7) { o.chain = 4; o.chm = .8; }
     }
     return o;
   }
@@ -1437,7 +1437,8 @@ input { -webkit-user-select: text; user-select: text; }
     h += '</div><p class="desc">짝: ' + PETN.map((n, p) => n + '(' + PETAN[PETA[p]] + ')-' + NMS[PAIR[p]]).join(' · ') + '</p></div>';
     { const elig = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).length;
       h += '<div class="card" style="border-color:#c27bff"><div class="row"><h3 class="ol grow">✨ 신화 강화</h3><span class="desc" style="color:#fff">★' + MYTH_STAR + ' 이상 ' + elig + '명</span></div><p class="desc">★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 합치면 <b>무작위 신화 총잡이</b> 1명이 나와요. 신화는 <b>5속성 전부</b> · 피해 ×1.3 · 무작위 <b>강속성</b> 1개(그 속성으로 때리면 ×1.3 더) · 총잡이마다 고유 특성이 있고, <b>★0부터</b> 다시 키워요.</p>' +
-        '<button class="btn p wide ol-s" data-act="mythOpen"' + (elig >= MYTH_NEED ? '' : ' disabled') + '>' + (elig >= MYTH_NEED ? '재료 고르기' : '★' + MYTH_STAR + ' 이상이 ' + MYTH_NEED + '명 필요해요 (' + elig + '/' + MYTH_NEED + ')') + '</button></div>'; }
+        '<button class="btn p wide ol-s" data-act="mythOpen"' + (elig >= MYTH_NEED ? '' : ' disabled') + '>' + (elig >= MYTH_NEED ? '재료 고르기' : '★' + MYTH_STAR + ' 이상이 ' + MYTH_NEED + '명 필요해요 (' + elig + '/' + MYTH_NEED + ')') + '</button>' +
+        (() => { const mc = save.coll.filter(u => u.m).length; return '<p class="desc" style="margin-top:8px"><b>신화 2명 조합</b> · 신화 2명을 합치면 8명 중 하나가 <b>똑같은 확률(12.5%)</b>로 나와요(강속성 무작위, ★0부터).</p><button class="btn y wide ol-s" data-act="mixOpen"' + (mc >= 2 ? '' : ' disabled') + '>' + (mc >= 2 ? '신화 2명 고르기' : '신화가 2명 필요해요 (' + mc + '/2)') + '</button>'; })() + '</div>'; }
     h += '<div class="card dark"><div class="row"><h3 class="ol grow">보관함 ' + save.coll.length + '/' + capOf() + '</h3>' + (save.coll.length ? '<button class="btn ' + (rmMode ? 'r' : '') + ' sm ol-s" data-act="rmmode">' + (rmMode ? '제거 취소' : '유닛 제거') + '</button>' : '') + '</div>' + unitPullBox();
     h += capOf() < CAP_MAX ? '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">보관함 확장 +5칸</b><br><span class="desc">기본 10칸이고 스테이지를 하나 열 때마다 1칸씩 늘어나요. 골드로 늘리면 최대 ' + CAP_MAX + '칸까지 돼요.</span></span><button class="btn y sm ol-s" data-act="capup"' + (save.gold < capCost(save.capBuy) ? ' disabled' : '') + '>' + I.coin + fmt(capCost(save.capBuy)) + '</button></div>' : '<p class="desc">보관함이 최대 ' + CAP_MAX + '칸이에요.</p>';
     if (!save.coll.length) h += '<p class="empty">아직 총잡이가 없어요. 위의 뽑기 버튼으로 뽑아보세요.</p>';
@@ -1499,6 +1500,33 @@ input { -webkit-user-select: text; user-select: text; }
     h += '<div class="slots4" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">' + MYTHT.map((t, n) => '<div class="desc" style="font-size:11px;text-align:center"><b>' + NMS[n] + '</b><br>' + t.nm + '</div>').join('') + '</div>';
     h += '<button class="btn p wide ol-s" data-act="mythGo"' + (mythSel.size === MYTH_NEED ? '' : ' disabled') + '>✨ 신화 강화하기</button>';
     return h;
+  }
+  const mixSel = new Set();
+  function mixBody() {
+    const list = save.coll.filter(u => u.m).sort((a, b) => a.s - b.s || a.n - b.n);
+    let h = '<p class="desc" style="color:#fff">합칠 신화 <b>2명</b>을 골라요. 둘 다 사라지고 <b>8명 중 하나가 같은 확률(12.5%)</b>로 나와요. 강속성은 무작위, 별은 <b>★0부터</b>예요. 출전 중이면 그 자리에 들어가요.</p>';
+    h += '<div class="hgrid">' + list.map(u => { const k = ukey(u); return heroTile(u, ' data-act="mixPick" data-k="' + esc(k) + '" role="button"', mixSel.has(k) ? 'pick' : ''); }).join('') + '</div>';
+    h += '<p class="desc" style="text-align:center;color:#fff">고른 신화 <b>' + mixSel.size + '/2</b></p>';
+    h += '<button class="btn p wide ol-s" data-act="mixGo"' + (mixSel.size === 2 ? '' : ' disabled') + '>✨ 신화 조합하기</button>';
+    return h;
+  }
+  function mythMix() {
+    const keys = [...mixSel].filter(k => { const u = getUnit(k); return u && u.m; });
+    if (keys.length !== 2) return null;
+    const freed = [];
+    save.slots = save.slots.map((k, i) => { if (keys.includes(k)) { freed.push(i); return null; } return k; });
+    save.coll = save.coll.filter(u => !keys.includes(ukey(u)));
+    const owned = new Set(save.coll.filter(u => u.m).map(ukey));
+    const n = Math.floor(Math.random() * NMS.length);
+    let ses = [0, 1, 2, 3, 4].filter(se => !owned.has(ukey({ n, e: [0, 1, 2, 3, 4], m: 1, se })));
+    if (!ses.length) ses = [0, 1, 2, 3, 4];
+    const nu = { n, e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se: ses[Math.floor(Math.random() * ses.length)] };
+    if (owned.has(ukey(nu))) { nu.s = 0; const ex = save.coll.find(u => ukey(u) === ukey(nu)); mixSel.clear(); return ex; }
+    save.coll.push(nu);
+    const free = freed.length ? freed[0] : save.slots.indexOf(null);
+    if (free >= 0) save.slots[free] = ukey(nu);
+    mixSel.clear();
+    return nu;
   }
   function mythMake() {
     const keys = [...mythSel].filter(k => { const u = getUnit(k); return u && !u.m && u.s >= MYTH_STAR; });
@@ -2151,14 +2179,21 @@ input { -webkit-user-select: text; user-select: text; }
     if (m > 1 && S.r.weak) a *= 1 + S.r.weak;
     if (S.r.exe && e.hp < e.mh * .3) a *= 1 + S.r.exe;
     if (e.cor > 0) a *= 1 + e.cv;
+    if (e.frz > 0 && els && els.fzb) a *= 1 + els.fzb;
     /* elite: monsters take 5% less damage, 30% less from elite stage 40 */
     if (S.elite) a *= 1 - (S.n >= 40 ? .3 : ELITE.def);
     if (S.sk.reson && S.teamEl >= 4) a *= 1 + .25 + .05 * (S.sk.reson.l - 1);
     if (S.sk.bounty && e.k === 'boss') a *= 1 + .2 + .05 * (S.sk.bounty.l - 1);
     let crit = false;
-    if (canCrit && Math.random() < critChance() + (els && els.cb || 0)) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm; }
+    /* crit chance above 100% turns into crit damage (1% chance = +1% crit damage) */
+    const cc = critChance() + (els && els.cb || 0), cOver = Math.max(0, cc - 1);
+    if (canCrit && Math.random() < cc) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm + (els && els.cdm || 0) + cOver; }
     if (direct && e.arm) a = Math.max(a * .3, a - e.arm);
+    const wasFrz = e.frz > 0;
     e.hp -= a; e.fl = .08;
+    /* mythic traits: 한일 crit pierces one enemy behind, 해천 hitting a frozen enemy throws ice shards */
+    if (els && canCrit) { if (crit && els.cpi) { const o = nearest(e.x, e.y, [e], 80); if (o) hit(o, a, [], true, false); }
+      if (wasFrz && els.shat) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 40) hit(o, a * .4, [], false, false); }
     dmgNum(e.x, e.y - e.r - 6, a, crit ? 'crit' : m > 1 ? 'weak' : m < 1 ? 'res' : 'n');
     Snd.hit(crit);
     if (e.hp <= 0) kill(e);
@@ -2203,7 +2238,7 @@ input { -webkit-user-select: text; user-select: text; }
   function fireAt(s, t, extra) {
     const st = s.st, a = Math.atan2(t.y - s.y, t.x - s.x);
     s.ang = a; s.fl = .07;
-    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
+    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, bsp: st.bsp || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
   }
   function updShooters(dt) {
     const tg = front();
@@ -2217,7 +2252,7 @@ input { -webkit-user-select: text; user-select: text; }
         fireAt(s, tg);
         if (S.r.smash && (s.cnt = (s.cnt || 0) + 1) % 5 === 0) { const b = S.bul[S.bul.length - 1]; b.dmg *= 1 + S.r.smash; b.big = 1; }
         if (S.g.dbl && Math.random() < S.g.dbl) fireAt(s, tg);
-        if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); if (s.st.twin >= 2) fireAt(s, nearest(tg.x, tg.y, [tg, t2], 180) || tg); }
+        if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); if (s.st.twin >= 2 && Math.random() < .65) fireAt(s, nearest(tg.x, tg.y, [tg, t2], 180) || tg); }
         s.cd = s.st.iv / spdm;
         Snd.shot();
       }
@@ -2237,7 +2272,7 @@ input { -webkit-user-select: text; user-select: text; }
         if (e.hp > 0) {
           if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
           if (S.r.gust && e.k !== 'boss' && e.x > visL + 40 && Math.random() < S.r.gust) { e.x = Math.max(visL + 10, e.x - 40); e.fl = .1; }
-          if (b.burn) { e.burn = 3; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); }
+          if (b.burn) { e.burn = 3; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
           if (b.frz && Math.random() < b.frz) e.frz = Math.max(e.frz, 1);
@@ -3683,6 +3718,9 @@ input { -webkit-user-select: text; user-select: text; }
     gearCb1: el => { const nx = combine(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + itemName(nx)); persist(); refreshPop(gearBody()); },
     gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else render(); },
     legendSkip: () => lgSkip(),
+    mixOpen: () => { mixSel.clear(); openPop('✨ 신화 2명 조합', mixBody(), 'mix'); },
+    mixPick: el => { const k = el.dataset.k; if (mixSel.has(k)) mixSel.delete(k); else if (mixSel.size < 2) mixSel.add(k); Snd.click(); refreshPop(mixBody()); },
+    mixGo: () => { const nu = mythMix(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
     mythOpen: () => { mythSel.clear(); openPop('✨ 신화 강화', mythBody(), 'myth'); },
     mythPick: el => { const k = el.dataset.k; if (mythSel.has(k)) mythSel.delete(k); else if (mythSel.size < MYTH_NEED) mythSel.add(k); Snd.click(); refreshPop(mythBody()); },
     mythGo: () => { const nu = mythMake(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 총잡이!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
