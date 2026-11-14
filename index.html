@@ -527,7 +527,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-1348';
+  const APP_VER = 'v.261114-1358';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2888,7 +2888,10 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
         '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + clamp(+d.lv || 1, 1, 300) + '</b></div><div><span>스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 50) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
-        (!isMe && String(d.v || '') < APP_VER ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(d.v || '아주 예전') + ') · 새로고침하면 정보가 갱신돼요</div>' : '') +
+        (isMe ? '' : (() => { const pv = on && peers[r.id] && peers[r.id].v ? String(peers[r.id].v) : '', dv = String(d.v || ''), cv = pv || dv;
+          if (cv >= APP_VER) return '';
+          return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
+            : '<div class="desc" style="font-size:11px">💤 마지막 접속 때 정보 (' + esc(dv || '예전 버전') + ') · 다음에 접속하면 자동으로 최신 버전이 돼요</div>'; })()) +
         '<div class="desc" style="font-size:11px">' + (isMe ? '내 정보는 바뀔 때마다 자동으로 올라가요' : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">' + NMS[n] + ' ★' + clamp(+x[2] || 0, 0, 30) + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
     });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
@@ -2975,7 +2978,7 @@ input { -webkit-user-select: text; user-select: text; }
     lastPres: '',
     presence(force) {
       if (!this.api) return;
-      const p = { n: save.name, s: save.unlocked, p: S && !S.over ? 1 : 0 };
+      const p = { n: save.name, s: save.unlocked, p: S && !S.over ? 1 : 0, v: APP_VER };
       const k = JSON.stringify(p);
       if (k === this.lastPres && !force) return;
       this.lastPres = k; this.api.presence(p);
@@ -3199,16 +3202,22 @@ input { -webkit-user-select: text; user-select: text; }
   /* Hosted build: check for a newer index.html every minute (and when the app comes back) and reload into it — at home right away, during a battle as soon as the run ends. */
   if (window.jmReady && /^https?:$/.test(location.protocol)) {
     let pendingVer = null;
-    const go = v => { try { persist(true); } catch (e) {} setTimeout(() => location.replace(location.pathname + '?v=' + encodeURIComponent(v)), 1200); };
-    window.__jmReload = () => { if (pendingVer && !S) { toast('새 버전 ' + pendingVer + '으로 업데이트할게요'); go(pendingVer); } };
+    /* guard: if the server/CDN hands back an older copy after a reload, don't loop — wait 5 min before trying the same version again */
+    const ssGet = k => { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }, ssSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} };
+    const tried = ssGet('jm-upd-try').split('|');
+    if (tried[0] && tried[0] <= APP_VER) ssSet('jm-upd-try', '');
+    const blocked = v => { const t = ssGet('jm-upd-try').split('|'); return t[0] === v && Date.now() - (+t[1] || 0) < 300000; };
+    const go = v => { if (blocked(v)) { window.__jmUpd.err = '서버가 아직 예전 파일을 줘요 (5분 뒤 재시도)'; return; } ssSet('jm-upd-try', v + '|' + Date.now()); try { persist(true); } catch (e) {} setTimeout(() => location.replace(location.pathname + '?v=' + encodeURIComponent(v)), 1200); };
+    window.__jmReload = () => { if (pendingVer && !S && !blocked(pendingVer)) { toast('새 버전 ' + pendingVer + '으로 업데이트할게요'); go(pendingVer); } };
     /* called when a run ends or before a new run starts: update even if the player never goes back home */
-    window.__jmUpdateNow = afterRun => { if (!pendingVer) return false; try { if (afterRun) { repStop(); } } catch (e) {} toast('새 버전 ' + pendingVer + '으로 자동 업데이트할게요'); go(pendingVer); return true; };
+    window.__jmUpdateNow = afterRun => { if (!pendingVer || blocked(pendingVer)) return false; try { if (afterRun) { repStop(); } } catch (e) {} toast('새 버전 ' + pendingVer + '으로 자동 업데이트할게요'); go(pendingVer); return true; };
     window.__jmUpd = { at: 0, ver: null, err: null };
     const check = async manual => {
       try {
         const r = await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } });
         const t = await r.text(), m = t.match(/APP_VER = '(v\.\d{6}-\d{4})'/);
         window.__jmUpd = { at: Date.now(), ver: m ? m[1] : null, err: m ? null : 'HTTP ' + r.status };
+        if (m && m[1] > APP_VER && blocked(m[1])) window.__jmUpd.err = '새 버전 ' + m[1] + '을 받았는데 서버가 아직 예전 파일을 줘요 · 5분 뒤 다시 시도';
         if (m && m[1] > APP_VER) { pendingVer = m[1]; if (!S) window.__jmReload(); else if (manual) toast('새 버전 ' + m[1] + ' · 이번 판이 끝나면 업데이트돼요'); }
         else if (manual) toast(m ? '이미 최신 버전이에요 (' + APP_VER + ')' : '버전 확인 실패');
       } catch (e) { window.__jmUpd = { at: Date.now(), ver: null, err: String(e && e.message || e).slice(0, 40) }; if (manual) toast('업데이트 확인 실패'); }
