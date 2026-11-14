@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-2149';
+  const APP_VER = 'v.261114-2256';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2846,6 +2846,143 @@ input { -webkit-user-select: text; user-select: text; }
     c.restore();
     if (fl > 0) { c.fillStyle = '#fff3a0'; c.beginPath(); c.arc(x - 16, y + bob, 3, 0, 6.283); c.fill(); }
   }
+  /* ===== mythic look: dark gunslinger (long duster, high collar, mask, glowing eyes, ornate gun) + guardian spirit ===== */
+  const TAU = Math.PI * 2; let MYA = Math.PI;
+  function myRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+  function myGlow(c, x, y, r, col, a) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.save(); c.globalAlpha = a; c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.restore(); }
+  function myZig(c, x1, y1, x2, y2, seg, amp, seed) { c.beginPath(); c.moveTo(x1, y1); for (let i = 1; i < seg; i++) { const k = i / seg; c.lineTo(x1 + (x2 - x1) * k + Math.sin(seed * 13 + i * 7) * amp, y1 + (y2 - y1) * k + Math.cos(seed * 7 + i * 5) * amp); } c.lineTo(x2, y2); }
+  function myFlame(c, x, y, s, t, col, col2) { c.save(); c.translate(x, y); c.scale(s, s); const w = Math.sin(t * 9) * 1.5;
+    c.fillStyle = col; c.beginPath(); c.moveTo(-5, 0); c.quadraticCurveTo(-7, -8, w, -16); c.quadraticCurveTo(7, -8, 5, 0); c.closePath(); c.fill();
+    c.fillStyle = col2 || '#ffe14a'; c.beginPath(); c.moveTo(-2.5, 0); c.quadraticCurveTo(-3, -5, w * .6, -9); c.quadraticCurveTo(3, -5, 2.5, 0); c.closePath(); c.fill(); c.restore(); }
+  function myShard(c, x, y, s, rot, col) { c.save(); c.translate(x, y); c.rotate(rot); c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, -s); c.lineTo(s * .45, 0); c.lineTo(0, s); c.lineTo(-s * .45, 0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.moveTo(0, -s); c.lineTo(s * .2, -s * .2); c.lineTo(0, 0); c.closePath(); c.fill(); c.restore(); }
+  function myRock(c, x, y, s, rot, col) { c.save(); c.translate(x, y); c.rotate(rot); c.fillStyle = col || '#8a7a6a'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-s, -s * .3); c.lineTo(-s * .4, -s); c.lineTo(s * .6, -s * .8); c.lineTo(s, 0); c.lineTo(s * .5, s * .9); c.lineTo(-s * .6, s * .8); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+  const MYTH_VIS = [
+    { nm: '한일', tr: '백발백중', sp: '구미호', th: ['#ff3a4a', '#ffd34a'], bg: ['#3a0e18', '#140408'], band: '#c0182a', coat: '#4a0f1c', hat: '#2a0810' },
+    { nm: '성민', tr: '속사포', sp: '질풍 토끼', th: ['#3affe0', '#ffffff'], bg: ['#0c2a34', '#04121a'], band: '#18b8c8', coat: '#0e4048', hat: '#06262c' },
+    { nm: '금유', tr: '거인 사냥꾼', sp: '황금 멧돼지', th: ['#ffc23a', '#ff8a1e'], bg: ['#3a2808', '#140c02'], band: '#e0a020', coat: '#5a3c0c', hat: '#2e1e04' },
+    { nm: '도영', tr: '대지 분쇄', sp: '바위 판다', th: ['#c8a060', '#7ac04a'], bg: ['#2a2414', '#100c06'], band: '#8a6a3a', coat: '#3c3a1c', hat: '#22200c' },
+    { nm: '진명', tr: '지옥불', sp: '화염 곰', th: ['#ff5a1e', '#ffe14a'], bg: ['#2a0a04', '#0c0200'], band: '#ff5a1e', coat: '#1a0a06', hat: '#0c0402' },
+    { nm: '해천', tr: '절대 영도', sp: '서리 스라소니', th: ['#9de8ff', '#ffffff'], bg: ['#0e2440', '#040c1a'], band: '#5ac8ff', coat: '#163a66', hat: '#0a1e3a' },
+    { nm: '정욱', tr: '폭풍 연사', sp: '폭풍 늑대', th: ['#6fe0b0', '#d8fff0'], bg: ['#0c2a20', '#04120c'], band: '#2ab888', coat: '#0f4630', hat: '#06261a' },
+    { nm: '재원', tr: '천둥 사슬', sp: '번개 두꺼비', th: ['#fff36a', '#b06aff'], bg: ['#20123a', '#0a0418'], band: '#8a4aff', coat: '#36166a', hat: '#1c0a3a' }
+  ];
+  function mySpirit(c, n, t) {
+    const T = MYTH_VIS[n].th, a = t * 1.3 + n;
+    c.save(); c.translate(0, -40 + Math.sin(t * 1.5 + n) * 2.5); c.scale(.82, .82);
+    myGlow(c, 0, 0, 44, myRgba(T[0], .9), .45);
+    c.globalAlpha = .8; c.lineWidth = 2.4; c.strokeStyle = myRgba(T[1], .95); c.fillStyle = myRgba(T[0], .55);
+    const head = (rx, ry) => { c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, TAU); c.fill(); c.stroke(); };
+    const eyes = (dx, y, col) => { c.fillStyle = col || T[1]; c.beginPath(); c.ellipse(-dx, y, 3.4, 2.2, -.3, 0, TAU); c.ellipse(dx, y, 3.4, 2.2, .3, 0, TAU); c.fill(); c.fillStyle = myRgba(T[0], .55); };
+    if (n === 0) { for (let k = 0; k < 7; k++) { const q = -1.2 + k * .4 + Math.sin(t * 2 + k) * .08; c.save(); c.rotate(q); c.beginPath(); c.moveTo(-5, 0); c.quadraticCurveTo(-12, -30, 0, -46); c.quadraticCurveTo(12, -30, 5, 0); c.closePath(); c.fill(); c.stroke(); myFlame(c, 0, -40, .7, t + k, myRgba(T[1], .9), '#fff'); c.restore(); }
+      c.beginPath(); c.moveTo(-18, -4); c.lineTo(-14, -24); c.lineTo(-5, -14); c.moveTo(18, -4); c.lineTo(14, -24); c.lineTo(5, -14); c.fill(); c.stroke(); head(18, 14); c.beginPath(); c.moveTo(-6, 8); c.lineTo(0, 16); c.lineTo(6, 8); c.fill(); eyes(7, -2); }
+    if (n === 1) { for (const s of [-1, 1]) { c.save(); c.rotate(s * (.25 + Math.sin(t * 6) * .06)); c.beginPath(); c.ellipse(s * 7, -26, 5.5, 18, 0, 0, TAU); c.fill(); c.stroke(); c.restore(); }
+      head(16, 13); eyes(6, -1); c.strokeStyle = myRgba(T[0], .8); c.lineWidth = 2; for (let k = 0; k < 4; k++) { const y = -10 + k * 7, x = 22 + ((t * 80 + k * 13) % 30); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 12, y); c.stroke(); } }
+    if (n === 2) { head(20, 15); c.fillStyle = myRgba(T[1], .9); for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(-12 + k * 6, -12); c.lineTo(-9 + k * 6, -24 - (k % 2) * 4); c.lineTo(-6 + k * 6, -12); c.fill(); }
+      c.fillStyle = '#fff6d0'; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 8, 6); c.quadraticCurveTo(s * 16, 10, s * 14, -4); c.lineTo(s * 11, 4); c.closePath(); c.fill(); c.stroke(); }
+      c.fillStyle = myRgba(T[1], .8); c.beginPath(); c.ellipse(0, 5, 7, 5, 0, 0, TAU); c.fill(); c.stroke(); eyes(8, -4, '#ff3a1e'); }
+    if (n === 3) { for (let k = 0; k < 5; k++) { const q = a + k * TAU / 5; myRock(c, Math.cos(q) * 30, Math.sin(q) * 12 + 4, 5, q, myRgba(T[0], .9)); }
+      c.beginPath(); c.arc(-13, -12, 6, 0, TAU); c.arc(13, -12, 6, 0, TAU); c.fill(); c.stroke(); head(17, 14); c.fillStyle = 'rgba(20,20,24,.7)'; c.beginPath(); c.ellipse(-7, -1, 5, 6, -.4, 0, TAU); c.ellipse(7, -1, 5, 6, .4, 0, TAU); c.fill(); eyes(7, -1, T[1]);
+      c.strokeStyle = '#c0392b'; c.lineWidth = 3; c.beginPath(); c.moveTo(-16, -8); c.lineTo(16, -8); c.stroke(); }
+    if (n === 4) { for (let k = -2; k <= 2; k++) myFlame(c, k * 7, -12 - Math.abs(k) * -2, 1.1, t + k, myRgba(T[0], .9), myRgba(T[1], .9)); c.beginPath(); c.arc(-13, -11, 6, 0, TAU); c.arc(13, -11, 6, 0, TAU); c.fill(); c.stroke(); head(18, 15); eyes(7, -2, '#fff'); c.fillStyle = myRgba(T[1], .8); c.beginPath(); c.ellipse(0, 6, 7, 5, 0, 0, TAU); c.fill(); }
+    if (n === 5) { for (let k = 0; k < 6; k++) { const q = a * .7 + k * TAU / 6; myShard(c, Math.cos(q) * 32, Math.sin(q) * 14, 6, q, myRgba(T[0], .9)); }
+      c.beginPath(); c.moveTo(-16, -4); c.lineTo(-13, -26); c.lineTo(-4, -13); c.moveTo(16, -4); c.lineTo(13, -26); c.lineTo(4, -13); c.fill(); c.stroke(); c.strokeStyle = myRgba(T[1], .95); c.beginPath(); c.moveTo(-13, -26); c.lineTo(-13, -32); c.moveTo(13, -26); c.lineTo(13, -32); c.stroke();
+      head(17, 14); eyes(7, -1, '#fff'); c.strokeStyle = myRgba(T[1], .9); c.lineWidth = 1.2; for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(s * 6, 5 + k * 2); c.lineTo(s * 20, 3 + k * 4); c.stroke(); } }
+    if (n === 6) { c.strokeStyle = myRgba(T[1], .8); c.lineWidth = 2; for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(-14, -6 + k * 4); c.quadraticCurveTo(-30, -10 + k * 5 + Math.sin(t * 5 + k) * 4, -44, -2 + k * 6); c.stroke(); }
+      c.strokeStyle = myRgba(T[1], .95); c.lineWidth = 2.4; c.beginPath(); c.moveTo(-14, -6); c.lineTo(-11, -26); c.lineTo(-3, -13); c.moveTo(14, -6); c.lineTo(11, -26); c.lineTo(3, -13); c.fill(); c.stroke(); head(16, 13);
+      c.beginPath(); c.ellipse(9, 6, 9, 6, 0, 0, TAU); c.fill(); c.stroke(); eyes(6, -3, '#fff'); }
+    if (n === 7) { c.beginPath(); c.arc(-9, -12, 7, 0, TAU); c.arc(9, -12, 7, 0, TAU); c.fill(); c.stroke(); head(20, 13); eyes(9, -12, '#fff'); c.strokeStyle = myRgba(T[0], .95); c.lineWidth = 2;
+      for (let k = 0; k < 4; k++) { const q = -2.6 + k * .55; myZig(c, Math.cos(q) * 18, Math.sin(q) * 14 - 8, Math.cos(q) * 34, Math.sin(q) * 28 - 10, 4, 3, Math.floor(t * 10) + k); c.stroke(); }
+      c.fillStyle = myRgba(T[1], .9); c.beginPath(); c.moveTo(-10, -22); c.lineTo(-6, -30); c.lineTo(-2, -22); c.lineTo(2, -32); c.lineTo(6, -22); c.lineTo(10, -30); c.lineTo(12, -22); c.closePath(); c.fill(); }
+    c.restore();
+  }
+  function ornateGun(c, lin, long) { c.fillStyle = '#c8ccd8'; c.strokeStyle = INK; c.lineWidth = 1.8; c.beginPath(); c.roundRect(11, -3.5, long ? 26 : 15, 5, 2); c.fill(); c.stroke();
+    c.fillStyle = '#8a8e9c'; c.beginPath(); c.roundRect(9, -5, 7, 8, 2); c.fill(); c.stroke(); c.strokeStyle = lin; c.lineWidth = 1; c.beginPath(); c.moveTo(13, -1); c.quadraticCurveTo(17, -4, 21, -1); c.quadraticCurveTo(24, 1, 26, -1); c.stroke();
+    c.fillStyle = '#4a2a1a'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(9, 2); c.lineTo(6, 8); c.lineTo(10, 8); c.lineTo(13, 2); c.closePath(); c.fill(); c.stroke(); }
+  function drawMythic(c, n, t, opt) {
+    const T = MYTH_VIS[n], lin = T.th[0], coat = T.coat, sw = Math.sin(t * 2.2 + n) * 3;
+    c.save(); c.strokeStyle = INK; c.lineWidth = 2.2; c.lineJoin = 'round';
+    // coat tail flowing back (to the right)
+    c.fillStyle = coat; c.beginPath(); c.moveTo(4, -3); c.lineTo(11, -3); c.quadraticCurveTo(16, 10, 20 + sw, 30); c.lineTo(10 + sw * .5, 27); c.lineTo(4, 30); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = lin; c.beginPath(); c.moveTo(11, -1); c.quadraticCurveTo(15, 10, 19 + sw, 29); c.lineTo(17 + sw, 29); c.quadraticCurveTo(13, 12, 9, 0); c.closePath(); c.fill();
+    // legs + boots + spurs
+    for (const x of [-7, 2]) { c.fillStyle = '#22242e'; c.beginPath(); c.roundRect(x, 10, 6, 10, 2); c.fill(); c.stroke(); c.fillStyle = '#121318'; c.beginPath(); c.roundRect(x - 1, 18, 8, 7, 2); c.fill(); c.stroke();
+      c.save(); c.translate(x + 8, 23); c.rotate(t * 3); c.strokeStyle = '#c8ccd8'; c.lineWidth = 1.2; for (let k = 0; k < 4; k++) { c.rotate(Math.PI / 4); c.beginPath(); c.moveTo(-2.5, 0); c.lineTo(2.5, 0); c.stroke(); } c.restore(); }
+    // coat body
+    c.fillStyle = coat; c.beginPath(); c.moveTo(-9, -4); c.lineTo(9, -4); c.lineTo(12, 18); c.lineTo(-12, 18); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#15161c'; c.beginPath(); c.moveTo(-3, -4); c.lineTo(3, -4); c.lineTo(2, 10); c.lineTo(-2, 10); c.closePath(); c.fill();
+    c.strokeStyle = lin; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-3, -3); c.lineTo(-4, 17); c.moveTo(3, -3); c.lineTo(4, 17); c.stroke();
+    c.fillStyle = '#c8ccd8'; for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(-6, -1 + k * 4.5, .9, 0, TAU); c.arc(6, -1 + k * 4.5, .9, 0, TAU); c.fill(); }
+    c.strokeStyle = INK; c.lineWidth = 2.2; c.fillStyle = '#121318'; c.beginPath(); c.roundRect(-11, 6, 22, 3.5, 1); c.fill(); c.stroke(); c.fillStyle = '#c8ccd8'; c.beginPath(); c.roundRect(-2.5, 5.5, 5, 4.5, 1); c.fill(); c.stroke();
+    // high collar
+    c.fillStyle = lin; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 4, -4); c.lineTo(s * 12.5, -10); c.lineTo(s * 10, -2); c.closePath(); c.fill(); c.stroke(); }
+    // head
+    const ghost = n === 4, hr = n === 2 ? 10.5 : 8.6;
+    if (ghost) { myGlow(c, 0, -12, 14, myRgba(lin, .9), .7); c.fillStyle = '#0c0d12'; c.beginPath(); c.arc(0, -12, hr, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#ffe14a'; c.beginPath(); c.ellipse(-3.5, -13, 2, 2.6, 0, 0, TAU); c.ellipse(3.5, -13, 2, 2.6, 0, 0, TAU); c.fill(); }
+    else { c.fillStyle = '#f2c49a'; c.beginPath(); if (n === 1) c.ellipse(0, -12, 6.8, 9.5, 0, 0, TAU); else c.arc(0, -12, hr, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = '#15161c'; c.beginPath(); c.moveTo(-hr - .5, -11.5); c.quadraticCurveTo(0, -9.5, hr + .5, -11.5); c.quadraticCurveTo(hr, -3, 0, -2.5); c.quadraticCurveTo(-hr, -3, -hr - .5, -11.5); c.fill(); c.stroke();
+      c.strokeStyle = lin; c.lineWidth = .9; c.beginPath(); c.moveTo(-4, -7); c.lineTo(4, -7); c.stroke(); c.strokeStyle = INK; c.lineWidth = 2.2;
+      const ey = -14; myGlow(c, -3.5, ey, 6, myRgba(lin, 1), .9); myGlow(c, 3.5, ey, 6, myRgba(lin, 1), .9); c.fillStyle = '#fff';
+      if (n === 5) { c.fillStyle = '#15161c'; c.beginPath(); c.ellipse(-3.6, ey, 3.2, 2.6, 0, 0, TAU); c.fill(); c.lineWidth = 1.4; c.beginPath(); c.moveTo(-9, -19); c.lineTo(9, -11); c.stroke(); c.lineWidth = 2.2; c.fillStyle = '#fff'; c.fillRect(2.4, ey - 1.2, 2.4, 2.4); }
+      else { c.fillRect(-4.8, ey - 1.1, 2.6, 2.2); c.fillRect(2.2, ey - 1.1, 2.6, 2.2); } }
+    // hat
+    c.save(); c.translate(0, n === 2 ? -23.5 : -21.5); c.rotate(-.08); c.fillStyle = T.hat; c.beginPath(); c.ellipse(0, 0, 19, 4.6, 0, 0, TAU); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(-9, 0); c.quadraticCurveTo(-10, -14, 0, -13); c.quadraticCurveTo(10, -14, 9, 0); c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = lin; c.lineWidth = 2.4; c.beginPath(); c.moveTo(-8.6, -3); c.lineTo(8.6, -3); c.stroke();
+    c.fillStyle = '#c8ccd8'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(7, -4); c.lineTo(15, -12); c.lineTo(10, -2); c.closePath(); c.fill(); c.stroke(); c.restore();
+    // arm + gun
+    if (!(opt && opt.noGun)) { c.save(); c.rotate(MYA); c.fillStyle = coat; c.strokeStyle = INK; c.lineWidth = 2.2; c.beginPath(); c.roundRect(0, -3.5, 11, 7, 3); c.fill(); c.stroke(); c.fillStyle = '#121318'; c.beginPath(); c.arc(11, 0, 3, 0, TAU); c.fill(); c.stroke(); ornateGun(c, lin, n === 0); c.restore(); }
+    c.restore();
+  }
+  function myGear(c, n, t, front) {
+    const T = MYTH_VIS[n]; c.strokeStyle = INK; c.lineWidth = 2.2;
+    if (!front) {
+      c.save(); c.translate(0, 26); c.scale(1, .3); c.rotate(t); c.strokeStyle = myRgba(T.th[0], .85); c.lineWidth = 3; c.setLineDash([10, 6]); c.beginPath(); c.arc(0, 0, 26, 0, TAU); c.stroke(); c.setLineDash([]); c.restore();
+      myGlow(c, 0, 24, 26, myRgba(T.th[0], .9), .45);
+      if (n === 6) { c.lineCap = 'round'; for (let k = 0; k < 2; k++) { c.strokeStyle = k ? '#2ab888' : '#6fe0b0'; c.lineWidth = 6 - k * 2; c.beginPath(); c.moveTo(3, -6); for (let i = 1; i <= 6; i++) c.lineTo(3 + i * 8, -6 + Math.sin(t * 8 - i + k) * 5 + i * 1.5); c.stroke(); } c.lineCap = 'butt'; c.strokeStyle = 'rgba(160,255,220,.6)'; c.lineWidth = 2; for (let k = 0; k < 3; k++) { c.beginPath(); c.ellipse(0, 24 - k * 4, 18 - k * 4, 5 - k, 0, t * 6 + k, t * 6 + k + 4.4); c.stroke(); } }
+      if (n === 7) { c.fillStyle = '#3a2a5a'; c.beginPath(); c.roundRect(5, -6, 9, 15, 3); c.fill(); c.stroke(); for (const x of [7, 12]) { c.fillStyle = '#c8a8ff'; c.beginPath(); c.roundRect(x - 2, -16, 4, 10, 2); c.fill(); c.stroke(); c.fillStyle = '#fff36a'; c.beginPath(); c.arc(x, -17, 2.5, 0, TAU); c.fill(); } c.strokeStyle = '#fff36a'; c.lineWidth = 1.6; myZig(c, 7, -18, 12, -18, 3, 3, Math.floor(t * 12)); c.stroke(); }
+      if (n === 3) for (let k = 0; k < 4; k++) { const q = t * 1.6 + k * TAU / 4; if (Math.sin(q) < 0) myRock(c, Math.cos(q) * 24, Math.sin(q) * 8 + 2, 4.5, q, '#9a8a72'); }
+      if (n === 1) { c.strokeStyle = myRgba(T.th[0], .7); c.lineWidth = 2; for (let k = 0; k < 5; k++) { const y = -18 + k * 9, x = 16 + ((t * 120 + k * 17) % 26); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 10, y); c.stroke(); } }
+      return; }
+    if (n === 0) { c.save(); c.rotate(MYA); c.strokeStyle = 'rgba(255,40,60,.85)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(38, -1); c.lineTo(120, -1); c.stroke(); c.fillStyle = '#ffd34a'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.roundRect(18, -8, 11, 4, 2); c.fill(); c.stroke(); c.restore(); }
+    if (n === 1) { c.save(); c.translate(-1, 8); c.rotate(MYA + .22); c.fillStyle = '#1c1e28'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(0, -3, 10, 6, 3); c.fill(); c.stroke(); ornateGun(c, MYTH_VIS[1].th[0], false); if (Math.sin(t * 14) > 0) { c.fillStyle = '#fff3a0'; c.beginPath(); c.moveTo(27, -1); c.lineTo(36, -5); c.lineTo(34, 0); c.lineTo(36, 4); c.closePath(); c.fill(); } c.restore(); }
+    if (n === 2) { c.save(); c.rotate(MYA); c.fillStyle = '#6a6e7a'; c.strokeStyle = INK; c.beginPath(); c.roundRect(8, -8, 20, 15, 4); c.fill(); c.stroke(); for (let k = 0; k < 4; k++) { const yy = -5 + ((k + t * 12) % 4) * 3; c.fillStyle = '#3a3e4a'; c.beginPath(); c.roundRect(26, yy - 1.2, 16, 2.6, 1); c.fill(); } c.fillStyle = '#ffc23a'; c.beginPath(); c.roundRect(40, -8, 5, 15, 2); c.fill(); c.stroke(); c.restore();
+      c.fillStyle = '#ffc23a'; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 7, -6); c.lineTo(s * 17, -10); c.lineTo(s * 17, -1); c.lineTo(s * 9, 0); c.closePath(); c.fill(); c.stroke(); } }
+    if (n === 3) { c.fillStyle = '#8a7a6a'; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 7, -7); c.lineTo(s * 19, -12); c.lineTo(s * 21, -1); c.lineTo(s * 10, 2); c.closePath(); c.fill(); c.stroke(); } c.save(); c.rotate(MYA); c.fillStyle = '#7a6a5a'; c.beginPath(); c.roundRect(9, -7, 15, 13, 4); c.fill(); c.stroke(); c.fillStyle = '#7ac04a'; c.beginPath(); c.arc(17, -.5, 3, 0, TAU); c.fill(); c.restore();
+      for (let k = 0; k < 4; k++) { const q = t * 1.6 + k * TAU / 4; if (Math.sin(q) >= 0) myRock(c, Math.cos(q) * 24, Math.sin(q) * 8 + 2, 4.5, q, '#b8a080'); } }
+    if (n === 4) { for (let k = 0; k < 7; k++) { const q = -Math.PI + k * Math.PI / 6; myFlame(c, Math.cos(q) * 16, Math.sin(q) * 20 + 4, .7, t + k, 'rgba(255,90,30,.8)', '#ffe14a'); } for (let k = -1; k <= 1; k++) myFlame(c, k * 7, -34, .9 + (k ? 0 : .3), t + k, '#ff4a1e', '#ffe14a'); }
+    if (n === 5) { c.fillStyle = '#c8f2ff'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-9, -33); c.lineTo(-7, -40); c.lineTo(-3, -34); c.lineTo(0, -42); c.lineTo(3, -34); c.lineTo(7, -40); c.lineTo(9, -33); c.closePath(); c.fill(); c.stroke(); for (let k = 0; k < 3; k++) { const q = t * 1.2 + k * TAU / 3; myShard(c, Math.cos(q) * 22, Math.sin(q) * 6 - 2, 4, q, '#bdf0ff'); } c.fillStyle = 'rgba(255,255,255,.9)'; for (let k = 0; k < 5; k++) c.fillRect(-20 + ((k * 13 + t * 10) % 40), -30 + ((k * 17 + t * 25) % 60), 2, 2); }
+    if (n === 6) { c.save(); c.rotate(MYA); c.fillStyle = '#3a5a4a'; c.beginPath(); c.roundRect(10, -6, 14, 11, 3); c.fill(); c.stroke(); for (let k = 0; k < 3; k++) { c.fillStyle = '#2a3a34'; c.beginPath(); c.roundRect(22, -5 + k * 3.5, 12, 2.5, 1); c.fill(); } c.restore(); }
+    if (n === 7) { c.strokeStyle = '#fff36a'; c.lineWidth = 1.8; c.save(); c.rotate(MYA); myZig(c, 26, 0, 46, 0, 5, 3, Math.floor(t * 12)); c.stroke(); c.restore(); }
+  }
+
+  /* mythic star aura (4안 magic circle): ★5 1 ring · ★10 star · ★15 3 rings · ★16 gold · ★17 light pillar · ★18 circle over the head · ★19 rising runes · ★20 4 rings */
+  function runeCircle(c, r, t, col, spokes, dir) { c.save(); c.rotate(t * dir); c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke(); c.beginPath(); c.arc(0, 0, r * .8, 0, TAU); c.stroke();
+    if (spokes) { c.beginPath(); for (let k = 0; k <= spokes; k++) { const q = k * TAU / spokes * 2; c.lineTo(Math.cos(q) * r * .8, Math.sin(q) * r * .8); } c.stroke(); }
+    c.fillStyle = col; for (let k = 0; k < 12; k++) { const q = k * TAU / 12; c.fillRect(Math.cos(q) * r * .9 - 1.5, Math.sin(q) * r * .9 - 1.5, 3, 3); } c.restore(); }
+  function myAura(c, s, t, front) { // 4: magic circle
+    const col = s >= 16 ? '#ffe9a0' : '#9de8ff';
+    if (!front) { c.save(); c.translate(0, 22); c.scale(1, .32);
+      if (s >= 5) runeCircle(c, 26, t, myRgba(col, .9), 0, 1);
+      if (s >= 10) runeCircle(c, 20, t, myRgba(col, .9), 5, -1.4);
+      if (s >= 15) runeCircle(c, 34, t, myRgba(col, .75), 0, -.6);
+      if (s >= 20) runeCircle(c, 42, t, myRgba('#ff9ad8', .8), 7, .5);
+      c.restore(); myGlow(c, 0, 22, 30 + (s >= 16 ? 10 : 0), myRgba(col, .9), s >= 16 ? .6 : .35);
+      if (s >= 17) { const g = c.createLinearGradient(0, 22, 0, -80); g.addColorStop(0, myRgba(col, .55)); g.addColorStop(1, myRgba(col, 0)); c.fillStyle = g; c.beginPath(); c.moveTo(-22, 22); c.lineTo(-14, -80); c.lineTo(14, -80); c.lineTo(22, 22); c.closePath(); c.fill(); }
+      return; }
+    if (s >= 18) { c.save(); c.translate(0, -44); c.scale(1, .32); runeCircle(c, 18, t, myRgba(col, .9), 5, 1.2); c.restore(); }
+    if (s >= 19) { c.fillStyle = col; c.font = "700 7px serif"; c.textAlign = 'center'; const R = 'ᚠᚢᚦᚨᚱᚲ'; for (let k = 0; k < 6; k++) { const y = 20 - ((t * 24 + k * 13) % 70), x = Math.sin(k * 2.1 + t) * 22; c.globalAlpha = .9 - (20 - y) / 90; c.fillText(R[k], x, y); } c.globalAlpha = 1; }
+  }
+
+  function drawMythicShooter(c, s, t) {
+    const n = s.u.n; MYA = s.ang;
+    c.save(); c.translate(s.x, s.y);
+    c.save(); c.globalAlpha = .8; c.translate(4, -13); c.scale(.62, .62); mySpirit(c, n, t); c.restore();
+    const st = s.u.s || 0; if (st >= 5) myAura(c, st, t, false);
+    myGear(c, n, t, false); drawMythic(c, n, t, { noGun: [2, 3, 6].includes(n) }); myGear(c, n, t, true);
+    if (st >= 5) myAura(c, st, t, true);
+    if ((s.fl || 0) > 0) { c.save(); c.rotate(MYA); c.fillStyle = '#fff3a0'; c.beginPath(); const L = n === 0 ? 39 : n === 2 ? 47 : 28; c.moveTo(L, -1); c.lineTo(L + 10, -6); c.lineTo(L + 8, 0); c.lineTo(L + 10, 5); c.closePath(); c.fill(); c.restore(); }
+    c.restore();
+  }
   /* mythic: five element orbs circling + a rainbow ring under the gunslinger */
   function mythHalo(c, x, y, t) {
     c.save(); c.translate(x, y + 2);
@@ -3098,7 +3235,7 @@ input { -webkit-user-select: text; user-select: text; }
     for (const s of shooters) if (s.syn) drawOrbs(c, s.x, s.y, 0);
     const atm = performance.now() / 1000;
     for (const s of shooters) if (s.u && s.u.s >= AURA_S) auraBack(c, s.x, s.y, s.u.s - AURA_S + 1, atm, s.n || s.u.n);
-    for (const s of shooters) if (s.robot) continue; else if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0, s.pg || 0); else { if (s.u && s.u.m) mythHalo(c, s.x, s.y, performance.now() / 1000); drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? uCol(s.u) : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1); }
+    for (const s of shooters) if (s.robot) continue; else if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0, s.pg || 0); else if (s.u && s.u.m) drawMythicShooter(c, s, performance.now() / 1000); else { drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? uCol(s.u) : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1); }
     for (const s of shooters) if (s.u && s.u.s >= AURA_S) auraFront(c, s.x, s.y, s.u.s - AURA_S + 1, atm, s.u.n);
     for (const s of shooters) if (s.syn) drawOrbs(c, s.x, s.y, 1);
     drawRobot(c, st ? st.robo.x : 364, st ? st.robo.y : 150 + Math.sin(t * 2) * 6);
