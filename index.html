@@ -222,6 +222,10 @@ input { -webkit-user-select: text; user-select: text; }
 .htile.r2 { background: linear-gradient(#3b6fb3, #1d3a66); }
 .htile.r3 { background: linear-gradient(#8a4fd0, #43207a); }
 .htile.r4 { background: linear-gradient(#e2a02a, #8a4a10); }
+.htile.r5 { background: linear-gradient(135deg, #ff5a6a, #ffb72e 25%, #7ee0a0 50%, #3fa9f5 75%, #c27bff); box-shadow: 0 0 0 2px #fff6c0 inset, 0 0 12px rgba(255,230,140,.7); }
+.htile .myb { position: absolute; right: 3px; top: 3px; font-family: var(--display); font-size: 10px; color: #fff; background: #c2185b; border: 2px solid var(--ink); border-radius: 6px; padding: 0 4px; z-index: 2; }
+.chip.se { box-shadow: 0 0 0 2px #fff, 0 0 8px #fff; font-weight: 900; }
+.htile.pick { outline: 4px solid #ffe14a; outline-offset: -2px; }
 .htile.gr0 { background: linear-gradient(#5d6878, #343c48); }
 .htile.gr1 { background: linear-gradient(#3f8f4c, #1e4d27); }
 .htile.gr2 { background: linear-gradient(#3b6fb3, #1d3a66); }
@@ -527,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-2023';
+  const APP_VER = 'v.261114-2149';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -550,7 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   function starBadge(n, col) {
     const pts = [];
     for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 7.5 : 15; pts.push((16 + Math.cos(a) * r).toFixed(1) + ',' + (16 + Math.sin(a) * r).toFixed(1)); }
-    return '<svg viewBox="0 0 32 32"><polygon points="' + pts.join(' ') + '" fill="' + (col || '#ffb72e') + '" stroke="' + INK + '" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="16.5" r="7" fill="#ffd96a" stroke="' + INK + '" stroke-width="1.6"/><text x="16" y="21" text-anchor="middle" font-family="Black Han Sans, sans-serif" font-size="' + (String(n).length > 1 ? 10 : 12) + '" fill="#fff" stroke="' + INK + '" stroke-width="2.4" paint-order="stroke">' + n + '</text></svg>';
+    return '<svg viewBox="0 0 32 32"><polygon points="' + pts.join(' ') + '" fill="' + (col || '#ffb72e') + '" stroke="' + INK + '" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="16.5" r="7" fill="#ffd96a" stroke="' + INK + '" stroke-width="1.6"/><text x="16" y="21" text-anchor="middle" font-family="Black Han Sans, sans-serif" font-size="' + (String(n).length > 2 ? 8 : String(n).length > 1 ? 10 : 12) + '" fill="#fff" stroke="' + INK + '" stroke-width="2.4" paint-order="stroke">' + n + '</text></svg>';
   }
   function bigStar(on) {
     const pts = [];
@@ -618,7 +622,8 @@ input { -webkit-user-select: text; user-select: text; }
     '심연', '혼돈', '광란', '붕괴', '재앙', '멸망', '암흑', '마왕성', '천벌', '심판',
     '천재지변', '아마겟돈', '라그나로크', '무간지옥', '핏빛 달', '공허', '대참사', '신의 분노', '세계의 끝', '전설'];
   const NEED = 30, STAGES = 50, ESTAGES = 50;
-  const LV_MAX = 300;
+  /* Lv1~98 normal, Lv99~197 = 지존1~99, Lv198~296 = 명인1~99 (max) */
+  const LV_MAX = 296;
   const NMS = ['한일', '성민', '금유', '도영', '진명', '해천', '정욱', '재원'];
   const HATS = ['#c8783a', '#5a3a2a', '#e8e0cc', '#2a2a2e', '#a83a2a', '#3a5a8a', '#6a8a3a', '#8a5aa8'];
   const ENM = ['불', '물', '번개', '땅', '바람'];
@@ -644,7 +649,7 @@ input { -webkit-user-select: text; user-select: text; }
   function eliteReq() {
     const st = save.coll.filter(u => u.s >= ELITE.star).length;
     return [
-      { nm: '프로필 레벨 ' + ELITE.lv, cur: 'LV.' + save.lv, ok: save.lv >= ELITE.lv },
+      { nm: '프로필 레벨 ' + ELITE.lv, cur: lvName(save.lv), ok: save.lv >= ELITE.lv },
       { nm: ELITE.star + '성 이상 총잡이 ' + ELITE.nStar + '명', cur: st + '명', ok: st >= ELITE.nStar },
       { nm: '거점 체력·방어력 Lv ' + ELITE.fort, cur: save.hl + ' / ' + save.dl, ok: save.hl >= ELITE.fort && save.dl >= ELITE.fort },
       { nm: '해금 비용 ' + (ELITE.cost / 1e4) + '만 골드', cur: fmt(save.gold), ok: save.gold >= ELITE.cost }
@@ -655,6 +660,12 @@ input { -webkit-user-select: text; user-select: text; }
   const STAR_P = [.95, .90, .85, .85, .80, .75, .70, .65, .60, .55, .50, .45, .40, .35, .30, .30, .30, .30, .30, .30, .30, .30, .20, .18, .15, .12, .10, .08, .06, .05];
   const STAR_B = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, .021, .021, .021, .028, .028, .07, .07, .10, .12, .14, .16, .18, .20, .22, .25];
   const starCost = n => Math.round(200 * Math.pow(1.15, n) / 10) * 10;
+  /* mythic star force: 500k x 1.2^star a try; from ★17 destruction (back to ★15), a failure keeps the star, no protection */
+  const MSTAR_P = STAR_P.slice(0, 17).concat([.30, .28, .26, .24, .22, .18, .16, .14, .12, .10, .09, .08, .07]);
+  const MSTAR_B = Array(17).fill(0).concat([.02, .025, .03, .035, .04, .05, .06, .07, .08, .09, .10, .11, .12]);
+  const MYTH_BACK = 15;
+  const starCostU = u => u.m ? Math.round(500000 * Math.pow(1.2, u.s) / 1000) * 1000 : starCost(u.s);
+  const boomTo = u => u.m ? MYTH_BACK : 12;
   const enhCost = n => Math.round(150 * Math.pow(1.16, n) / 10) * 10;
   function oddsOf(n) {
     const s = n < 3 ? 1 : Math.max(.2, .95 - (n - 3) * .027);
@@ -923,7 +934,7 @@ input { -webkit-user-select: text; user-select: text; }
   const synVal = u => { if (!u) return 0; let v = 0; for (const id of save.pslot) { const x = getPet(id); if (x && PAIR[x.p] === u.n) v = Math.max(v, synOf(x.s)); } return v; };
   const synFor = u => !!u && save.pslot.some(id => { const x = getPet(id); return x && PAIR[x.p] === u.n; });
   function petStat(x, owner) {
-    return { dmg: 5 * PGR[x.g].m * (1 + .15 * x.s) * (1 + .02 * (save.lv - 1)) * (owner ? 1 + .08 * owner.s : 1), iv: .85, el: owner ? owner.e.slice(0, 1) : [], burn: 0, slow: 0, chain: 0, splash: 0, twin: 0 };
+    return { dmg: 5 * PGR[x.g].m * (1 + .15 * x.s) * (1 + .02 * (save.lv - 1)) * (owner ? 1 + .08 * owner.s : 1), iv: .85, el: owner ? (owner.m ? [owner.se] : owner.e.slice(0, 1)) : [], burn: 0, slow: 0, chain: 0, splash: 0, twin: 0 };
   }
   const petCost = x => Math.round(800 * Math.pow(x.s + 1, 1.6) * PGR[x.g].m / 10) * 10;
   const petRate = s => Math.max(.3, .95 - .065 * s);
@@ -972,7 +983,16 @@ input { -webkit-user-select: text; user-select: text; }
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0
     };
   }
-  const ukey = u => u.n + '|' + u.e.join('');
+  const ukey = u => u.n + '|' + u.e.join('') + (u.m ? '|m' + u.se : '');
+  /* Mythic gunslingers: all 5 elements, damage x1.3, one random strong element (x1.3 more when hitting with it), a trait per name.
+     Made from five ★22+ gunslingers (random name + strong element), starting again from ★0. */
+  const MYTH_NEED = 5, MYTH_STAR = 22;
+  const MYTHT = [
+    { nm: '백발백중', d: '치명타 확률 +25%' }, { nm: '속사포', d: '공격 속도 +40%' }, { nm: '거인 사냥꾼', d: '보스 피해 +60%' }, { nm: '대지 분쇄', d: '범위 피해 반경 2배 · 범위 피해 100%' },
+    { nm: '지옥불', d: '화상 피해 3배' }, { nm: '절대 영도', d: '10% 확률로 1초 빙결' }, { nm: '폭풍 연사', d: '2연사 → 3연사' }, { nm: '천둥 사슬', d: '연쇄 5회 · 연쇄 피해 100%' }
+  ];
+  const uCol = u => EC[u.m ? u.se : u.e[0]];
+  const uRar = u => u.m ? 5 : u.e.length;
   function cleanColl(a) {
     const out = [], seen = {};
     if (!Array.isArray(a)) return out;
@@ -980,8 +1000,10 @@ input { -webkit-user-select: text; user-select: text; }
       if (!u || !Array.isArray(u.e)) continue;
       const n = (+u.n) | 0;
       const e = Array.from(new Set(u.e.map(x => (+x) | 0))).filter(x => x >= 0 && x < 5).sort((p, q) => p - q);
-      if (n < 0 || n >= NMS.length || e.length < 1 || e.length > 4) continue;
+      const m = u.m && e.length === 5 ? 1 : 0;
+      if (n < 0 || n >= NMS.length || e.length < 1 || e.length > (m ? 5 : 4)) continue;
       const v = { n, e, s: clamp((+u.s) | 0, 0, 30), dc: clamp((+u.dc) | 0, 0, 2) };
+      if (m) { v.m = 1; v.se = clamp((+u.se) | 0, 0, 4); if (u.xb != null && (+u.xb | 0) !== v.se && +u.xb >= 0 && +u.xb <= 4) v.xb = +u.xb | 0; }
       if (seen[ukey(v)]) continue;
       seen[ukey(v)] = 1; out.push(v);
     }
@@ -1061,9 +1083,15 @@ input { -webkit-user-select: text; user-select: text; }
     }
     dmg *= (1 + .3 * (u.e.length - 1)) * (1 + .08 * u.s) * (1 + .02 * (save.lv - 1));
     iv *= Math.max(.5, 1 - .015 * u.s);
-    return { dmg, iv, el: u.e, burn, slow, chain, splash, twin };
+    const el = u.e.slice(), o = { dmg, iv, el, burn, slow, chain, splash, twin };
+    if (u.m) {
+      o.dmg *= 1.3; el.se = u.se; o.se = u.se; if (u.xb != null) el.xb = u.xb;
+      if (u.n === 0) el.cb = .25; else if (u.n === 1) o.iv /= 1.4; else if (u.n === 2) el.boss = .6; else if (u.n === 3) { o.splash = 68; o.spm = 1; }
+      else if (u.n === 4) o.burn = 1.2; else if (u.n === 5) o.frz = .1; else if (u.n === 6) o.twin = 2; else if (u.n === 7) { o.chain = 5; o.chm = 1; }
+    }
+    return o;
   }
-  const dps = st => st.dmg / st.iv * (st.twin ? 2 : 1) * (1 + (st.chain ? .5 : 0) + (st.splash ? .4 : 0) + (st.burn ? .3 : 0));
+  const dps = st => st.dmg / st.iv * (1 + (st.twin || 0)) * (1 + (st.chain ? .5 + (st.chain > 2 ? .4 : 0) : 0) + (st.splash ? .4 + (st.spm ? .3 : 0) : 0) + (st.burn ? .3 * (st.burn > .5 ? 2 : 1) : 0) + (st.frz ? .15 : 0)) * (st.se != null ? 1.1 : 1);
   function team() { const t = save.slots.map(getUnit).filter(Boolean); return t.length ? t : [null]; }
   function critBonus() { let b = 0; for (const s of SK) if (save.sk[s.id] && save.lv >= s.un) b += (save.sk[s.id].lv - 1); return b; }
   /* power tiers shown in the ranking (5.1M starts Gold) */
@@ -1113,6 +1141,7 @@ input { -webkit-user-select: text; user-select: text; }
     p += baseHp(hl) * (1 + go.hp) / (1 - defRed(dl)) / (1 - go.dr) / 6;
     if (!f.prof) for (const s of SK) if (save.sk[s.id] && save.lv >= s.un) p += 15 * save.sk[s.id].lv;
     p /= 1 - (f.fort ? 0 : slowPct(save.sll || 0));
+    p *= 1 + lvBonus();
     save.lv = lv0;
     return Math.max(1, p);
   }
@@ -1140,10 +1169,15 @@ input { -webkit-user-select: text; user-select: text; }
     for (const s of SK) if (save.sk[s.id] && save.lv >= s.un) p += 15 * save.sk[s.id].lv;
     /* fort slow field: slower monsters = more time to shoot and less damage taken */
     p /= 1 - slowPct(save.sll || 0);
+    p *= 1 + lvBonus();
     return Math.round(p);
   }
   /* profile level up to 300; from Lv98 on every level needs the same xp as 98 -> 99 */
-  const lvNeed = l => 10 + Math.min(l, 98) * 10;
+  /* Lv99 and up: every level needs 400 runs of stage 50 (21 xp each) = 8,400 xp; each level past 99 gives +1% total damage */
+  const lvNeed = l => l >= 99 ? 8400 : 10 + Math.min(l, 98) * 10;
+  const lvName = l => l < 99 ? 'LV.' + l : l < 198 ? '지존 ' + (l - 98) : '명인 ' + (l - 197);
+  const lvBadge = l => l < 99 ? starBadge(l) : l < 198 ? starBadge('지' + (l - 98), '#c27bff') : starBadge('명' + (l - 197), '#e0402a');
+  const lvBonus = () => Math.max(0, save.lv - 99) * .01;
   function skOf(id) { if (!save.sk[id]) save.sk[id] = { lv: 1, c: 0 }; return save.sk[id]; }
   const skUnlocked = s => save.lv >= s.un;
 
@@ -1255,7 +1289,7 @@ input { -webkit-user-select: text; user-select: text; }
   function topbar() {
     tickEnergy();
     $('avaFace').innerHTML = face(myHat(), '#e0452e');
-    $('avaLv').innerHTML = starBadge(save.lv);
+    $('avaLv').innerHTML = lvBadge(save.lv);
     $('avaXp').style.width = clamp(save.xp / lvNeed(save.lv) * 100, 0, 100) + '%';
     $('avaName').textContent = save.name || '이름 없음';
     $('vGem').textContent = fmt(save.gem);
@@ -1365,10 +1399,10 @@ input { -webkit-user-select: text; user-select: text; }
       '<p class="desc">' + eff + (max ? '' : ' · 성공 <b>' + pct(o.s) + '</b> · 실패 시 하락 <b>' + pct(o.d) + '</b>') + '</p></div>';
   }
   function heroTile(u, extra, cls) {
-    const k = u.e.length;
+    const k = uRar(u);
     const aw = u.s >= 22 ? u.s - 21 : 0;
-    return '<div class="htile r' + k + (cls ? ' ' + cls : '') + (aw ? ' aura' + (aw >= 8 ? ' aura3' : aw >= 5 ? ' aura2' : '') : '') + '"' + (extra || '') + '>' + face(HATS[u.n], EC[u.e[0]], { n: u.n }) + (aw ? '<span class="awk ol-s">각성 ' + aw + '</span>' : '') +
-      '<span class="hn ol-s">' + NMS[u.n] + '</span><span class="chips">' + u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + '</i>').join('') + '</span>' +
+    return '<div class="htile r' + k + (cls ? ' ' + cls : '') + (aw ? ' aura' + (aw >= 8 ? ' aura3' : aw >= 5 ? ' aura2' : '') : '') + '"' + (extra || '') + '>' + face(HATS[u.n], uCol(u), { n: u.n }) + (aw ? '<span class="awk ol-s">각성 ' + aw + '</span>' : '') + (u.m ? '<span class="myb">신화</span>' : '') +
+      '<span class="hn ol-s">' + NMS[u.n] + '</span><span class="chips">' + (u.m ? '<i class="chip e' + u.se + ' se">' + ENM[u.se] + '★</i><i class="chip" style="background:#fff">5속성</i>' : u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + '</i>').join('')) + '</span>' +
       '<span class="st ol-s">★' + u.s + '</span></div>';
   }
   function renderHero() {
@@ -1401,11 +1435,14 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="htile' + (x ? '' : ' emp') + (syn ? ' sel' : '') + '" data-act="petslot" data-i="' + i + '" role="button">' + (x ? '<span style="width:46px;height:46px;display:block">' + petSvg(x.p) + '</span><span class="hn ol-s">' + PETN[x.p] + '</span><span class="st ol-s" style="color:' + PGR[x.g].c + '">' + PGR[x.g].nm + ' ★' + x.s + (syn ? ' · +' + Math.round(synOf(x.s) * 100) + '%' : '') + '</span>' + '<span class="st ol-s" style="color:#fff">공격 ' + petAtk(x) + '</span>' : '<span class="ol-s">' + (i + 1) + '번 펫<br>비어 있음</span>') + '</div>';
     }
     h += '</div><p class="desc">짝: ' + PETN.map((n, p) => n + '(' + PETAN[PETA[p]] + ')-' + NMS[PAIR[p]]).join(' · ') + '</p></div>';
+    { const elig = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).length;
+      h += '<div class="card" style="border-color:#c27bff"><div class="row"><h3 class="ol grow">✨ 신화 강화</h3><span class="desc" style="color:#fff">★' + MYTH_STAR + ' 이상 ' + elig + '명</span></div><p class="desc">★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 합치면 <b>무작위 신화 총잡이</b> 1명이 나와요. 신화는 <b>5속성 전부</b> · 피해 ×1.3 · 무작위 <b>강속성</b> 1개(그 속성으로 때리면 ×1.3 더) · 총잡이마다 고유 특성이 있고, <b>★0부터</b> 다시 키워요.</p>' +
+        '<button class="btn p wide ol-s" data-act="mythOpen"' + (elig >= MYTH_NEED ? '' : ' disabled') + '>' + (elig >= MYTH_NEED ? '재료 고르기' : '★' + MYTH_STAR + ' 이상이 ' + MYTH_NEED + '명 필요해요 (' + elig + '/' + MYTH_NEED + ')') + '</button></div>'; }
     h += '<div class="card dark"><div class="row"><h3 class="ol grow">보관함 ' + save.coll.length + '/' + capOf() + '</h3>' + (save.coll.length ? '<button class="btn ' + (rmMode ? 'r' : '') + ' sm ol-s" data-act="rmmode">' + (rmMode ? '제거 취소' : '유닛 제거') + '</button>' : '') + '</div>' + unitPullBox();
     h += capOf() < CAP_MAX ? '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">보관함 확장 +5칸</b><br><span class="desc">기본 10칸이고 스테이지를 하나 열 때마다 1칸씩 늘어나요. 골드로 늘리면 최대 ' + CAP_MAX + '칸까지 돼요.</span></span><button class="btn y sm ol-s" data-act="capup"' + (save.gold < capCost(save.capBuy) ? ' disabled' : '') + '>' + I.coin + fmt(capCost(save.capBuy)) + '</button></div>' : '<p class="desc">보관함이 최대 ' + CAP_MAX + '칸이에요.</p>';
     if (!save.coll.length) h += '<p class="empty">아직 총잡이가 없어요. 위의 뽑기 버튼으로 뽑아보세요.</p>';
     else {
-      const list = save.coll.slice().sort((a, b) => b.e.length - a.e.length || b.s - a.s);
+      const list = save.coll.slice().sort((a, b) => uRar(b) - uRar(a) || b.s - a.s);
       if (rmMode) {
         let g = 0; for (const u of save.coll) if (rmSel.has(ukey(u))) g += sellPrice(u);
         h += '<div class="rmbar"><p class="desc" style="color:#fff">제거할 총잡이를 눌러서 고르세요. 고른 총잡이는 한 번에 사라지고 골드로 바뀌어요. 출전 중이면 자동으로 빠져요.</p>' +
@@ -1443,6 +1480,7 @@ input { -webkit-user-select: text; user-select: text; }
   function starOdds(u, prot) {
     const n = u.s;
     if (u.dc >= 2) return { p: 1, keep: 0, drop: 0, boom: 0, chance: true };
+    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0 || n >= 17; return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false }; }
     const boom = (prot && n >= 15 && n <= 21) ? 0 : STAR_B[n];
     const p = STAR_P[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0;
     return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false };
@@ -1452,15 +1490,44 @@ input { -webkit-user-select: text; user-select: text; }
     for (let r = 0; r < 2; r++) { h += '<div style="font-size:19px;letter-spacing:-1px">'; for (let i = 0; i < 15; i++) { const k = r * 15 + i; h += '<span style="color:' + (k < n ? '#ffd23f' : '#3a4a60') + ';-webkit-text-stroke:1px ' + INK + '">★</span>' + (i % 5 === 4 && i < 14 ? ' ' : ''); } h += '</div>'; }
     return h + '</div>';
   }
+  const mythSel = new Set();
+  function mythBody() {
+    const list = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).sort((a, b) => a.s - b.s || a.e.length - b.e.length);
+    let h = '<p class="desc" style="color:#fff">재료로 쓸 ★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 눌러서 골라요. 고른 총잡이는 사라지고 <b>무작위 신화 총잡이</b>(★0)가 나와요. 출전 중이면 그 자리에 신화가 들어가요.</p>';
+    h += '<div class="hgrid">' + list.map(u => { const k = ukey(u); return heroTile(u, ' data-act="mythPick" data-k="' + esc(k) + '" role="button"', mythSel.has(k) ? 'pick' : ''); }).join('') + '</div>';
+    h += '<p class="desc" style="text-align:center;color:#fff">고른 재료 <b>' + mythSel.size + '/' + MYTH_NEED + '</b></p>';
+    h += '<div class="slots4" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">' + MYTHT.map((t, n) => '<div class="desc" style="font-size:11px;text-align:center"><b>' + NMS[n] + '</b><br>' + t.nm + '</div>').join('') + '</div>';
+    h += '<button class="btn p wide ol-s" data-act="mythGo"' + (mythSel.size === MYTH_NEED ? '' : ' disabled') + '>✨ 신화 강화하기</button>';
+    return h;
+  }
+  function mythMake() {
+    const keys = [...mythSel].filter(k => { const u = getUnit(k); return u && !u.m && u.s >= MYTH_STAR; });
+    if (keys.length !== MYTH_NEED) return null;
+    const hi = keys.every(k => getUnit(k).s >= 24);
+    const slotsFreed = [];
+    save.slots = save.slots.map((k, i) => { if (keys.includes(k)) { slotsFreed.push(i); return null; } return k; });
+    save.coll = save.coll.filter(u => !keys.includes(ukey(u)));
+    const owned = new Set(save.coll.filter(u => u.m).map(ukey)), opts = [];
+    for (let n = 0; n < NMS.length; n++) for (let se = 0; se < 5; se++) { const u = { n, e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se }; if (!owned.has(ukey(u))) opts.push(u); }
+    const nu = opts.length ? opts[Math.floor(Math.random() * opts.length)] : { n: Math.floor(Math.random() * 8), e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se: Math.floor(Math.random() * 5) };
+    if (owned.has(ukey(nu))) return null;
+    if (hi) { const o = [0, 1, 2, 3, 4].filter(x => x !== nu.se); nu.xb = o[Math.floor(Math.random() * o.length)]; }
+    save.coll.push(nu);
+    const free = slotsFreed.length ? slotsFreed[0] : save.slots.indexOf(null);
+    if (free >= 0) save.slots[free] = ukey(nu);
+    mythSel.clear();
+    return nu;
+  }
   function heroBody() {
     const u = getUnit(selKey);
     if (!u) return '<p class="empty">총잡이를 찾을 수 없어요.</p>';
     const st = hstat(u), max = u.s >= 30;
-    const canProt = u.s >= 15 && u.s <= 21 && u.dc < 2, prot = protect && canProt;
-    const o = starOdds(u, protect), cost = starCost(u.s) * (prot ? 2 : 1);
+    const canProt = !u.m && u.s >= 15 && u.s <= 21 && u.dc < 2, prot = protect && canProt;
+    const o = starOdds(u, protect), cost = starCostU(u) * (prot ? 2 : 1);
     const at = save.slots.indexOf(selKey);
-    let h = '<div class="row" style="align-items:center"><div class="htile r' + u.e.length + '" style="width:96px;flex:none">' + face(HATS[u.n], EC[u.e[0]], { n: u.n }) + '<span class="hn ol-s">' + NMS[u.n] + '</span></div>' +
-      '<div class="grow" style="display:grid;gap:4px"><span class="chips">' + u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + ' · ' + EFF[e] + '</i>').join('') + '</span>' +
+    let h = '<div class="row" style="align-items:center"><div class="htile r' + uRar(u) + '" style="width:96px;flex:none">' + face(HATS[u.n], uCol(u), { n: u.n }) + (u.m ? '<span class="myb">신화</span>' : '') + '<span class="hn ol-s">' + NMS[u.n] + '</span></div>' +
+      '<div class="grow" style="display:grid;gap:4px"><span class="chips">' + u.e.map(e => '<i class="chip e' + e + (u.m && e === u.se ? ' se' : '') + '">' + ENM[e] + (u.m && e === u.se ? '★' : '') + ' · ' + EFF[e] + '</i>').join('') + '</span>' +
+      (u.m ? '<p class="desc" style="color:#ffd0ff"><b>✨ 신화</b> · 피해 ×1.3 · 강속성 <b>' + ENM[u.se] + '</b>(이 속성으로 때리면 ×1.3 더)<br><b>' + MYTHT[u.n].nm + '</b> · ' + MYTHT[u.n].d + '</p>' : '') +
       '<p class="desc">공격력 <b>' + st.dmg.toFixed(1) + '</b> · 발사 간격 <b>' + st.iv.toFixed(2) + '초</b><br>초당 피해 약 <b>' + fmt(dps(st)) + '</b></p></div></div>';
     h += starRows(u.s);
     if (max) h += '<div class="msg ok">30성 달성! 최고 단계예요.</div>';
@@ -1468,7 +1535,7 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="row" style="justify-content:space-between"><b class="ol" style="font-family:var(--display);font-size:20px">' + u.s + '성 → ' + (u.s + 1) + '성</b><span class="ol-s" style="font-family:var(--display);display:flex;align-items:center;gap:3px">' + I.coin + fmt(save.gold) + '</span></div>';
       h += o.chance ? '<div class="msg ok">찬스타임! 이번 강화는 100% 성공해요.</div>' :
         '<div class="kv"><div class="ok"><span>성공</span><b class="ol-s">' + pct(o.p) + '</b></div><div class="mid"><span>' + (o.drop ? '실패(하락)' : '실패(유지)') + '</span><b class="ol-s">' + pct(o.keep + o.drop) + '</b></div><div class="bad"><span>파괴</span><b class="ol-s">' + pct(o.boom) + '</b></div></div>';
-      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 12성이 돼요.' : '') + '</p>';
+      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 파괴(★15로), 실패하면 별 유지, 파괴 방지 없음</span>' : '') + '</p>';
       h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">15~21성에서 파괴를 막아요. 비용 2배</span></span><button class="tog' + (prot ? ' on' : '') + '" data-act="prot"' + (canProt ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (prot ? 'ON' : 'OFF') + '</i></button></div>';
       if (autoWarn && !autoOn) h += '<div class="rmbar"><p class="desc" style="color:#fff;text-align:center"><b>' + esc(autoWarn.t) + '</b></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn r ol-s" data-act="autoRisk">위험 감수하고 계속</button><button class="btn ol-s" data-act="autoWarnNo">여기서 그만</button></div></div>';
       if (autoOn) h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">자동 강화 중 · 목표 <b>★' + autoTo + '</b> · 지금 ★' + u.s + '</p><button class="btn r wide ol-s" data-act="auto">자동 멈춤</button></div>';
@@ -1492,14 +1559,14 @@ input { -webkit-user-select: text; user-select: text; }
   function starUp() {
     const u = getUnit(selKey);
     if (!u || u.s >= 30) { autoOn = false; return false; }
-    const canProt = u.s >= 15 && u.s <= 21 && u.dc < 2, prot = protect && canProt;
-    const cost = starCost(u.s) * (prot ? 2 : 1);
+    const canProt = !u.m && u.s >= 15 && u.s <= 21 && u.dc < 2, prot = protect && canProt;
+    const cost = starCostU(u) * (prot ? 2 : 1);
     if (save.gold < cost) { autoOn = false; smsg = { c: 'bad', t: '골드가 부족해요' }; return false; }
     save.gold -= cost;
     const o = starOdds(u, protect), r = Math.random(), s0 = u.s, nm = NMS[u.n];
     let ok = false;
     if (r < o.p) { u.s = s0 + 1; u.dc = 0; ok = true; smsg = { c: 'ok', t: (o.chance ? '찬스타임 성공! ' : '강화 성공! ') + nm + ' ★' + u.s }; Snd.lvup(); }
-    else if (r < o.p + o.boom) { u.s = 12; u.dc = 0; smsg = { c: 'bad', t: '파괴! ' + nm + ' 12성으로 복구' }; Snd.boom(); }
+    else if (r < o.p + o.boom) { u.s = boomTo(u); u.dc = 0; smsg = { c: 'bad', t: '파괴! ' + nm + ' ' + u.s + '성으로 복구' }; Snd.boom(); }
     else if (r < o.p + o.boom + o.drop) { u.s = s0 - 1; u.dc = Math.min(2, u.dc + 1); smsg = { c: 'bad', t: '하락 · ' + nm + ' ★' + u.s + (u.dc >= 2 ? ' · 다음은 찬스타임' : '') }; Snd.bad(); }
     else { u.dc = 0; smsg = { c: 'mute', t: '실패 · ★' + u.s + ' 유지' }; Snd.bad(); }
     qAdd('enh'); persist(); topbar();
@@ -1511,8 +1578,8 @@ input { -webkit-user-select: text; user-select: text; }
     const u = getUnit(selKey); if (!u) return false;
     const o = starOdds(u, protect);
     if (o.boom <= 0) return false;
-    if (protect && u.s >= 22 && !autoAck.prot) { autoWarn = { k: 'prot', t: '⚠ ★' + u.s + '부터는 파괴 방지가 적용되지 않아요. 다음 강화부터 파괴 확률 ' + pct(o.boom) + '! 자동 강화를 멈췄어요.' }; return true; }
-    if (!autoAck.boom && !(protect && autoAck.prot)) { autoWarn = { k: 'boom', t: '⚠ 다음 강화(★' + u.s + ' → ★' + (u.s + 1) + ')부터 파괴될 수 있어요(확률 ' + pct(o.boom) + '). 터지면 12성이 돼요. 자동 강화를 멈췄어요.' }; return true; }
+    if (protect && !u.m && u.s >= 22 && !autoAck.prot) { autoWarn = { k: 'prot', t: '⚠ ★' + u.s + '부터는 파괴 방지가 적용되지 않아요. 다음 강화부터 파괴 확률 ' + pct(o.boom) + '! 자동 강화를 멈췄어요.' }; return true; }
+    if (!autoAck.boom && !(protect && autoAck.prot)) { autoWarn = { k: 'boom', t: '⚠ 다음 강화(★' + u.s + ' → ★' + (u.s + 1) + ')부터 파괴될 수 있어요(확률 ' + pct(o.boom) + '). 터지면 ' + boomTo(u) + '성이 돼요. 자동 강화를 멈췄어요.' }; return true; }
     return false;
   }
   function autoStep() {
@@ -1580,7 +1647,7 @@ input { -webkit-user-select: text; user-select: text; }
   function skillBody() {
     const s = SKM[skSel], k = skOf(skSel), open = skUnlocked(s), need = skNeed(k.lv), cost = skCost(k.lv);
     let h = '<div class="row"><span class="si" style="width:72px;height:72px;border:3px solid ' + INK + ';border-radius:12px;overflow:hidden;flex:none">' + skillIcon(s.id) + '</span><div class="grow"><b class="ol" style="font-family:var(--display);font-size:20px">' + s.nm + '</b><p class="desc">' + s.d + '</p></div></div>';
-    if (!open) return h + '<p class="desc" style="text-align:center">프로필 레벨 <b>' + s.un + '</b>이 되면 열려요. 지금 레벨 ' + save.lv + '.</p>';
+    if (!open) return h + '<p class="desc" style="text-align:center">프로필 레벨 <b>' + s.un + '</b>이 되면 열려요. 지금 ' + lvName(save.lv) + '.</p>';
     h += '<div class="kv"><div class="mid"><span>레벨</span><b class="ol-s">' + k.lv + '</b></div><div class="mid"><span>스킬 위력</span><b class="ol-s">+' + ((k.lv - 1) * 15) + '%</b></div><div class="mid"><span>치명타 피해</span><b class="ol-s">+' + (k.lv - 1) + '%</b></div></div>';
     if (k.lv >= 10) return h + '<div class="msg ok">최고 레벨이에요.</div>';
     h += '<div class="bar cy"><i style="width:' + clamp(k.c / need * 100, 0, 100) + '%"></i><b class="ol-s">카드 ' + k.c + '/' + need + '</b></div>';
@@ -1691,7 +1758,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (fill) fillInfo = { k: 'unit', n: pulls.length, gold: batches * cost };
     qAdd('pull', 1); Snd.coin(); persist(); render();
     const lg = pulls.filter(r => r.u.e.length >= 4);
-    if (lg.length) legendFlash(face(HATS[lg[0].u.n], EC[lg[0].u.e[0]], { n: lg[0].u.n }), '4속성 총잡이!' + (lg.length > 1 ? ' ×' + lg.length : ''), lg.slice(0, 4).map(r => NMS[r.u.n] + ' ' + r.u.e.map(e => ENM[e]).join('')).join(' · '));
+    if (lg.length) legendFlash(face(HATS[lg[0].u.n], uCol(lg[0].u), { n: lg[0].u.n }), '4속성 총잡이!' + (lg.length > 1 ? ' ×' + lg.length : ''), lg.slice(0, 4).map(r => NMS[r.u.n] + ' ' + r.u.e.map(e => ENM[e]).join('')).join(' · '));
   }
   /* normal stages: up to ~28k; elite: 200k at stage 1, ×1.048 per elite stage opened (~2M at 50) */
   const bagElite = () => save.elOn && save.el ? clamp(+save.el.unlocked || 0, 0, ESTAGES) : 0;
@@ -1721,7 +1788,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (pulls) {
       const ushow = pulls.length > 20 ? pulls.filter(r => r.isNew).slice(0, 40) : pulls;
       h += '<div class="card" style="margin:6px 0"><div class="row"><h3 class="ol grow">뽑기 결과</h3><button class="btn sm ol-s" data-act="pullclr">닫기</button></div>' + (fillInfo && fillInfo.k === 'unit' ? '<p class="desc" style="color:#fff">' + fillInfo.n + '번 뽑기 · ' + fmt(fillInfo.gold) + '골드 · 새 총잡이 ' + pulls.filter(r => r.isNew).length + '명' + (pulls.length > 20 ? ' (새 총잡이만 보여줘요)' : '') + '</p>' : '') + '<div class="pullres">';
-      for (const r of ushow) h += '<div class="htile r' + r.u.e.length + '">' + face(HATS[r.u.n], EC[r.u.e[0]], { n: r.u.n }) + '<span class="hn ol-s" style="font-size:11px">' + NMS[r.u.n] + '</span><span class="chips">' + r.u.e.map(e => '<i class="chip e' + e + '" style="font-size:9px;padding:0 3px">' + EGL[e] + '</i>').join('') + '</span><span class="tag' + (r.isNew ? '' : ' dup') + '">' + (r.isNew ? 'NEW' : r.full ? '가득 +' + FULLG + 'G' : '+' + DUPG + 'G') + '</span></div>';
+      for (const r of ushow) h += '<div class="htile r' + uRar(r.u) + '">' + face(HATS[r.u.n], uCol(r.u), { n: r.u.n }) + '<span class="hn ol-s" style="font-size:11px">' + NMS[r.u.n] + '</span><span class="chips">' + r.u.e.map(e => '<i class="chip e' + e + '" style="font-size:9px;padding:0 3px">' + EGL[e] + '</i>').join('') + '</span><span class="tag' + (r.isNew ? '' : ' dup') + '">' + (r.isNew ? 'NEW' : r.full ? '가득 +' + FULLG + 'G' : '+' + DUPG + 'G') + '</span></div>';
       h += '</div></div>';
     }
     return h;
@@ -1755,8 +1822,8 @@ input { -webkit-user-select: text; user-select: text; }
     const ago = save.saved ? Math.max(0, Math.round((Date.now() - save.saved) / 1000)) : null;
     const pw = power(), t = tierOf(pw), T = TIERS[t], pc = powerPct(), sh = powerShare(), rd = radarSvg(pc), rec = powerRecs();
     return '<div class="pbox"><div class="prof2"><span class="face">' + face(myHat(), '#e0452e') + '</span><div style="flex:1;min-width:0"><b class="ol" style="font-family:var(--display);font-weight:400;font-size:20px;overflow-wrap:anywhere">' + esc(save.name || '이름 없음') + ' <span style="font-size:14px;color:var(--yel)">· ' + PSTEP[Math.min(4, Math.floor(rd.done / 20))] + '</span></b>' +
-        '<div class="desc" style="color:#cfe0f0">LV ' + save.lv + ' · <span style="color:' + T.c1 + '">' + T.nm + ' 티어</span> · 전투력 <b style="color:#fff">' + fmt(pw) + '</b></div>' +
-        '<div class="lvline">' + starBadge(save.lv) + '<div class="bar"><i style="width:' + clamp(save.xp / lvNeed(save.lv) * 100, 0, 100) + '%"></i><b class="ol-s">' + save.xp + '/' + lvNeed(save.lv) + '</b></div></div></div>' + tierEmblem(t, 'big') + '</div>' +
+        '<div class="desc" style="color:#cfe0f0">' + lvName(save.lv) + (save.lv > 99 ? ' (피해 +' + (save.lv - 99) + '%)' : '') + ' · <span style="color:' + T.c1 + '">' + T.nm + ' 티어</span> · 전투력 <b style="color:#fff">' + fmt(pw) + '</b></div>' +
+        '<div class="lvline">' + lvBadge(save.lv) + '<div class="bar"><i style="width:' + clamp(save.xp / lvNeed(save.lv) * 100, 0, 100) + '%"></i><b class="ol-s">' + save.xp + '/' + lvNeed(save.lv) + '</b></div></div></div>' + tierEmblem(t, 'big') + '</div>' +
         rd.svg + '<p class="desc" style="text-align:center;margin:0">육각형이 넓을수록 골고루 강해요 · 가운데 숫자는 완성도 · 각 꼭짓점은 그 항목 최대치 대비 %</p></div>' +
       '<div class="pbox"><b class="ol-s" style="font-family:var(--display);font-size:15px">전투력은 어디서 나올까</b><div class="pchips">' + PCAT.map(c => '<div><small>' + c.ic + ' ' + c.nm + '</small><b class="ol-s" style="color:' + c.c + '">' + Math.round(sh[c.k] * 100) + '%</b></div>').join('') + '</div></div>' +
       '<div class="pbox"><b class="ol-s" style="font-family:var(--display);font-size:15px">다음에 올리면 좋은 것</b>' + (rec.length ? rec.map(r => '<div class="prec"><span style="font-size:20px">' + r.ic + '</span><span style="min-width:0"><b>' + esc(r.nm) + '</b><br><span class="desc">' + esc(r.sub) + '</span></span><span class="up">전투력 +' + (r.g >= .1 ? Math.round(r.g * 100) : (Math.round(r.g * 1000) / 10)) + '%</span></div>').join('') : '<p class="desc">출전 총잡이·장비·펫을 갖추면 추천이 나와요.</p>') + '</div>' +
@@ -1817,7 +1884,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
-    { id: 'n261114e2', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
+    { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
   const leftTxt = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간' : h ? h + '시간 ' + m + '분' : m + '분'; };
@@ -1968,8 +2035,8 @@ input { -webkit-user-select: text; user-select: text; }
     if (!els || !els.length) return 1;
     const r = resOf(e);
     let m = 0;
-    const pen = S && S.r ? S.r.pen : 0;
-    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)); if (v > m) m = v; }
+    const pen = S && S.r ? S.r.pen : 0, se = els.se, xb = els.xb;
+    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)) * (a === se || a === xb ? 1.3 : 1); if (v > m) m = v; }
     return m;
   }
   let S = null, raf = 0, last = 0, speed = 1, tmode = 0;
@@ -2000,7 +2067,7 @@ input { -webkit-user-select: text; user-select: text; }
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, ps: x.s, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
-      elite, n, P, sh, avg, g: G, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
+      elite, n, P, sh, avg, g: G, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), lvb: lvBonus(), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
       lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
@@ -2060,7 +2127,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function xpNeed(l) { return 5 + l * 3; }
   function critChance() { return .05 + S.pass.crit * .06 + S.g.crit; }
-  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk);
+  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk) * (1 + S.lvb);
   function skPow(id) { return S.avg * atkMul() * (1 + .15 * (skOf(id).lv - 1)); }
 
   /* damage numbers in Korean units: 1234조 5678억 9012만 3456 (empty groups are left out) */
@@ -2080,15 +2147,16 @@ input { -webkit-user-select: text; user-select: text; }
     const m = emul(els, e);
     let a = base * m;
     if (els && els.length) a *= 1 + S.g.el;
-    if (e.k === 'boss') a *= 1 + S.g.boss + S.r.boss;
+    if (e.k === 'boss') a *= 1 + S.g.boss + S.r.boss + (els && els.boss || 0);
     if (m > 1 && S.r.weak) a *= 1 + S.r.weak;
     if (S.r.exe && e.hp < e.mh * .3) a *= 1 + S.r.exe;
     if (e.cor > 0) a *= 1 + e.cv;
-    if (S.elite) a *= 1 - ELITE.def;
+    /* elite: monsters take 5% less damage, 30% less from elite stage 40 */
+    if (S.elite) a *= 1 - (S.n >= 40 ? .3 : ELITE.def);
     if (S.sk.reson && S.teamEl >= 4) a *= 1 + .25 + .05 * (S.sk.reson.l - 1);
     if (S.sk.bounty && e.k === 'boss') a *= 1 + .2 + .05 * (S.sk.bounty.l - 1);
     let crit = false;
-    if (canCrit && Math.random() < critChance()) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm; }
+    if (canCrit && Math.random() < critChance() + (els && els.cb || 0)) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm; }
     if (direct && e.arm) a = Math.max(a * .3, a - e.arm);
     e.hp -= a; e.fl = .08;
     dmgNum(e.x, e.y - e.r - 6, a, crit ? 'crit' : m > 1 ? 'weak' : m < 1 ? 'res' : 'n');
@@ -2135,7 +2203,7 @@ input { -webkit-user-select: text; user-select: text; }
   function fireAt(s, t, extra) {
     const st = s.st, a = Math.atan2(t.y - s.y, t.x - s.x);
     s.ang = a; s.fl = .07;
-    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.el[0]] : '#fff3a0', ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? st.el[0] : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
+    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
   }
   function updShooters(dt) {
     const tg = front();
@@ -2149,7 +2217,7 @@ input { -webkit-user-select: text; user-select: text; }
         fireAt(s, tg);
         if (S.r.smash && (s.cnt = (s.cnt || 0) + 1) % 5 === 0) { const b = S.bul[S.bul.length - 1]; b.dmg *= 1 + S.r.smash; b.big = 1; }
         if (S.g.dbl && Math.random() < S.g.dbl) fireAt(s, tg);
-        if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); }
+        if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); if (s.st.twin >= 2) fireAt(s, nearest(tg.x, tg.y, [tg, t2], 180) || tg); }
         s.cd = s.st.iv / spdm;
         Snd.shot();
       }
@@ -2172,12 +2240,13 @@ input { -webkit-user-select: text; user-select: text; }
           if (b.burn) { e.burn = 3; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
+          if (b.frz && Math.random() < b.frz) e.frz = Math.max(e.frz, 1);
         }
         if (b.chain) {
           const hitL = [e];
-          for (let i = 0; i < b.chain; i++) { const o = nearest(hitL[hitL.length - 1].x, hitL[hitL.length - 1].y, hitL, 90); if (!o) break; S.fx.push({ k: 'zap', x1: hitL[hitL.length - 1].x, y1: hitL[hitL.length - 1].y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * .6, b.el, false, false); hitL.push(o); }
+          for (let i = 0; i < b.chain; i++) { const o = nearest(hitL[hitL.length - 1].x, hitL[hitL.length - 1].y, hitL, 90); if (!o) break; S.fx.push({ k: 'zap', x1: hitL[hitL.length - 1].x, y1: hitL[hitL.length - 1].y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * (b.chm || .6), b.el, false, false); hitL.push(o); }
         }
-        if (b.splash) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.splash) hit(o, b.dmg * .6, b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: b.splash, l: .25, c: '#ffcf6a' }); }
+        if (b.splash) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.splash) hit(o, b.dmg * (b.spm || .6), b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: b.splash, l: .25, c: '#ffcf6a' }); }
       } else { b.x += dx / d * st; b.y += dy / d * st; }
     }
     S.bul = S.bul.filter(b => !b.dead);
@@ -2440,14 +2509,14 @@ input { -webkit-user-select: text; user-select: text; }
       '<p class="desc" style="text-align:center;color:#fff">' + stageLabel(n) + ' · ' + NAMES[i] + ' · 남은 체력 ' + hpPct + '% · 처치 ' + S.kills + '</p>' +
       (drops.length ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>장비 획득!</b></p><div class="rewards">' + drops.map(d => '<div class="rw">' + itemIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + iK(d.id).nm + '</b><span style="color:' + RAR[iG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[iG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       (rdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0ff"><b>💍 반지 획득!</b></p><div class="rewards">' + rdrops.map(d => '<div class="rw">' + ringIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + rK(d.id).nm + '</b><span style="color:' + RAR[rG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[rG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
-      '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + starBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
+      '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + lvBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
       (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
       (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
       (S.evt ? '<p class="desc" style="text-align:center;color:#ffb72e;font-size:16px"><b>🔥 이벤트 보상 ' + EVT.mul + '배 적용!</b></p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
-      (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! LV.' + save.lv + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
+      (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! ' + lvName(save.lv) + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + stageLabel(n + 1) + ' · ' + NAMES[n] + '</b> 해금!' + (S.elite ? '' : ' · 보관함 +1칸 (' + capOf() + '칸)') + '</p>' : '<p class="desc" style="text-align:center">' + (n === tk.unlocked && n < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + save.plays[i] + '번') + '</p>') +
       (!win && power() < recPower(n) * (S.elite ? 25000 : 1) ? '<p class="desc" style="text-align:center">추천 전투력 ' + fmt(recPower(n) * (S.elite ? 25000 : 1)) + ' · 내 전투력 ' + fmt(power()) + '. 총잡이 탭에서 강화해 보세요.</p>' : '') +
       '<div id="resBtns" style="display:grid;gap:10px">' + resButtons(n) + '</div>' +
@@ -2777,6 +2846,16 @@ input { -webkit-user-select: text; user-select: text; }
     c.restore();
     if (fl > 0) { c.fillStyle = '#fff3a0'; c.beginPath(); c.arc(x - 16, y + bob, 3, 0, 6.283); c.fill(); }
   }
+  /* mythic: five element orbs circling + a rainbow ring under the gunslinger */
+  function mythHalo(c, x, y, t) {
+    c.save(); c.translate(x, y + 2);
+    const g = c.createConicGradient ? c.createConicGradient(t * 2, 0, 0) : null;
+    if (g) { EC.forEach((col, i) => g.addColorStop(i / 5, col)); g.addColorStop(1, EC[0]); c.strokeStyle = g; } else c.strokeStyle = '#fff';
+    c.globalAlpha = .85; c.lineWidth = 4; c.beginPath(); c.ellipse(0, 14, 24, 8, 0, 0, 6.283); c.stroke();
+    c.globalAlpha = 1;
+    for (let i = 0; i < 5; i++) { const a = t * 2.2 + i * 1.2566, ox = Math.cos(a) * 26, oy = Math.sin(a) * 10 - 6; c.fillStyle = EC[i]; c.strokeStyle = INK; c.lineWidth = 1.5; c.beginPath(); c.arc(ox, oy, 4, 0, 6.283); c.fill(); c.stroke(); }
+    c.restore();
+  }
   function drawCowboy(c, x, y, hat, band, ang, fl, lead, n) {
     if (n === undefined || n === null) n = -1;
     c.save(); c.translate(x, y);
@@ -3019,7 +3098,7 @@ input { -webkit-user-select: text; user-select: text; }
     for (const s of shooters) if (s.syn) drawOrbs(c, s.x, s.y, 0);
     const atm = performance.now() / 1000;
     for (const s of shooters) if (s.u && s.u.s >= AURA_S) auraBack(c, s.x, s.y, s.u.s - AURA_S + 1, atm, s.n || s.u.n);
-    for (const s of shooters) if (s.robot) continue; else if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0, s.pg || 0); else drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? EC[s.u.e[0]] : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1);
+    for (const s of shooters) if (s.robot) continue; else if (s.pet != null) drawPet(c, s.x, s.y, s.pet, s.ang, s.fl || 0, s.pg || 0); else { if (s.u && s.u.m) mythHalo(c, s.x, s.y, performance.now() / 1000); drawCowboy(c, s.x, s.y, s.u ? HATS[s.u.n] : '#c8783a', s.u ? uCol(s.u) : '#e0452e', s.ang, s.fl || 0, s.lead, s.u ? s.u.n : -1); }
     for (const s of shooters) if (s.u && s.u.s >= AURA_S) auraFront(c, s.x, s.y, s.u.s - AURA_S + 1, atm, s.u.n);
     for (const s of shooters) if (s.syn) drawOrbs(c, s.x, s.y, 1);
     drawRobot(c, st ? st.robo.x : 364, st ? st.robo.y : 150 + Math.sin(t * 2) * 6);
@@ -3159,7 +3238,7 @@ input { -webkit-user-select: text; user-select: text; }
       const list2 = save.coll.filter(u => !used.includes(ukey(u))).sort((a, b) => supportDmg(b) - supportDmg(a)).slice(0, 8);
       for (const u of list2) {
         const k = ukey(u), m = elMul(u.e, B.el);
-        h += '<div class="htile r' + u.e.length + (k === bossSel ? ' sel' : '') + '" data-act="bpick" data-k="' + k + '" role="button">' + face(HATS[u.n], EC[u.e[0]], { n: u.n }) + '<span class="hn ol-s" style="font-size:12px">' + NMS[u.n] + ' ★' + u.s + '</span><span class="dmg">' + fmt(supportDmg(u)) + (m > 1 ? ' 약점!' : m < 1 ? ' 저항' : '') + '</span></div>';
+        h += '<div class="htile r' + uRar(u) + (k === bossSel ? ' sel' : '') + '" data-act="bpick" data-k="' + k + '" role="button">' + face(HATS[u.n], uCol(u), { n: u.n }) + '<span class="hn ol-s" style="font-size:12px">' + NMS[u.n] + ' ★' + u.s + '</span><span class="dmg">' + fmt(supportDmg(u)) + (m > 1 ? ' 약점!' : m < 1 ? ' 저항' : '') + '</span></div>';
       }
       h += '</div><button class="btn p wide ol-s" data-act="bsend"' + (bossSel ? '' : ' disabled') + '>⚔ 지원 보내기 (' + (sentN(s) + 1) + '/' + WB_SEND + ')</button>';
       h += '<p class="desc" style="color:#cdb9ef">보스 속성의 약점을 찌르는 총잡이를 보내면 피해가 1.6배예요. 보스 하나에 총잡이 <b>3명</b>까지, 같은 총잡이는 한 번만 보낼 수 있어요.</p>';
@@ -3236,7 +3315,7 @@ input { -webkit-user-select: text; user-select: text; }
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
       h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
-        '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + clamp(+d.lv || 1, 1, 300) + '</b></div><div><span>스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 50) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
+        '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 50) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
         (isMe ? '' : (() => { const pv = on && peers[r.id] && peers[r.id].v ? String(peers[r.id].v) : '', dv = String(d.v || ''), cv = pv || dv;
           if (cv >= APP_VER) return '';
           return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
@@ -3250,7 +3329,7 @@ input { -webkit-user-select: text; user-select: text; }
   function agoTxt(t) { if (!t) return '알 수 없음'; const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : Math.floor(s / 86400) + '일 전'; }
   function eliteBody() {
     const req = eliteReq(), ok = req.every(r => r.ok);
-    return '<p class="desc" style="color:#fff">정예는 1~50단계를 따로 진행하는 고난도 모드예요. 몬스터 <b>체력 ' + ELITE.hp + '배</b>, 공격력 ' + ELITE.atk + '배, 수·이동 속도 +15%, 받는 피해 -5%이고 모두 속성을 갖고 나와요. 보스가 <b>30% 확률로 2번</b> 따로 굴려져 최대 <b>2마리</b>까지 나와요(보스마다 장비 드롭). 대신 보상이 커요: 골드는 <b>일반 50단계의 130%부터 단계마다 +10%</b>, 클리어마다 <b>젬 40개부터 단계마다 +3개</b>(5단계마다 +40개 보너스).</p>' +
+    return '<p class="desc" style="color:#fff">정예는 1~50단계를 따로 진행하는 고난도 모드예요. 몬스터 <b>체력 ' + ELITE.hp + '배</b>, 공격력 ' + ELITE.atk + '배, 수·이동 속도 +15%, 받는 피해 -5%(<b>40단계부터 -30%</b>)이고 모두 속성을 갖고 나와요. 보스가 <b>30% 확률로 2번</b> 따로 굴려져 최대 <b>2마리</b>까지 나와요(보스마다 장비 드롭). 대신 보상이 커요: 골드는 <b>일반 50단계의 130%부터 단계마다 +10%</b>, 클리어마다 <b>젬 40개부터 단계마다 +3개</b>(5단계마다 +40개 보너스).</p>' +
       '<p class="desc" style="color:#ffd0ff">💍 정예 <b>30단계부터</b> 보스를 잡으면 <b>반지</b>가 나와요(보스 1마리당 30~39단계 40% · 40단계 이상 60%).</p>' +
       req.map(r => '<div class="prow" style="padding:8px 12px"><span><b style="font-size:15px">' + (r.ok ? '✅ ' : '❌ ') + r.nm + '</b><br><span class="desc">지금: ' + r.cur + '</span></span><span></span></div>').join('') +
       '<button class="btn p wide ol-s" data-act="eliteBuy"' + (ok ? '' : ' disabled') + '>' + (ok ? '정예 모드 해금 · ' + (ELITE.cost / 1e4) + '만 골드' : '조건을 모두 채우면 해금할 수 있어요') + '</button>';
@@ -3467,6 +3546,9 @@ input { -webkit-user-select: text; user-select: text; }
     gearCb1: el => { const nx = combine(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + itemName(nx)); persist(); refreshPop(gearBody()); },
     gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else render(); },
     legendSkip: () => lgSkip(),
+    mythOpen: () => { mythSel.clear(); openPop('✨ 신화 강화', mythBody(), 'myth'); },
+    mythPick: el => { const k = el.dataset.k; if (mythSel.has(k)) mythSel.delete(k); else if (mythSel.size < MYTH_NEED) mythSel.add(k); Snd.click(); refreshPop(mythBody()); },
+    mythGo: () => { const nu = mythMake(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 총잡이!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
     ringbag: el => { ringSlot = +el.dataset.i; openPop('반지 · ' + (ringSlot + 1) + '번 칸', ringBody(), 'ring'); },
     ringEq: el => { const id = el.dataset.id; if (!save.rings[id]) return; save.rslot = save.rslot.map((x, j) => j !== ringSlot && x && rK(x) === rK(id) ? null : x); save.rslot[ringSlot] = id; Snd.click(); persist(); refreshPop(ringBody()); },
     ringOff: () => { save.rslot[ringSlot] = null; persist(); refreshPop(ringBody()); },
