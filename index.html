@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0102';
+  const APP_VER = 'v.261115-0146';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -988,8 +988,8 @@ input { -webkit-user-select: text; user-select: text; }
      Made from five ★22+ gunslingers (random name + strong element), starting again from ★0. */
   const MYTH_NEED = 5, MYTH_STAR = 22;
   const MYTHT = [
-    { nm: '백발백중', d: '치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통' }, { nm: '속사포', d: '공격 속도 +40%' }, { nm: '거인 사냥꾼', d: '보스 피해 +80% · 모든 피해 +15%' }, { nm: '대지 분쇄', d: '범위 피해 반경 1.8배 · 범위 피해 85%' },
-    { nm: '지옥불', d: '화상 피해 6배 · 주변 적에게 화상이 번짐' }, { nm: '절대 영도', d: '25% 확률로 1초 빙결 · 얼어 있는 적에게 피해 +80% · 언 적을 때리면 주변에 얼음 파편' }, { nm: '폭풍 연사', d: '2연사 → 65% 확률로 3연사' }, { nm: '천둥 사슬', d: '연쇄 4회 · 연쇄 피해 80%' }
+    { nm: '백발백중', d: '치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통' }, { nm: '속사포', d: '공격 속도 +60% · 같은 적을 계속 쏘면 1발마다 피해 +2% (최대 +60%)' }, { nm: '거인 사냥꾼', d: '보스 피해 +80% · 모든 피해 +15% · 체력이 많은 적일수록 피해 최대 +60%' }, { nm: '대지 분쇄', d: '범위 피해 반경 1.8배 · 범위 피해 85% · 5번째 공격마다 지진(넓은 범위 150%) · 범위 피해도 치명타 적용' },
+    { nm: '지옥불', d: '화상 피해 7배 · 주변 적에게 화상이 번짐 · 불타는 적에게 피해 +60% · 화상도 치명타 적용' }, { nm: '절대 영도', d: '25% 확률로 1초 빙결 · 얼어 있는 적에게 피해 +90% · 언 적을 때리면 주변에 얼음 파편(60%)' }, { nm: '폭풍 연사', d: '항상 3연사 · 총알 피해 +25% · 총알마다 40% 확률로 회오리(주변 80% 피해)' }, { nm: '천둥 사슬', d: '연쇄 5회 · 연쇄 피해 125% · 멀리 튕김 · 연쇄도 치명타 적용' }
   ];
   const uCol = u => EC[u.m ? u.se : u.e[0]];
   const uRar = u => u.m ? 5 : u.e.length;
@@ -1086,8 +1086,8 @@ input { -webkit-user-select: text; user-select: text; }
     const el = u.e.slice(), o = { dmg, iv, el, burn, slow, chain, splash, twin };
     if (u.m) {
       o.dmg *= 1.3; el.se = u.se; o.se = u.se; if (u.xb != null) el.xb = u.xb;
-      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; } else if (u.n === 1) o.iv /= 1.4; else if (u.n === 2) { el.boss = .8; o.dmg *= 1.15; } else if (u.n === 3) { o.splash = 61; o.spm = .85; }
-      else if (u.n === 4) { o.burn = 2.4; o.bsp = 60; } else if (u.n === 5) { o.frz = .25; el.fzb = .8; el.shat = 1; } else if (u.n === 6) o.twin = 2; else if (u.n === 7) { o.chain = 4; o.chm = .8; }
+      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; } else if (u.n === 1) { o.iv /= 1.6; o.ramp = 1; } else if (u.n === 2) { el.boss = .8; o.dmg *= 1.15; el.giant = .6; } else if (u.n === 3) { o.splash = 61; o.spm = .85; el.sc = 1; o.quake = 1; }
+      else if (u.n === 4) { o.burn = 2.8; o.bsp = 80; el.sc = 1; el.ign = .6; } else if (u.n === 5) { o.frz = .25; el.fzb = .9; el.shat = 1; } else if (u.n === 6) { o.twin = 2; el.gale = .4; o.dmg *= 1.25; } else if (u.n === 7) { o.chain = 5; o.chm = 1.25; o.chr = 140; el.sc = 1; }
     }
     return o;
   }
@@ -1174,7 +1174,8 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* profile level up to 300; from Lv98 on every level needs the same xp as 98 -> 99 */
   /* Lv99 and up: every level needs 400 runs of stage 50 (21 xp each) = 8,400 xp; each level past 99 gives +1% total damage */
-  const lvNeed = l => l >= 99 ? 8400 : 10 + Math.min(l, 98) * 10;
+  /* eased 40%: every level needs 60% of the old amount (Lv99+ 5,040 instead of 8,400) */
+  const lvNeed = l => Math.round((l >= 99 ? 8400 : 10 + Math.min(l, 98) * 10) * .6);
   const lvName = l => l < 99 ? 'LV.' + l : l < 198 ? '지존 ' + (l - 98) : '명인 ' + (l - 197);
   const lvBadge = l => l < 99 ? starBadge(l) : l < 198 ? starBadge('지' + (l - 98), '#c27bff') : starBadge('명' + (l - 197), '#e0402a');
   const lvBonus = () => Math.max(0, save.lv - 99) * .01;
@@ -2198,6 +2199,7 @@ input { -webkit-user-select: text; user-select: text; }
     let crit = false;
     /* crit chance above 100% turns into crit damage (1% chance = +1% crit damage) */
     const cc = critChance() + (els && els.cb || 0), cOver = Math.max(0, cc - 1);
+    if (els) { if (!canCrit && els.sc) a *= 1 + Math.min(1, cc) * (.5 + critBonus() / 100 + S.r.cdm + (els.cdm || 0) + cOver); if (els.giant) a *= 1 + els.giant * Math.max(0, e.hp / e.mh); if (els.ign && e.burn > 0) a *= 1 + els.ign; }
     if (canCrit && Math.random() < cc) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm + (els && els.cdm || 0) + cOver; }
     if (direct && e.arm) a = Math.max(a * .3, a - e.arm);
     const wasFrz = e.frz > 0;
@@ -2205,7 +2207,7 @@ input { -webkit-user-select: text; user-select: text; }
     e.hp -= a; e.fl = .08;
     /* mythic traits: 한일 crit pierces one enemy behind, 해천 hitting a frozen enemy throws ice shards */
     if (els && canCrit) { if (crit && els.cpi) { const o = nearest(e.x, e.y, [e], 80); if (o) hit(o, a, [], true, false); }
-      if (wasFrz && els.shat) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 40) hit(o, a * .4, [], false, false); }
+      if (wasFrz && els.shat) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 40) hit(o, a * .6, [], false, false); }
     dmgNum(e.x, e.y - e.r - 6, a, crit ? 'crit' : m > 1 ? 'weak' : m < 1 ? 'res' : 'n');
     Snd.hit(crit);
     if (e.hp <= 0) kill(e);
@@ -2250,7 +2252,7 @@ input { -webkit-user-select: text; user-select: text; }
   function fireAt(s, t, extra) {
     const st = s.st, a = Math.atan2(t.y - s.y, t.x - s.x);
     s.ang = a; s.fl = .07;
-    S.bul.push({ src: s, x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, bsp: st.bsp || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
+    S.bul.push({ src: s, x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, bsp: st.bsp || 0, chr: st.chr || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
   }
   function updShooters(dt) {
     const tg = front();
@@ -2260,13 +2262,17 @@ input { -webkit-user-select: text; user-select: text; }
       if (s.robot) { s.x = S.robo.x - 14; s.y = S.robo.y + 6; }
       s.cd -= dt; s.fl -= dt;
       if (tg) s.ang = Math.atan2(tg.y - s.y, tg.x - s.x);
-      if (tg && s.cd <= 0) {
+      if (!tg && s.cd < 0) s.cd = 0;
+      /* fast shooters may fire several times in one frame (attack speed is no longer capped by the frame rate) */
+      for (let shot = 0; tg && s.cd <= 0 && shot < 8; shot++) {
         fireAt(s, tg);
+        if (s.st.ramp) { s.rk = s.rt === tg ? Math.min(30, (s.rk || 0) + 1) : 0; s.rt = tg; S.bul[S.bul.length - 1].dmg *= 1 + .02 * s.rk; }
+        if (s.st.quake && (s.qc = (s.qc || 0) + 1) % 5 === 0) S.bul[S.bul.length - 1].quake = 1;
         if (S.r.smash && (s.cnt = (s.cnt || 0) + 1) % 5 === 0) { const b = S.bul[S.bul.length - 1]; b.dmg *= 1 + S.r.smash; b.big = 1; }
         if (S.g.dbl && Math.random() < S.g.dbl) fireAt(s, tg);
-        if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); if (s.st.twin >= 2 && Math.random() < .65) fireAt(s, nearest(tg.x, tg.y, [tg, t2], 180) || tg); }
-        s.cd = s.st.iv / spdm;
-        Snd.shot();
+        if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); if (s.st.twin >= 2) fireAt(s, nearest(tg.x, tg.y, [tg, t2], 180) || tg); }
+        s.cd += s.st.iv / spdm;
+        if (!shot) Snd.shot();
       }
     }
   }
@@ -2284,15 +2290,17 @@ input { -webkit-user-select: text; user-select: text; }
         if (e.hp > 0) {
           if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
           if (S.r.gust && e.k !== 'boss' && e.x > visL + 40 && Math.random() < S.r.gust) { e.x = Math.max(visL + 10, e.x - 40); e.fl = .1; }
-          if (b.burn) { e.burn = 3; e.bsrc = b.src; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
+          if (b.burn) { e.burn = 3; e.bsrc = b.src; const bcx = b.el && b.el.sc ? 1 + Math.min(1, critChance() + (b.el.cb || 0)) * (.5 + critBonus() / 100 + S.r.cdm + Math.max(0, critChance() + (b.el.cb || 0) - 1)) : 1; e.bd = Math.max(e.bd, b.dmg * b.burn * bcx * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
           if (b.frz && Math.random() < b.frz) e.frz = Math.max(e.frz, 1);
         }
         if (b.chain) {
           const hitL = [e];
-          for (let i = 0; i < b.chain; i++) { const o = nearest(hitL[hitL.length - 1].x, hitL[hitL.length - 1].y, hitL, 90); if (!o) break; S.fx.push({ k: 'zap', x1: hitL[hitL.length - 1].x, y1: hitL[hitL.length - 1].y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * (b.chm || .6), b.el, false, false); hitL.push(o); }
+          for (let i = 0; i < b.chain; i++) { const o = nearest(hitL[hitL.length - 1].x, hitL[hitL.length - 1].y, hitL, b.chr || 90); if (!o) break; S.fx.push({ k: 'zap', x1: hitL[hitL.length - 1].x, y1: hitL[hitL.length - 1].y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * (b.chm || .6), b.el, false, false); hitL.push(o); }
         }
+        if (b.quake) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 120) hit(o, b.dmg * 1.5, b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 120, l: .4, c: '#c8a060' }); S.shake = Math.max(S.shake || 0, .15); }
+        if (b.el && b.el.gale && Math.random() < b.el.gale) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 65) hit(o, b.dmg * .8, b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 65, l: .25, c: '#6fe0b0' }); }
         if (b.splash) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.splash) hit(o, b.dmg * (b.spm || .6), b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: b.splash, l: .25, c: '#ffcf6a' }); }
       } else { b.x += dx / d * st; b.y += dy / d * st; }
     }
