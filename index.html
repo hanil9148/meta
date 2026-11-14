@@ -527,7 +527,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-1226';
+  const APP_VER = 'v.261114-1254';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1835,6 +1835,7 @@ input { -webkit-user-select: text; user-select: text; }
   const vfx = () => !!save.set.vfx;
 
   function startRun() {
+    if (window.__jmUpdateNow && window.__jmUpdateNow()) return;
     tickEnergy();
     if (save.en < RUN_COST) { openPop('에너지 부족', '<p class="desc" style="text-align:center;color:#fff">에너지가 부족해요. 1분마다 1씩 차요.<br>상점이나 상단 + 버튼에서 젬으로 충전할 수 있어요.</p><button class="btn y wide ol-s" data-act="energy">젬 ' + EN_GEM + '개로 30 충전</button>', 'en'); return; }
     save.en -= RUN_COST; if (save.en < EN_MAX && save.en + RUN_COST >= EN_MAX) save.enT = Date.now();
@@ -2273,6 +2274,8 @@ input { -webkit-user-select: text; user-select: text; }
       '</div></div>';
     $('bpop').innerHTML = h; $('bpop').hidden = false;
     NET.presence();
+    /* a newer version was found during the run: update right after the result is saved */
+    if (window.__jmUpdateNow && window.__jmUpdateNow(true)) return;
     /* skipped stage: no result screen, go straight on (repeat the same stage while repeating, otherwise the next stage) */
     if (S.skipped && win) {
       $('bpop').hidden = true;
@@ -3191,11 +3194,13 @@ input { -webkit-user-select: text; user-select: text; }
   }
   new ResizeObserver(() => { if (S) fitBattle(); sizeHome(); }).observe($('app'));
   $('lVer').textContent = '버전 ' + APP_VER;
-  /* Hosted build: check for a newer index.html every 3 minutes and reload into it (after a battle if one is running). */
+  /* Hosted build: check for a newer index.html every minute (and when the app comes back) and reload into it — at home right away, during a battle as soon as the run ends. */
   if (window.jmReady && /^https?:$/.test(location.protocol)) {
     let pendingVer = null;
     const go = v => { try { persist(true); } catch (e) {} setTimeout(() => location.replace(location.pathname + '?v=' + encodeURIComponent(v)), 1200); };
     window.__jmReload = () => { if (pendingVer && !S) { toast('새 버전 ' + pendingVer + '으로 업데이트할게요'); go(pendingVer); } };
+    /* called when a run ends or before a new run starts: update even if the player never goes back home */
+    window.__jmUpdateNow = afterRun => { if (!pendingVer) return false; try { if (afterRun) { repStop(); } } catch (e) {} toast('새 버전 ' + pendingVer + '으로 자동 업데이트할게요'); go(pendingVer); return true; };
     const check = async () => {
       try {
         const t = await (await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store' })).text();
@@ -3203,8 +3208,9 @@ input { -webkit-user-select: text; user-select: text; }
         if (m && m[1] > APP_VER) { pendingVer = m[1]; if (!S) window.__jmReload(); }
       } catch (e) {}
     };
-    setTimeout(check, 15000);
-    setInterval(check, 180000);
+    setTimeout(check, 8000);
+    setInterval(check, 60000);
+    window.addEventListener('focus', check); window.addEventListener('online', check);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
   }
   qDay();
