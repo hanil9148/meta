@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-2334';
+  const APP_VER = 'v.261115-0041';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1790,7 +1790,9 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* normal stages: up to ~28k; elite: 200k at stage 1, ×1.048 per elite stage opened (~2M at 50) */
   const bagElite = () => save.elOn && save.el ? clamp(+save.el.unlocked || 0, 0, ESTAGES) : 0;
-  const goldBag = () => { const e = bagElite(); return Math.round((1500 * (1 + save.unlocked * .35) + (e ? 200000 * Math.pow(1.048, e - 1) : 0)) / 1000) * 1000; };
+  /* gold pouch: 250 gems for 5x the old 50-gem amount */
+  const BAG_GEM = 250;
+  const goldBag = () => { const e = bagElite(); return Math.round(5 * (1500 * (1 + save.unlocked * .35) + (e ? 200000 * Math.pow(1.048, e - 1) : 0)) / 1000) * 1000; };
   function renderShop() {
     qDay();
     const item = (ico, nm, p, price, left, act, dis) => '<div class="shopi"><span class="ico">' + ico + '</span><div style="min-width:0"><b class="ol-s">' + nm + '</b><p>' + p + '</p></div><div class="buy"><span class="price ol-s">' + price + '</span><button class="btn y sm ol-s" data-act="' + act + '"' + (dis ? ' disabled' : '') + '>' + (left === '0' ? '품절' : '구매') + '</button>' + (left ? '<span class="left">남은 ' + left + '</span>' : '') + '</div></div>';
@@ -1801,7 +1803,7 @@ input { -webkit-user-select: text; user-select: text; }
     h += item(I.bolt, '에너지 충전', '에너지 30을 바로 채워요.', I.gem + EN_GEM, (3 - save.shop.en) + '/3', 'buyen', save.gem < EN_GEM || save.shop.en >= 3);
     h += item(itemIcon('rv1'), '장비 상자', '장비 1개 · 일반 90 · 고급 6.4 · 희귀 2.8 · 영웅 0.7 · 전설 0.1%', I.gem + EBOX[0].p, '', 'ebox1', save.gem < EBOX[0].p);
     h += item(itemIcon('sg4'), '고급 장비 상자', '고급 80 · 희귀 14 · 영웅 5 · 전설 1% · ' + PITY + '번 안에 전설 확정 (남은 ' + (PITY - save.pity) + '번)', I.gem + EBOX[1].p, '', 'ebox2', save.gem < EBOX[1].p);
-    h += item(I.coin, '골드 주머니', fmt(goldBag()) + ' 골드. ' + (bagElite() ? '정예 ' + bagElite() + '단계 보너스 포함 · 정예를 열수록 크게 늘어요.' : '정예 모드를 열면 크게 늘어나요.'), I.gem + '50', '', 'goldbag', save.gem < 50);
+    h += item(I.coin, '골드 주머니', fmt(goldBag()) + ' 골드. ' + (bagElite() ? '정예 ' + bagElite() + '단계 보너스 포함 · 정예를 열수록 크게 늘어요.' : '정예 모드를 열면 크게 늘어나요.'), I.gem + BAG_GEM, '', 'goldbag', save.gem < BAG_GEM);
     h += '</div>';
     h += '</div>';
     $('screen').innerHTML = h;
@@ -3771,7 +3773,7 @@ input { -webkit-user-select: text; user-select: text; }
     pullfill: () => pull(10, true),
     cardbox: () => { qDay(); if (save.gem < 40 || save.shop.card >= 5) return; save.gem -= 40; save.shop.card++; giveCards(20); Snd.coin(); toast('스킬 카드 20장 받았어요'); persist(); render(); },
     buyen: () => { qDay(); if (save.gem < EN_GEM || save.shop.en >= 3) return; save.gem -= EN_GEM; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
-    goldbag: () => { if (save.gem < 50) return; save.gem -= 50; save.gold += goldBag(); Snd.coin(); toast(fmt(goldBag()) + ' 골드 받았어요'); persist(); render(); },
+    goldbag: () => { if (save.gem < BAG_GEM) return; save.gem -= BAG_GEM; save.gold += goldBag(); Snd.coin(); toast(fmt(goldBag()) + ' 골드 받았어요'); persist(); render(); },
     bpick: el => { bossSel = el.dataset.k; bossMsg = null; render(); },
     bsend: () => bossSend(),
     bclaim: () => bossClaimAll(),
