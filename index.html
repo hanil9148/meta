@@ -527,7 +527,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-1714';
+  const APP_VER = 'v.261114-1928';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -829,7 +829,85 @@ input { -webkit-user-select: text; user-select: text; }
     return '<svg viewBox="0 0 56 56"><rect x="2" y="2" width="52" height="52" rx="10" fill="' + INK + '"/><rect x="4" y="4" width="48" height="48" rx="8" fill="' + c + '" opacity=".38"/>' + G[K.k] + '</svg>';
   }
   const EBOX = [{ p: 60, odds: ODDS.box1 }, { p: 300, odds: ODDS.box2 }];
-  function gearPow() { const o = gearAll(); return (1 + o.atk) * (1 + o.natk) * (1 + o.spd) * (1 + o.crit * .5) * (1 + o.el * .6) * (1 + o.boss * .15) * (1 + o.dbl) * (1 + o.pierce * .3 + o.boom * .5); }
+  function gearPow() { const o = gearAll(); return ringPow() * (1 + o.atk) * (1 + o.natk) * (1 + o.spd) * (1 + o.crit * .5) * (1 + o.el * .6) * (1 + o.boss * .15) * (1 + o.dbl) * (1 + o.pierce * .3 + o.boom * .5); }
+  /* Rings: 3 ring slots, 15 kinds x 5 grades, dropped by elite bosses from elite stage 30.
+     Effect = kind max x fraction: 일반 .10 · 고급 .15 (no enhancing) · 희귀 .20→.40 (Lv20) · 영웅 .30→.60 (Lv30) · 전설 .40→1.00 (Lv50).
+     The same kind can be worn only once. Ring id = 'q' + kind(2 digits) + grade, e.g. 'q034'. */
+  const RMAX = [1, 1, 20, 30, 50], RF0 = [.1, .15, .2, .3, .4], RF1 = [.1, .15, .4, .6, 1];
+  const RINGS = [
+    { t: 'atk', nm: '분노의 반지', mx: .4, c: '#ff5a3a', d: v => '공격력 +' + pr(v) },
+    { t: 'cdm', nm: '저격의 반지', mx: 1, c: '#ff9a3a', d: v => '치명타 피해 +' + pr(v) },
+    { t: 'boss', nm: '사냥꾼의 반지', mx: .75, c: '#e0452e', d: v => '보스 피해 +' + pr(v) },
+    { t: 'pen', nm: '관통의 반지', mx: .25, c: '#c27bff', d: v => '속성 저항 ' + pr(v) + ' 무시' },
+    { t: 'spd', nm: '연사의 반지', mx: .3, c: '#ffe14a', d: v => '공격 속도 +' + pr(v) },
+    { t: 'exe', nm: '처형의 반지', mx: 1, c: '#a01818', d: v => '체력 30% 이하 적 피해 +' + pr(v) },
+    { t: 'weak', nm: '약점의 반지', mx: .75, c: '#7ee0a0', d: v => '상성 속성 피해 +' + pr(v) },
+    { t: 'chain', nm: '연쇄의 반지', mx: .3, c: '#3fa9f5', d: (v, f) => pr(v) + ' 확률로 ' + (1 + Math.round(2 * f)) + '마리 튕김' },
+    { t: 'cor', nm: '부식의 반지', mx: .25, c: '#8ac04a', d: v => '맞은 적 3초간 받는 피해 +' + pr(v) },
+    { t: 'smash', nm: '강타의 반지', mx: 3, c: '#ffb72e', d: v => '5번째 공격마다 ×' + (Math.round((1 + v) * 10) / 10) + ' 강타' },
+    { t: 'frost', nm: '서리의 반지', mx: .12, c: '#9de8ff', d: v => '맵 전체 적 이속 -' + pr(v) },
+    { t: 'thunder', nm: '천둥의 반지', mx: 1, c: '#fff36a', d: (v, f) => (Math.round((14 - 8 * f) * 10) / 10) + '초마다 번개 · 1.5초 기절' },
+    { t: 'swamp', nm: '늪의 반지', mx: .6, c: '#5a9a5a', d: v => '거점 앞 구역 적 이속 -' + pr(v) },
+    { t: 'time', nm: '시간의 반지', mx: 3, c: '#d9b8ff', d: v => '웨이브 시작 시 모든 적 ' + (Math.round(v * 10) / 10) + '초 정지' },
+    { t: 'gust', nm: '돌풍의 반지', mx: .2, c: '#c8f0e0', d: v => pr(v) + ' 확률로 적 밀쳐내기' }
+  ];
+  const pr = v => (Math.round(v * 1000) / 10) + '%';
+  const rK = id => RINGS[+id.slice(1, 3)], rG = id => +id[3], rkey = (k, g) => 'q' + (k < 10 ? '0' : '') + k + g;
+  const validRid = id => typeof id === 'string' && /^q(0\d|1[0-4])[0-4]$/.test(id);
+  const ringName = id => RAR[rG(id)].nm + ' ' + rK(id).nm;
+  const ringFrac = (g, lv) => RMAX[g] <= 1 ? RF0[g] : RF0[g] + (RF1[g] - RF0[g]) * (clamp(lv, 1, RMAX[g]) - 1) / (RMAX[g] - 1);
+  const ringVal = (id, lv) => rK(id).mx * ringFrac(rG(id), lv);
+  const ringTxt = (id, lv) => { if (lv == null) lv = save.rings[id] ? save.rings[id].lv : 1; return rK(id).d(ringVal(id, lv), ringFrac(rG(id), lv)); };
+  const ringCost = (id, lv) => rG(id) === 4 && lv >= 30 ? LEG_COST : Math.round(lv * 5000 * UPC[rG(id)]);
+  const ringRate = (id, lv) => rG(id) === 4 && lv >= 30 ? Math.max(.03, .09 - .01 * Math.floor((lv - 30) / 10)) : 1;
+  function ringAll() {
+    const o = { atk: 0, cdm: 0, boss: 0, pen: 0, spd: 0, exe: 0, weak: 0, chain: 0, chainN: 0, cor: 0, smash: 0, frost: 0, thunder: 0, swamp: 0, time: 0, gust: 0 };
+    for (const id of save.rslot) { const d = id && save.rings[id]; if (!d) continue; const K = rK(id), f = ringFrac(rG(id), d.lv);
+      if (K.t === 'thunder') o.thunder = 14 - 8 * f; else o[K.t] = K.mx * f;
+      if (K.t === 'chain') o.chainN = 1 + Math.round(2 * f); }
+    return o;
+  }
+  function ringPow() {
+    const o = ringAll();
+    return (1 + o.atk) * (1 + o.cdm * .25) * (1 + o.boss * .15) * (1 + o.pen * .8) * (1 + o.spd) * (1 + o.exe * .2) * (1 + o.weak * .3) * (1 + o.chain * o.chainN * .5) * (1 + o.cor * .7) * (1 + o.smash / 5)
+      / (1 - o.frost) * (1 + (o.thunder ? .75 / o.thunder : 0)) * (1 + o.swamp * .3) * (1 + o.time * .03) * (1 + o.gust * .3);
+  }
+  function addRing(id) {
+    const ex = save.rings[id];
+    if (ex) ex.n++; else save.rings[id] = { n: 1, lv: 1 };
+    const k = rK(id), same = save.rslot.findIndex(x => x && rK(x) === k);
+    if (same >= 0) { if (rG(save.rslot[same]) < rG(id)) save.rslot[same] = id; }
+    else { const e = save.rslot.findIndex(x => !x); if (e >= 0) save.rslot[e] = id; }
+    return !ex;
+  }
+  const RODDS = { r30: [.70, .18, .075, .035, .01], r40: [.55, .25, .13, .06, .01] };
+  function dropRings(n, odds) {
+    const out = [];
+    for (let i = 0; i < n; i++) { const id = rkey(Math.floor(Math.random() * RINGS.length), rollGrade(odds)); out.push({ id, isNew: addRing(id) }); }
+    return out;
+  }
+  function combineRing(id) {
+    const d = save.rings[id], g = rG(id);
+    if (!d || d.n < 3 || g >= 4) return null;
+    d.n -= 3;
+    const nx = rkey(+id.slice(1, 3), g + 1), slot = save.rslot.indexOf(id);
+    if (d.n <= 0) delete save.rings[id];
+    if (slot >= 0 && !save.rings[id]) save.rslot[slot] = null;
+    addRing(nx);
+    if (slot >= 0 && !save.rings[id] && !save.rslot.includes(nx)) { const j = save.rslot.findIndex(x => x && rK(x) === rK(nx)); if (j >= 0) save.rslot[j] = null; save.rslot[slot] = nx; }
+    return nx;
+  }
+  function combineRingsAll() {
+    const made = [];
+    for (let g = 0; g < 4; g++) for (let k = 0; k < RINGS.length; k++) { const id = rkey(k, g); let nx; while ((nx = combineRing(id))) made.push(nx); }
+    return made;
+  }
+  function ringIcon(id) {
+    const K = rK(id), c = RAR[rG(id)].c;
+    return '<svg viewBox="0 0 56 56"><rect x="2" y="2" width="52" height="52" rx="10" fill="' + INK + '"/><rect x="4" y="4" width="48" height="48" rx="8" fill="' + c + '" opacity=".38"/>' +
+      '<ellipse cx="28" cy="34" rx="14" ry="12" fill="none" stroke="' + INK + '" stroke-width="8"/><ellipse cx="28" cy="34" rx="14" ry="12" fill="none" stroke="#e8c45a" stroke-width="4.5"/>' +
+      '<path d="M28 9l9 9-9 9-9-9Z" fill="' + K.c + '" stroke="' + INK + '" stroke-width="2.4" stroke-linejoin="round"/><path d="M24 17l4-4" stroke="#fff" stroke-width="2" opacity=".8"/></svg>';
+  }
   /* Pets: one per deployed slot. Each pet has a partner gunslinger; pairing them in the same slot gives that gunslinger +30% attack. */
   const PETN = ['현호', '승주', '해서', '현성', '해승', '기현', '태인', '성진'];
   const PAIR = [0, 3, 1, 7, 5, 4, 2, 6];
@@ -889,7 +967,7 @@ input { -webkit-user-select: text; user-select: text; }
   function fresh() {
     return {
       v: 1, name: '', lv: 1, xp: 0, gold: 600, gem: 100, en: 30, enT: Date.now(),
-      unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
+      unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], rings: {}, rslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0
     };
@@ -923,6 +1001,8 @@ input { -webkit-user-select: text; user-select: text; }
     s.elOn = r.elOn ? 1 : 0; s.mode = r.mode === 'e' && s.elOn ? 'e' : 'n';
     if (r.el && typeof r.el === 'object') { const e = r.el; s.el = { unlocked: num(e.unlocked, 1, ESTAGES, 1), cur: 1, plays: arr(e.plays, 1e6), best: arr(e.best, 100), reach: arr(e.reach, 7), claim: arr(e.claim, 7) }; s.el.cur = num(e.cur, 1, s.el.unlocked, 1); }
     if (r.items && typeof r.items === 'object') for (const id in r.items) { const v = r.items[id]; if (validId(id) && v && typeof v === 'object' && v.n >= 1) s.items[id] = { n: num(v.n, 1, 1e6, 1), lv: num(v.lv, 1, GMAX[+id[2]], 1) }; }
+    if (r.rings && typeof r.rings === 'object') for (const id in r.rings) { const v = r.rings[id]; if (validRid(id) && v && typeof v === 'object' && v.n >= 1) s.rings[id] = { n: num(v.n, 1, 1e6, 1), lv: num(v.lv, 1, RMAX[+id[3]], 1) }; }
+    if (Array.isArray(r.rslot)) { const seen = []; s.rslot = [0, 1, 2].map(i => { const id = r.rslot[i]; if (!validRid(id) || !s.rings[id] || seen.includes(id.slice(1, 3))) return null; seen.push(id.slice(1, 3)); return id; }); }
     if (r.gear && typeof r.gear === 'object') for (const k of ['w', 'h', 'n']) { const id = r.gear[k]; if (validId(id) && KND[id.slice(0, 2)].slot === k && s.items[id]) s.gear[k] = id; }
     s.pity = num(r.pity, 0, 1000, 0);
     if (Array.isArray(r.pcoll)) {
@@ -1302,6 +1382,12 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="htile' + (d ? ' gr' + iG(id) : ' emp') + '" data-act="gearbag" data-s="' + k + '" role="button">' + (d ? '<span style="width:48px;height:48px;display:block">' + itemIcon(id) + '</span><span class="hn ol-s" style="font-size:12px;text-align:center">' + iK(id).nm + '</span><span class="st ol-s" style="color:' + RAR[iG(id)].c + '">' + RAR[iG(id)].nm + ' · Lv ' + d.lv + '</span>' : '<span class="ol-s">' + SLOTN[k] + '<br>비어 있음</span>') + '</div>';
     }
     h += '</div>' + (canCombine() ? '<button class="btn y wide ol-s" data-act="gearComb" data-s="" style="margin-top:8px">조합 가능한 장비 모두 조합</button>' : '') + '</div>';
+    h += '<div class="card"><div class="row"><h3 class="ol grow">💍 반지</h3><span class="desc" style="color:#fff">' + Object.keys(save.rings).length + '/75 종</span></div><p class="desc">반지는 3개까지 껴요(같은 종류는 1개만). <b>정예 30단계 이상 보스</b>를 잡으면 나와요. 일반·고급은 강화할 수 없고, 희귀 Lv20 · 영웅 Lv30 · 전설 Lv50까지 올라가요. 같은 반지 3개를 조합하면 다음 등급이 돼요.</p><div class="slots4">';
+    for (let i = 0; i < 3; i++) {
+      const id = save.rslot[i], d = id && save.rings[id];
+      h += '<div class="htile' + (d ? ' gr' + rG(id) : ' emp') + '" data-act="ringbag" data-i="' + i + '" role="button">' + (d ? '<span style="width:48px;height:48px;display:block">' + ringIcon(id) + '</span><span class="hn ol-s" style="font-size:12px;text-align:center">' + rK(id).nm + '</span><span class="st ol-s" style="color:' + RAR[rG(id)].c + '">' + RAR[rG(id)].nm + (RMAX[rG(id)] > 1 ? ' · Lv ' + d.lv : '') + '</span>' : '<span class="ol-s">반지 ' + (i + 1) + '<br>비어 있음</span>') + '</div>';
+    }
+    h += '</div>' + (Object.keys(save.rings).some(id => save.rings[id].n >= 3 && rG(id) < 4) ? '<button class="btn y wide ol-s" data-act="ringComb" style="margin-top:8px">조합 가능한 반지 모두 조합</button>' : '') + '</div>';
     h += '<div class="card"><h3 class="ol">출전 총잡이</h3><p class="desc">전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 위에 떠 있는 드론도 항상 같이 쏴요.</p><div class="slots4">';
     for (let i = 0; i < 3; i++) {
       const u = getUnit(save.slots[i]);
@@ -1441,6 +1527,24 @@ input { -webkit-user-select: text; user-select: text; }
   /* ---------- skill tab ---------- */
   let gearSlot = 'w';
   const canCombine = sl => Object.keys(save.items).some(id => save.items[id].n >= 3 && iG(id) < 4 && (!sl || iK(id).slot === sl));
+  let ringSlot = 0;
+  function ringBody() {
+    const i = ringSlot, cur = save.rslot[i];
+    const ids = Object.keys(save.rings).sort((a, b) => (save.rslot.includes(b) ? 1 : 0) - (save.rslot.includes(a) ? 1 : 0) || rG(b) - rG(a) || (a < b ? -1 : 1));
+    let h = '<p class="desc" style="color:#fff">' + (i + 1) + '번 반지 칸에 낄 반지를 골라요. 같은 종류를 다른 칸에 끼고 있으면 그 칸에서 빠져요. 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%).</p>';
+    if (!ids.length) h += '<p class="empty">아직 반지가 없어요.<br>정예 30단계 이상에서 보스를 잡아 보세요.</p>';
+    for (const id of ids) {
+      const d = save.rings[id], g = rG(id), K = rK(id), on = cur === id, other = !on && save.rslot.includes(id), mx = d.lv >= RMAX[g], cost = ringCost(id, d.lv), rt = ringRate(id, d.lv);
+      h += '<div class="shopi"><span class="ico" style="background:none;border:0">' + ringIcon(id) + '</span><div style="min-width:0"><b class="ol-s">' + K.nm + ' <span style="font-size:12px;color:' + RAR[g].c + '">' + RAR[g].nm + '</span></b>' +
+        '<p style="color:#fff">' + (RMAX[g] > 1 ? 'Lv ' + d.lv + '/' + RMAX[g] + ' · ' : '강화 불가 · ') + '보유 ' + d.n + '개' + (other ? ' · ' + (save.rslot.indexOf(id) + 1) + '번 칸에 낌' : '') + '</p><p>' + ringTxt(id) + '</p>' +
+        (RMAX[g] > 1 && !mx ? '<p style="opacity:.75">다음 Lv: ' + ringTxt(id, d.lv + 1) + '</p>' + (rt < 1 ? '<p style="color:var(--yel)">강화 성공 ' + Math.round(rt * 100) + '% · 실패하면 레벨 유지</p>' : '') : '') + '</div>' +
+        '<div class="buy">' + (on ? '<button class="btn sm ol-s" disabled>장착 중</button>' : '<button class="btn g sm ol-s" data-act="ringEq" data-id="' + id + '">장착</button>') +
+        (RMAX[g] > 1 ? '<button class="btn y sm ol-s" data-act="ringUp" data-id="' + id + '"' + (!mx && save.gold >= cost ? '' : ' disabled') + '>' + (mx ? 'MAX' : '강화 ' + fmt(cost)) + '</button>' : '') +
+        (g < 4 ? '<button class="btn sm ol-s" data-act="ringCb1" data-id="' + id + '"' + (d.n >= 3 ? '' : ' disabled') + '>조합 ' + Math.min(d.n, 3) + '/3</button>' : '') + '</div></div>';
+    }
+    if (cur) h += '<button class="btn r sm ol-s" data-act="ringOff">장착 해제</button>';
+    return h;
+  }
   function gearBody() {
     const ids = Object.keys(save.items).filter(id => iK(id).slot === gearSlot).sort((a, b) => iG(b) - iG(a) || (a < b ? -1 : 1));
     let h = '<p class="desc" style="color:#fff">같은 장비 <b>3개</b> → 다음 등급 1개 (새 장비는 Lv1). 레벨은 골드로 올리고 등급마다 최대 레벨이 달라요(일반 10 ~ 전설 99). 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%, 10강마다 1%씩 낮아져요).</p>';
@@ -1779,8 +1883,9 @@ input { -webkit-user-select: text; user-select: text; }
     return { hpm: HPK * Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x) * (n >= 45 ? 1 + .3 * (n - 44) : 1), d: n - 1 };
   }
   /* elite rewards sit above normal 50: gold x1.3 of stage 50 at elite 1, +10% per elite stage */
-  const eGoldK = n => 1.3 + .1 * (n - 1);
-  const eGem = n => 40 + 3 * (n - 1) + (n % 5 === 0 ? 40 : 0);
+  /* elite rewards x2 (gold and gems) */
+  const eGoldK = n => 2 * (1.3 + .1 * (n - 1));
+  const eGem = n => 2 * (40 + 3 * (n - 1) + (n % 5 === 0 ? 40 : 0));
   function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: 2 * params(50).gm * params(50).cnt / (P.cnt * ELITE.cnt) * eGoldK(n), cnt: P.cnt * ELITE.cnt, spm: P.spm * ELITE.spd }) : P; }
   const ET = {
     bug:    { hp: 14,  sp: 74, r: 11, atk: 4,  xp: 1,  g: 2 },
@@ -1831,7 +1936,8 @@ input { -webkit-user-select: text; user-select: text; }
     if (!els || !els.length) return 1;
     const r = resOf(e);
     let m = 0;
-    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a]); if (v > m) m = v; }
+    const pen = S && S.r ? S.r.pen : 0;
+    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)); if (v > m) m = v; }
     return m;
   }
   let S = null, raf = 0, last = 0, speed = 1, tmode = 0;
@@ -1862,7 +1968,7 @@ input { -webkit-user-select: text; user-select: text; }
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, ps: x.s, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
-      elite, n, P, sh, avg, g: G, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, fs: 1 - slowPct(save.sll), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
+      elite, n, P, sh, avg, g: G, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
       lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
@@ -1874,6 +1980,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function nextWave() {
     S.wave++;
+    if (S.r.time) S.tstop = S.r.time;
     const c = Math.round((12 + 6 * S.wave) * S.P.cnt);
     S.toSpawn = c; S.spawnIv = 18 / c; S.spawnT = .6; S.waveDone = 0;
     S.banner = { t: 2, s: '웨이브 ' + S.wave + '/3' };
@@ -1920,7 +2027,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function xpNeed(l) { return 5 + l * 3; }
   function critChance() { return .05 + S.pass.crit * .06 + S.g.crit; }
-  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk);
+  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk);
   function skPow(id) { return S.avg * atkMul() * (1 + .15 * (skOf(id).lv - 1)); }
 
   function dmgNum(x, y, v, kind) {
@@ -1933,12 +2040,15 @@ input { -webkit-user-select: text; user-select: text; }
     const m = emul(els, e);
     let a = base * m;
     if (els && els.length) a *= 1 + S.g.el;
-    if (e.k === 'boss') a *= 1 + S.g.boss;
+    if (e.k === 'boss') a *= 1 + S.g.boss + S.r.boss;
+    if (m > 1 && S.r.weak) a *= 1 + S.r.weak;
+    if (S.r.exe && e.hp < e.mh * .3) a *= 1 + S.r.exe;
+    if (e.cor > 0) a *= 1 + e.cv;
     if (S.elite) a *= 1 - ELITE.def;
     if (S.sk.reson && S.teamEl >= 4) a *= 1 + .25 + .05 * (S.sk.reson.l - 1);
     if (S.sk.bounty && e.k === 'boss') a *= 1 + .2 + .05 * (S.sk.bounty.l - 1);
     let crit = false;
-    if (canCrit && Math.random() < critChance()) { crit = true; a *= 1.5 + critBonus() / 100; }
+    if (canCrit && Math.random() < critChance()) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm; }
     if (direct && e.arm) a = Math.max(a * .3, a - e.arm);
     e.hp -= a; e.fl = .08;
     dmgNum(e.x, e.y - e.r - 6, a, crit ? 'crit' : m > 1 ? 'weak' : m < 1 ? 'res' : 'n');
@@ -1989,7 +2099,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function updShooters(dt) {
     const tg = front();
-    const spdm = (1 + S.pass.spd * .12 + S.g.spd) * (S.rapid > 0 ? 2 : 1);
+    const spdm = (1 + S.pass.spd * .12 + S.g.spd) * (1 + S.r.spd) * (S.rapid > 0 ? 2 : 1);
     if (S.rapid > 0) S.rapid -= dt;
     for (const s of S.sh) {
       if (s.robot) { s.x = S.robo.x - 14; s.y = S.robo.y + 6; }
@@ -1997,6 +2107,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (tg) s.ang = Math.atan2(tg.y - s.y, tg.x - s.x);
       if (tg && s.cd <= 0) {
         fireAt(s, tg);
+        if (S.r.smash && (s.cnt = (s.cnt || 0) + 1) % 5 === 0) { const b = S.bul[S.bul.length - 1]; b.dmg *= 1 + S.r.smash; b.big = 1; }
         if (S.g.dbl && Math.random() < S.g.dbl) fireAt(s, tg);
         if (s.st.twin) { const t2 = nearest(tg.x, tg.y, [tg], 160) || tg; fireAt(s, t2); }
         s.cd = s.st.iv / spdm;
@@ -2014,7 +2125,10 @@ input { -webkit-user-select: text; user-select: text; }
         if (b.k >= 0 && S.nImp < 36) { S.nImp++; S.fx.push({ k: 'imp', e: b.k, x: e.x, y: e.y, r: e.r, l: .45, sd: Math.random() * 100, sm: b.sm }); }
         if (b.pierce) { const o = nearest(e.x, e.y, [e], 70); if (o) hit(o, b.dmg * .6, b.el, true, true); }
         if (b.boom && Math.random() < b.boom) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 55) hit(o, b.dmg * .8, b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 55, l: .3, c: '#ff8a3a' }); }
+        if (S.r.chain && Math.random() < S.r.chain) { const hl = [e]; for (let i = 0; i < S.r.chainN; i++) { const p0 = hl[hl.length - 1], o = nearest(p0.x, p0.y, hl, 110); if (!o) break; S.fx.push({ k: 'zap', x1: p0.x, y1: p0.y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * .5, b.el, false, false); hl.push(o); } }
         if (e.hp > 0) {
+          if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
+          if (S.r.gust && Math.random() < S.r.gust) { e.x -= e.k === 'boss' ? 20 : 40; e.fl = .1; }
           if (b.burn) { e.burn = 3; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
@@ -2135,7 +2249,10 @@ input { -webkit-user-select: text; user-select: text; }
       if (e.burn > 0) { e.burn -= dt; e.hp -= e.bd * dt; }
       if (e.pois > 0) { e.pois -= dt; e.hp -= e.pd * dt; }
       if (e.hp <= 0) { kill(e); continue; }
+      if (e.cor > 0) e.cor -= dt;
+      if (S.tstop > 0 && e.ts !== S.wave) { e.ts = S.wave; e.frz = Math.max(e.frz, S.tstop); }
       let sp = e.sp * S.fs;
+      if (S.r.swamp && e.x > edgeX(e.y) - 110) sp *= 1 - S.r.swamp;
       if (e.slow > 0) { e.slow -= dt; sp *= 1 - e.sf; } else e.sf = 0;
       if (e.frz > 0) { e.frz -= dt; sp = 0; }
       const ex = edgeX(e.y) - e.r * .7;
@@ -2154,6 +2271,8 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function update(dt) {
     S.t += dt;
+    if (S.tstop > 0) S.tstop -= dt;
+    if (S.r.thunder) { S.thT -= dt; if (S.thT <= 0) { S.thT = S.r.thunder; const t = densest(70); if (t) { for (const e of S.en) if (e.hp > 0 && Math.hypot(e.x - t.x, e.y - t.y) < 70) e.frz = Math.max(e.frz, 1.5); S.fx.push({ k: 'zap', x1: t.x + 10, y1: Math.max(0, t.y - 260), x2: t.x, y2: t.y, l: .3 }); S.fx.push({ k: 'ring', x: t.x, y: t.y, r: 70, l: .35, c: '#ffe14a' }); S.shake = Math.max(S.shake || 0, .25); } } }
     if (S.toSpawn > 0) { S.spawnT -= dt; if (S.spawnT <= 0) { spawn(); S.toSpawn--; S.spawnT = S.spawnIv * rnd(.5, 1.5); } }
     else {
       S.waveDone += dt;
@@ -2248,6 +2367,9 @@ input { -webkit-user-select: text; user-select: text; }
     if (win && S.elite) drops = drops.concat(dropItems(1, ODDS.eliteWin));
     if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills), ODDS.eliteBoss) : dropItems(1, ODDS.stage));
     if (S.rareK) drops = drops.concat(dropItems(3, ODDS.rare));
+    /* rings: elite stage 30+, each boss killed has a 40% (30~39) / 60% (40~50) chance */
+    let rdrops = [];
+    if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
     if (S.rareK) { save.gem += 100; save.rareK = (save.rareK || 0) + 1; }
     const xp = 2 + Math.floor(n / 3) + (win ? 3 : 0);
     let cards = 0;
@@ -2275,6 +2397,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<div class="res-stars">' + bigStar(stars >= 1) + bigStar(stars >= 2).replace('<svg', '<svg class="mid"') + bigStar(stars >= 3) + '</div>' +
       '<p class="desc" style="text-align:center;color:#fff">' + stageLabel(n) + ' · ' + NAMES[i] + ' · 남은 체력 ' + hpPct + '% · 처치 ' + S.kills + '</p>' +
       (drops.length ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>장비 획득!</b></p><div class="rewards">' + drops.map(d => '<div class="rw">' + itemIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + iK(d.id).nm + '</b><span style="color:' + RAR[iG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[iG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
+      (rdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0ff"><b>💍 반지 획득!</b></p><div class="rewards">' + rdrops.map(d => '<div class="rw">' + ringIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + rK(d.id).nm + '</b><span style="color:' + RAR[rG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[rG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + starBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
@@ -2287,6 +2410,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<div id="resBtns" style="display:grid;gap:10px">' + resButtons(n) + '</div>' +
       '</div></div>';
     $('bpop').innerHTML = h; $('bpop').hidden = false;
+    { const lr = rdrops.filter(d => rG(d.id) === 4); if (lr.length) legendFlash(ringIcon(lr[0].id), '전설 반지!' + (lr.length > 1 ? ' ×' + lr.length : ''), lr.map(d => rK(d.id).nm).join(' · ')); }
     NET.presence();
     /* a newer version was found during the run: update right after the result is saved */
     if (window.__jmUpdateNow && window.__jmUpdateNow(true)) return;
@@ -2915,6 +3039,7 @@ input { -webkit-user-select: text; user-select: text; }
   function eliteBody() {
     const req = eliteReq(), ok = req.every(r => r.ok);
     return '<p class="desc" style="color:#fff">정예는 1~50단계를 따로 진행하는 고난도 모드예요. 몬스터 <b>체력 ' + ELITE.hp + '배</b>, 공격력 ' + ELITE.atk + '배, 수·이동 속도 +15%, 받는 피해 -5%이고 모두 속성을 갖고 나와요. 보스가 <b>30% 확률로 2번</b> 따로 굴려져 최대 <b>2마리</b>까지 나와요(보스마다 장비 드롭). 대신 보상이 커요: 골드는 <b>일반 50단계의 130%부터 단계마다 +10%</b>, 클리어마다 <b>젬 40개부터 단계마다 +3개</b>(5단계마다 +40개 보너스).</p>' +
+      '<p class="desc" style="color:#ffd0ff">💍 정예 <b>30단계부터</b> 보스를 잡으면 <b>반지</b>가 나와요(보스 1마리당 30~39단계 40% · 40단계 이상 60%).</p>' +
       req.map(r => '<div class="prow" style="padding:8px 12px"><span><b style="font-size:15px">' + (r.ok ? '✅ ' : '❌ ') + r.nm + '</b><br><span class="desc">지금: ' + r.cur + '</span></span><span></span></div>').join('') +
       '<button class="btn p wide ol-s" data-act="eliteBuy"' + (ok ? '' : ' disabled') + '>' + (ok ? '정예 모드 해금 · ' + (ELITE.cost / 1e4) + '만 골드' : '조건을 모두 채우면 해금할 수 있어요') + '</button>';
   }
@@ -3126,6 +3251,12 @@ input { -webkit-user-select: text; user-select: text; }
     gearCb1: el => { const nx = combine(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + itemName(nx)); persist(); refreshPop(gearBody()); },
     gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else render(); },
     legendSkip: () => lgSkip(),
+    ringbag: el => { ringSlot = +el.dataset.i; openPop('반지 · ' + (ringSlot + 1) + '번 칸', ringBody(), 'ring'); },
+    ringEq: el => { const id = el.dataset.id; if (!save.rings[id]) return; save.rslot = save.rslot.map((x, j) => j !== ringSlot && x && rK(x) === rK(id) ? null : x); save.rslot[ringSlot] = id; Snd.click(); persist(); refreshPop(ringBody()); },
+    ringOff: () => { save.rslot[ringSlot] = null; persist(); refreshPop(ringBody()); },
+    ringUp: el => { const id = el.dataset.id, d = save.rings[id]; if (!d || d.lv >= RMAX[rG(id)]) return; const c = ringCost(id, d.lv); if (save.gold < c) return; save.gold -= c; const rt = ringRate(id, d.lv); if (Math.random() >= rt) { Snd.bad(); toast('강화 실패 (성공 ' + Math.round(rt * 100) + '%) · Lv ' + d.lv + ' 유지'); persist(); topbar(); refreshPop(ringBody()); return; } d.lv++; Snd.lvup(); toast(ringName(id) + ' Lv ' + d.lv + '!'); persist(); topbar(); refreshPop(ringBody()); },
+    ringCb1: el => { const nx = combineRing(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + ringName(nx)); persist(); refreshPop(ringBody()); if (rG(nx) === 4) legendFlash(ringIcon(nx), '전설 반지!', rK(nx).nm); },
+    ringComb: () => { const m = combineRingsAll(); if (!m.length) return; Snd.lvup(); toast('반지 조합 ' + m.length + '번 · 최고 ' + ringName(m.reduce((a, b) => rG(b) > rG(a) ? b : a))); persist(); render(); },
     ebox1: () => { const b = EBOX[0]; if (save.gem < b.p) return; save.gem -= b.p; const d = dropItems(1, b.odds)[0]; Snd.coin(); toast((d.isNew ? 'NEW ' : '+1 ') + itemName(d.id)); persist(); render(); if (iG(d.id) === 4) legendFlash(itemIcon(d.id), '전설 장비!', itemName(d.id)); },
     ebox2: () => { const b = EBOX[1]; if (save.gem < b.p) return; save.gem -= b.p; save.pity++; const d = dropItems(1, b.odds, save.pity >= PITY ? 4 : null)[0]; if (iG(d.id) === 4) save.pity = 0; Snd.coin(); toast((d.isNew ? 'NEW ' : '+1 ') + itemName(d.id)); persist(); render(); if (iG(d.id) === 4) legendFlash(itemIcon(d.id), '전설 장비!', itemName(d.id)); },
     unequip: () => { const at = save.slots.indexOf(selKey); if (at >= 0) save.slots[at] = null; persist(); refreshPop(heroBody()); },
@@ -3253,7 +3384,7 @@ input { -webkit-user-select: text; user-select: text; }
   last = performance.now();
   raf = requestAnimationFrame(frame);
   NET.init();
-  window.__G = { forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt };
+  window.__G = { forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS };
 })();
 </script>
 <script type="module">
