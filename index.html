@@ -527,7 +527,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-1254';
+  const APP_VER = 'v.261114-1348';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1654,7 +1654,8 @@ input { -webkit-user-select: text; user-select: text; }
       '<button class="btn c ol-s" data-act="help" style="justify-self:center;min-width:160px">게임 방법</button>' +
       '<p class="desc" style="text-align:center">연출을 끄면 화면 흔들림·번쩍임·데미지 숫자가 줄어들어요.</p>' +
       (NET.mode === 'firebase' ? '<button class="btn r wide ol-s" data-act="logout">LogOut</button>' : '') +
-      '<div class="ver">찍먹메타 · 버전 ' + APP_VER + '</div>';
+      '<div class="ver">찍먹메타 · 버전 ' + APP_VER + '</div>' +
+      (window.__jmUpd ? '<div class="ver" style="color:#cfe0f0">업데이트 확인: ' + (window.__jmUpd.at ? Math.max(0, Math.round((Date.now() - window.__jmUpd.at) / 1000)) + '초 전 · 서버 ' + (window.__jmUpd.ver || '?') : '아직 확인 전') + (window.__jmUpd.err ? ' · 실패(' + esc(window.__jmUpd.err) + ')' : '') + '</div><button class="btn c sm ol-s" data-act="updnow" style="justify-self:center">지금 업데이트 확인</button>' : '');
   }
   /* stage chest milestones: 1 clear, 2 >=50% HP, 4 100% HP */
   const CHEST = [
@@ -3022,6 +3023,7 @@ input { -webkit-user-select: text; user-select: text; }
   const ACT = {
     close: () => closePop(),
     profile: () => openPop('프로필', profileBody(), 'profile'),
+    updnow: () => { if (window.__jmCheck) window.__jmCheck(true); },
     settings: () => openPop('설정', settingsBody(), 'settings'),
     tog: el => { const k = el.dataset.k; save.set[k] = save.set[k] ? 0 : 1; persist(); refreshPop(settingsBody()); },
     help: () => openTut(0),
@@ -3201,13 +3203,18 @@ input { -webkit-user-select: text; user-select: text; }
     window.__jmReload = () => { if (pendingVer && !S) { toast('새 버전 ' + pendingVer + '으로 업데이트할게요'); go(pendingVer); } };
     /* called when a run ends or before a new run starts: update even if the player never goes back home */
     window.__jmUpdateNow = afterRun => { if (!pendingVer) return false; try { if (afterRun) { repStop(); } } catch (e) {} toast('새 버전 ' + pendingVer + '으로 자동 업데이트할게요'); go(pendingVer); return true; };
-    const check = async () => {
+    window.__jmUpd = { at: 0, ver: null, err: null };
+    const check = async manual => {
       try {
-        const t = await (await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store' })).text();
-        const m = t.match(/APP_VER = '(v\.\d{6}-\d{4})'/);
-        if (m && m[1] > APP_VER) { pendingVer = m[1]; if (!S) window.__jmReload(); }
-      } catch (e) {}
+        const r = await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } });
+        const t = await r.text(), m = t.match(/APP_VER = '(v\.\d{6}-\d{4})'/);
+        window.__jmUpd = { at: Date.now(), ver: m ? m[1] : null, err: m ? null : 'HTTP ' + r.status };
+        if (m && m[1] > APP_VER) { pendingVer = m[1]; if (!S) window.__jmReload(); else if (manual) toast('새 버전 ' + m[1] + ' · 이번 판이 끝나면 업데이트돼요'); }
+        else if (manual) toast(m ? '이미 최신 버전이에요 (' + APP_VER + ')' : '버전 확인 실패');
+      } catch (e) { window.__jmUpd = { at: Date.now(), ver: null, err: String(e && e.message || e).slice(0, 40) }; if (manual) toast('업데이트 확인 실패'); }
+      if (popKind === 'settings') refreshPop(settingsBody());
     };
+    window.__jmCheck = check;
     setTimeout(check, 8000);
     setInterval(check, 60000);
     window.addEventListener('focus', check); window.addEventListener('online', check);
