@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0559';
+  const APP_VER = 'v.261115-0616';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -661,8 +661,9 @@ input { -webkit-user-select: text; user-select: text; }
   const STAR_B = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, .021, .021, .021, .028, .028, .07, .07, .10, .12, .14, .16, .18, .20, .22, .25];
   const starCost = n => Math.round(200 * Math.pow(1.15, n) / 10) * 10;
   /* mythic star force: 500k x 1.2^star a try; from ★17 destruction (back to ★15), a failure keeps the star, no protection */
-  const MSTAR_P = STAR_P.slice(0, 17).concat(Array(13).fill(.15)); /* ★17+ : 15% flat */
-  const MSTAR_B = Array(17).fill(0).concat([.02, .025, .03, .035, .04, .05, .06, .07, .08, .09, .10, .11, .12]);
+  const MSTAR_P = STAR_P.slice(0, 17).concat([.30, .28, .26, .24, .22], Array(8).fill(.15)); /* ★17~21 restored, ★22+ 15% */
+  const MSTAR_B = Array(17).fill(0).concat([.04, .05, .06, .07, .08, .10, .12, .14, .16, .18, .20, .22, .24]); /* boom doubled */
+  const MSTAR_DROP = .4; /* ★17+: of the non-boom failures, 40% drop a star and 60% keep it */
   const MYTH_BACK = 15;
   const starCostU = u => u.m ? Math.round(500000 * Math.pow(1.2, u.s) / 1000) * 1000 : starCost(u.s);
   const boomTo = u => u.m ? MYTH_BACK : 12;
@@ -1232,6 +1233,9 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.en) { save.en += r.en; out.push('에너지 ' + r.en); }
     if (r.cards) { const got = giveCards(r.cards); out.push(got); }
     /* bulk run rewards (gift mail): gear, rings and profile xp of k elite clears with 3 bosses each */
+    /* gift: equipped gear to max level, equipped pets to max star */
+    if (r.maxGear) { let k = 0; for (const sl of ['w', 'h', 'n']) { const id = save.gear[sl], d = id && save.items[id]; if (d) { d.lv = GMAX[iG(id)]; k++; } } out.push('장착 장비 ' + k + '개 최대 레벨'); }
+    if (r.maxPet) { let k = 0; for (const pid of save.pslot) { const x = pid && save.pcoll.find(q => q.id === pid); if (x) { x.s = PET_MAX; k++; } } out.push('장착 펫 ' + k + '마리 ★' + PET_MAX); }
     if (r.runs) { const k = r.runs; let it = dropItems(k, ODDS.eliteWin).length + dropItems(6 * k, ODDS.eliteBoss).length + dropItems(Math.round(k * .03), ODDS.rare).length;
       const rc = Math.round(3 * k * .6); dropRings(rc, RODDS.r40);
       save.xp += 36 * k; let up = 0; while (save.lv < LV_MAX && save.xp >= lvNeed(save.lv)) { save.xp -= lvNeed(save.lv); save.lv++; save.gem += 10; up++; }
@@ -1494,7 +1498,7 @@ input { -webkit-user-select: text; user-select: text; }
   function starOdds(u, prot) {
     const n = u.s;
     if (u.dc >= 2) return { p: 1, keep: 0, drop: 0, boom: 0, chance: true };
-    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0; return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false }; }
+    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0, dr = safe ? 0 : n >= 17 ? f * MSTAR_DROP : f; return { p, keep: f - dr, drop: dr, boom, chance: false }; }
     const boom = (prot && n >= 15 && n <= 21) ? 0 : STAR_B[n];
     const p = STAR_P[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0;
     return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false };
@@ -1602,7 +1606,7 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="row" style="justify-content:space-between"><b class="ol" style="font-family:var(--display);font-size:20px">' + u.s + '성 → ' + (u.s + 1) + '성</b><span class="ol-s" style="font-family:var(--display);display:flex;align-items:center;gap:3px">' + I.coin + fmt(save.gold) + '</span></div>';
       h += o.chance ? '<div class="msg ok">찬스타임! 이번 강화는 100% 성공해요.</div>' :
         '<div class="kv"><div class="ok"><span>성공</span><b class="ol-s">' + pct(o.p) + '</b></div><div class="mid"><span>' + (o.drop ? '실패(하락)' : '실패(유지)') + '</span><b class="ol-s">' + pct(o.keep + o.drop) + '</b></div><div class="bad"><span>파괴</span><b class="ol-s">' + pct(o.boom) + '</b></div></div>';
-      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 성공 15% · 파괴(★15로) · 나머지는 하락 (★20·25는 유지), 파괴 방지 없음</span>' : '') + '</p>';
+      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 파괴(★15로) · 실패 중 일부만 하락 (★20·25는 유지) · ★22부터 성공 15%, 파괴 방지 없음</span>' : '') + '</p>';
       h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">미리 켜둘 수 있어요 · 15~21성에서만 파괴를 막고 그때만 비용 2배</span></span><button class="tog' + (protect && !u.m ? ' on' : '') + '" data-act="prot"' + (!u.m && u.s <= 21 ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (protect && !u.m ? 'ON' : 'OFF') + '</i></button></div>';
       if (autoWarn && !autoOn) h += '<div class="rmbar"><p class="desc" style="color:#fff;text-align:center"><b>' + esc(autoWarn.t) + '</b></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn r ol-s" data-act="autoRisk">위험 감수하고 계속</button><button class="btn ol-s" data-act="autoWarnNo">여기서 그만</button></div></div>';
       if (autoOn) h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">자동 강화 중 · 목표 <b>★' + autoTo + '</b> · 지금 ★' + u.s + '</p><button class="btn r wide ol-s" data-act="auto">자동 멈춤</button></div>';
@@ -1967,6 +1971,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'g261115rhi2', to: '류한일', t: '🎁 운영자 선물', s: '골드 72억 · 장착한 장비 3개 Lv99 · 장착한 펫 ★10', r: { gold: 7200000000, maxGear: 1, maxPet: 1 }, until: Date.UTC(2026, 11, 31, 15, 0) },
     { id: 'g261115rhi', to: '류한일', t: '🎁 정예 40 3000판 보상', s: '정예 40단계(보스 3마리) 3,000판 클리어 보상 · 골드 72.6억 · 젬 355.5만 · 스킬 카드 39,000장 · 장비 21,090개 · 반지 5,400개 · 경험치 108,000', r: { gold: 7260000000, gem: 3555000, cards: 39000, runs: 3000 }, until: Date.UTC(2026, 11, 31, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
