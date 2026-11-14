@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0041';
+  const APP_VER = 'v.261115-0102';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2172,6 +2172,15 @@ input { -webkit-user-select: text; user-select: text; }
     if (S.dn.length > 40) S.dn.shift();
     S.dn.push({ x: x + rnd(-6, 6), y, v: Math.max(1, Math.round(v)), k: kind, l: .7 });
   }
+  /* damage meter: who dealt how much this run (shown on the result screen) */
+  function dmgKey(s) { if (!s) return '스킬'; if (s.robot) return '드론'; if (s.pet != null) return PETN[s.pet] + ' (펫)'; return s.u ? NMS[s.u.n] + (s.u.m ? ' (신화)' : '') : '기타'; }
+  function dmgAdd(s, v) { if (!S || !(v > 0)) return; if (!S.dmgBy) S.dmgBy = {}; const k = dmgKey(s); S.dmgBy[k] = (S.dmgBy[k] || 0) + v; }
+  function dmgBody() {
+    const d = S && S.dmgBy; if (!d) return '';
+    const rows = Object.entries(d).sort((a, b) => b[1] - a[1]), tot = rows.reduce((a, r) => a + r[1], 0) || 1, top = rows.length ? rows[0][1] : 1;
+    return '<div class="card dark" style="padding:10px 12px;gap:6px"><b class="ol-s" style="font-family:var(--display);font-size:15px">⚔ 딜량 정리 · 총 ' + krNum(tot) + '</b>' + rows.map(([k, v]) =>
+      '<div style="display:grid;grid-template-columns:96px 1fr 92px;gap:6px;align-items:center;font-size:12px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(k) + '</span><span style="height:10px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden"><i style="display:block;height:100%;width:' + (v / top * 100).toFixed(1) + '%;background:var(--yel)"></i></span><span style="text-align:right">' + krNum(v) + ' · ' + Math.round(v / tot * 100) + '%</span></div>').join('') + '</div>';
+  }
   function hit(e, base, els, direct, canCrit) {
     if (e.hp <= 0) return 0;
     const m = emul(els, e);
@@ -2192,6 +2201,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (canCrit && Math.random() < cc) { crit = true; a *= 1.5 + critBonus() / 100 + S.r.cdm + (els && els.cdm || 0) + cOver; }
     if (direct && e.arm) a = Math.max(a * .3, a - e.arm);
     const wasFrz = e.frz > 0;
+    dmgAdd(S.curSrc, Math.min(a, Math.max(0, e.hp)));
     e.hp -= a; e.fl = .08;
     /* mythic traits: 한일 crit pierces one enemy behind, 해천 hitting a frozen enemy throws ice shards */
     if (els && canCrit) { if (crit && els.cpi) { const o = nearest(e.x, e.y, [e], 80); if (o) hit(o, a, [], true, false); }
@@ -2240,7 +2250,7 @@ input { -webkit-user-select: text; user-select: text; }
   function fireAt(s, t, extra) {
     const st = s.st, a = Math.atan2(t.y - s.y, t.x - s.x);
     s.ang = a; s.fl = .07;
-    S.bul.push({ x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, bsp: st.bsp || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
+    S.bul.push({ src: s, x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, spm: st.spm || 0, chm: st.chm || 0, bsp: st.bsp || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
   }
   function updShooters(dt) {
     const tg = front();
@@ -2265,7 +2275,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (b.t.hp <= 0 && !b.dead) { const nt = nearest(b.x, b.y, null, 120); if (nt) b.t = nt; else { b.dead = true; continue; } }
       const dx = b.t.x - b.x, dy = b.t.y - b.y, d = Math.hypot(dx, dy), st = b.sp * dt;
       if (d <= st + b.t.r * .6) {
-        const e = b.t; b.dead = true;
+        const e = b.t; b.dead = true; S.curSrc = b.src;
         hit(e, b.dmg, b.el, true, true);
         if (b.k >= 0 && S.nImp < 36) { S.nImp++; S.fx.push({ k: 'imp', e: b.k, x: e.x, y: e.y, r: e.r, l: .45, sd: Math.random() * 100, sm: b.sm }); }
         if (b.pierce) { const o = nearest(e.x, e.y, [e], 70); if (o) hit(o, b.dmg * .6, b.el, true, true); }
@@ -2274,7 +2284,7 @@ input { -webkit-user-select: text; user-select: text; }
         if (e.hp > 0) {
           if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
           if (S.r.gust && e.k !== 'boss' && e.x > visL + 40 && Math.random() < S.r.gust) { e.x = Math.max(visL + 10, e.x - 40); e.fl = .1; }
-          if (b.burn) { e.burn = 3; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
+          if (b.burn) { e.burn = 3; e.bsrc = b.src; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
           if (b.frz && Math.random() < b.frz) e.frz = Math.max(e.frz, 1);
@@ -2286,6 +2296,7 @@ input { -webkit-user-select: text; user-select: text; }
         if (b.splash) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.splash) hit(o, b.dmg * (b.spm || .6), b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: b.splash, l: .25, c: '#ffcf6a' }); }
       } else { b.x += dx / d * st; b.y += dy / d * st; }
     }
+    S.curSrc = null;
     S.bul = S.bul.filter(b => !b.dead);
   }
   /* active skills */
@@ -2392,7 +2403,7 @@ input { -webkit-user-select: text; user-select: text; }
     for (const e of S.en) {
       if (e.hp <= 0) continue;
       e.ph += dt * 6; e.fl -= dt;
-      if (e.burn > 0) { e.burn -= dt; e.hp -= e.bd * dt; }
+      if (e.burn > 0) { e.burn -= dt; dmgAdd(e.bsrc, Math.min(e.bd * dt, Math.max(0, e.hp))); e.hp -= e.bd * dt; }
       if (e.pois > 0) { e.pois -= dt; e.hp -= e.pd * dt; }
       if (e.hp <= 0) { kill(e); continue; }
       if (e.cor > 0) e.cor -= dt;
@@ -2556,6 +2567,7 @@ input { -webkit-user-select: text; user-select: text; }
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! ' + lvName(save.lv) + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + stageLabel(n + 1) + ' · ' + NAMES[n] + '</b> 해금!' + (S.elite ? '' : ' · 보관함 +1칸 (' + capOf() + '칸)') + '</p>' : '<p class="desc" style="text-align:center">' + (n === tk.unlocked && n < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + save.plays[i] + '번') + '</p>') +
       (!win && power() < recPower(n) * (S.elite ? 25000 : 1) ? '<p class="desc" style="text-align:center">추천 전투력 ' + fmt(recPower(n) * (S.elite ? 25000 : 1)) + ' · 내 전투력 ' + fmt(power()) + '. 총잡이 탭에서 강화해 보세요.</p>' : '') +
+      dmgBody() +
       '<div id="resBtns" style="display:grid;gap:10px">' + resButtons(n) + '</div>' +
       '</div></div>';
     $('bpop').innerHTML = h; $('bpop').hidden = false;
@@ -3790,6 +3802,13 @@ input { -webkit-user-select: text; user-select: text; }
     again: el => { repStart(+(el && el.dataset.c) || 1); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } },
     bnext: () => { repStart(1); const t = trk(); if (t.cur < t.unlocked) t.cur++; persist(); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } }
   };
+  /* secret: hold a mythic gunslinger for 5 seconds to see its hidden strong element */
+  let lpT = 0, lpFired = false;
+  const lpUnit = el => { const t = el.closest('.htile'); if (!t) return null; const k = t.dataset.k || (t.dataset.act === 'slot' ? save.slots[+t.dataset.i] : null) || (popKind === 'hero' && t.closest('#pop') ? selKey : null); const u = k && getUnit(k); return u && u.m ? u : null; };
+  $('app').addEventListener('pointerdown', e => { clearTimeout(lpT); const u = lpUnit(e.target); if (!u) return; lpT = setTimeout(() => { lpFired = true; toast('🤫 숨은 강속성: ' + (u.xb != null ? ENM[u.xb] : '없음')); }, 5000); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('app').addEventListener(ev, () => clearTimeout(lpT));
+  $('app').addEventListener('contextmenu', e => { if (e.target.closest('.htile')) e.preventDefault(); });
+  $('app').addEventListener('click', e => { if (lpFired) { lpFired = false; e.stopPropagation(); e.preventDefault(); } }, true);
   $('app').addEventListener('click', e => {
     Snd.unlock();
     const nb = e.target.closest('.nav button');
