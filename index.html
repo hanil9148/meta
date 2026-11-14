@@ -527,7 +527,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-1928';
+  const APP_VER = 'v.261114-2023';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -849,7 +849,7 @@ input { -webkit-user-select: text; user-select: text; }
     { t: 'thunder', nm: '천둥의 반지', mx: 1, c: '#fff36a', d: (v, f) => (Math.round((14 - 8 * f) * 10) / 10) + '초마다 번개 · 1.5초 기절' },
     { t: 'swamp', nm: '늪의 반지', mx: .6, c: '#5a9a5a', d: v => '거점 앞 구역 적 이속 -' + pr(v) },
     { t: 'time', nm: '시간의 반지', mx: 3, c: '#d9b8ff', d: v => '웨이브 시작 시 모든 적 ' + (Math.round(v * 10) / 10) + '초 정지' },
-    { t: 'gust', nm: '돌풍의 반지', mx: .2, c: '#c8f0e0', d: v => pr(v) + ' 확률로 적 밀쳐내기' }
+    { t: 'gust', nm: '돌풍의 반지', mx: .2, c: '#c8f0e0', d: v => pr(v) + ' 확률로 적 밀쳐내기 (보스 제외)' }
   ];
   const pr = v => (Math.round(v * 1000) / 10) + '%';
   const rK = id => RINGS[+id.slice(1, 3)], rG = id => +id[3], rkey = (k, g) => 'q' + (k < 10 ? '0' : '') + k + g;
@@ -1330,11 +1330,12 @@ input { -webkit-user-select: text; user-select: text; }
           '<div class="modes"><button class="ol-s' + (isElite() ? ' off' : '') + '" data-act="mode" data-m="n">일반</button>' + (save.elOn ? '<button class="ol-s' + (isElite() ? ' elite' : ' off') + '" data-act="mode" data-m="e">정예</button>' : '<button class="off ol-s" data-act="elite">🔒 정예</button>') + '</div>' +
       '</div>' +
           '<div class="stage-title"><button class="arrow ol-s" data-act="prev"' + (n <= 1 ? ' disabled' : '') + '>◀</button>' +
-          '<div><b class="ol">' + stageLabel(n) + '</b><small class="ol-s">' + NAMES[i] + (isBossStage(n) ? ' · 보스' : '') + '</small></div>' +
+          '<div><b class="ol">' + stageLabel(n) + '</b><small class="ol-s">' + THEMES[themeOf(n)].nm + ' · ' + NAMES[i] + (isBossStage(n) ? ' · 보스' : '') + '</small></div>' +
           '<button class="qbtn ol-s" data-act="stageinfo">?</button>' +
           '<button class="arrow ol-s" data-act="next"' + (n >= tk.unlocked ? ' disabled' : '') + '>▶</button></div>' +
       '<div class="scene"><canvas id="hcv"></canvas>' +
         (isBossStage(n) ? '<span class="bossflag ol-s">보스 출현 스테이지</span>' : '') +
+        (evtOn() ? '<span class="bossflag ol-s" style="top:' + (isBossStage(n) ? 44 : 10) + 'px;background:#ff8a1e">🔥 이벤트 · 정예 1~' + EVT.maxSt + ' · 일반 40~50 보상 ' + EVT.mul + '배 · ' + Math.max(1, Math.ceil((EVT.to - Date.now()) / 60000)) + '분 남음</span>' : '') +
         '<span class="plays ol-s">' + (tk.reach[i] & 1 ? '클리어 ✓ · 플레이 ' + tk.plays[i] + '번' : n < stMax() ? '클리어하면 다음 단계가 열려요' : '마지막 단계') + '</span>' +
         '<span class="pw ol-s">' + tierEmblem(tierOf(power()), 'sm') + fmt(power()) + '</span></div>' +
       '<div class="start-row">' +
@@ -1816,6 +1817,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'n261114e2', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
   const leftTxt = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간' : h ? h + '시간 ' + m + '분' : m + '분'; };
@@ -1830,13 +1832,13 @@ input { -webkit-user-select: text; user-select: text; }
   function mailBody() {
     const m = mailItems();
     if (!m.length) return '<p class="empty">받을 우편이 없어요.<br>공동 보스를 함께 쓰러뜨리면 선물이 와요.</p>';
-    return m.map(x => '<div class="prow"><span style="min-width:0"><b style="font-size:15px">' + esc(x.t) + '</b><br><span class="desc">' + esc(x.s) + '</span></span><button class="btn g sm ol-s" data-act="mailget" data-id="' + x.id + '">선물 받기</button></div>').join('') +
+    return m.map(x => '<div class="prow"><span style="min-width:0"><b style="font-size:15px">' + esc(x.t) + '</b><br><span class="desc">' + esc(x.s) + '</span></span><button class="btn g sm ol-s" data-act="mailget" data-id="' + x.id + '">' + (x.r && Object.keys(x.r).length ? '선물 받기' : '확인') + '</button></div>').join('') +
       (m.length > 1 ? '<button class="btn y wide ol-s" data-act="mailall">모두 받기</button>' : '');
   }
   function mailGet(id) {
     const x = mailItems().find(m => m.id === id); if (!x) return;
     if (x.notice) save.mail[id] = 1; else if (id === 'welcome') save.mail.welcome = 1; else if (x.slot !== undefined) { save.bossClaim.push(x.slot); const d = dropItems(1, ODDS.wb)[0]; setTimeout(() => toast('장비 선물: ' + itemName(d.id)), 1300); }
-    const t = giveR(x.r); Snd.coin(); toast(t + ' 받았어요'); persist(); topbar();
+    const t = x.r && Object.keys(x.r).length ? giveR(x.r) : ''; Snd.coin(); toast(t ? t + ' 받았어요' : '확인했어요'); persist(); topbar();
   }
   const TUT = [
     ['찍먹메타에 오신 걸 환영해요', '<p>왼쪽에서 몬스터가 몰려와요. 오른쪽 <b>거점</b>을 지키면 이겨요. 총잡이들은 <b>자동으로</b> 쏘니까 따로 조작할 건 없어요.</p>'],
@@ -1855,13 +1857,13 @@ input { -webkit-user-select: text; user-select: text; }
   function openTut(i) { openPop(TUT[i][0], tutBody(i), 'tut', true); }
   function stageInfoBody() {
     const n = trk().cur, P = eParams(n, isElite());
-    return '<p class="desc" style="color:#fff">' + stageLabel(n) + ' · <b>' + NAMES[n - 1] + '</b></p>' +
+    return '<p class="desc" style="color:#fff">' + stageLabel(n) + ' · <b>' + THEMES[themeOf(n)].nm + '</b> · ' + NAMES[n - 1] + '</p>' +
       '<div class="kv"><div class="mid"><span>적 체력</span><b class="ol-s">×' + P.hpm.toFixed(1) + '</b></div><div class="mid"><span>적 공격력</span><b class="ol-s">×' + P.dm.toFixed(1) + '</b></div><div class="mid"><span>플레이</span><b class="ol-s">' + save.plays[n - 1] + '번</b></div></div>' +
-      '<p class="desc">웨이브 3개를 막으면 클리어예요.' + (isBossStage(n) ? ' 마지막 웨이브에 <b>보스</b>가 나와요.' : ' 5의 배수 단계에는 보스가 나와요.') + ' 어느 단계든 1% 확률로 희귀 보스가 끼어들 수 있어요.' + ' 단계가 오를수록 빠른 말벌, 단단한 골렘, 방패 도마뱀, 쪼개지는 선인장이 섞여 나오고 속성을 가진 몬스터가 많아져요.</p>' +
+      '<p class="desc">웨이브 3개를 막으면 클리어예요.' + (isBossStage(n) ? ' 마지막 웨이브에 <b>보스</b>가 나와요.' : ' 5의 배수 단계에는 보스가 나와요.') + ' 어느 단계든 1% 확률로 희귀 보스가 끼어들 수 있어요.' + ' 10단계마다 장소가 바뀌고(모래 황무지 → 어둠의 동굴 → 얼어붙은 설원 → 불타는 화산 → 저주받은 묘지) 그곳만의 몬스터가 나와요. 빠른 놈, 단단한 놈, 방패 든 놈, 쪼개지는 놈이 섞여 나오고 속성을 가진 몬스터가 많아져요.</p>' +
       '<p class="desc">추천 전투력 약 <b>' + fmt(recPower(n)) + '</b> · 내 전투력 <b>' + fmt(power()) + '</b></p>' + monsterGuide(n);
   }
   function monsterGuide(n) {
-    const kinds = ['bug', 'rock'].concat(n >= 2 ? ['bandit'] : [], n >= 4 ? ['golem'] : [], n >= 6 ? ['lizard'] : [], n >= 8 ? ['cactus'] : []);
+    const K = THEMES[themeOf(n)].k, kinds = [K.fast, K.basic].concat(n >= 2 ? [K.basic2] : [], n >= 4 ? [K.tank] : [], n >= 6 ? [K.armor] : [], n >= 8 ? [K.split] : []);
     const chip = (r, f) => [0, 1, 2, 3, 4].filter(f).map(a => '<i class="chip e' + a + '">' + ENM[a] + ' ' + (r[a] > 0 ? '-' : '+') + Math.round(Math.abs(r[a]) * 100) + '%</i>').join('') || '<span class="desc">없음</span>';
     let h = '<p class="desc" style="color:#fff"><b>몬스터 속성 방어</b> · 몬스터마다 강한 속성과 약한 속성이 달라요. 여러 속성 총잡이를 섞어 보내세요.</p>' +
       (isElite() ? '<p class="desc" style="color:#d9b8ff"><b>정예</b>: 몬스터마다 무작위 속성 방어가 더 붙어요. 45%는 <b>4속성 방어 +60%</b>(보라 방패, 한 속성만 뚫려요), 나머지는 2속성 +55%(회색 방패). 보스가 <b>30% 확률로 2번</b> 따로 굴려져서 최대 <b>2마리</b>까지 나와요(보스 단계는 고정 1마리 + 30%로 1마리 더).</p>' : n >= 45 ? '<p class="desc" style="color:#ffd24a"><b>45단계 이상</b>: 몬스터마다 무작위 2속성 방어가 +' + Math.round((50 + 2 * (n - 45))) + '% 더 붙어요(회색 방패 표시).</p>' : '');
@@ -1883,6 +1885,10 @@ input { -webkit-user-select: text; user-select: text; }
     return { hpm: HPK * Math.pow(1.071, n - 1) * Math.pow(1.15, x), dm: Math.pow(1.054, n - 1) * Math.pow(1.08, x), spm: 1 + t * .45, cnt: 1 + t * 1.1, gm: (1 + .18 * (n - 1)) * Math.pow(1.06, x) * (n >= 45 ? 1 + .3 * (n - 44) : 1), d: n - 1 };
   }
   /* elite rewards sit above normal 50: gold x1.3 of stage 50 at elite 1, +10% per elite stage */
+  /* event: 2026-11-14 22:00~23:00 KST, elite 1~4 and normal 40~50 rewards (gold, gems) x4 — judged by when the run started */
+  const EVT = { from: Date.UTC(2026, 10, 14, 13, 0), to: Date.UTC(2026, 10, 14, 14, 0), maxSt: 4, mul: 4 };
+  const evtOn = () => { const t = Date.now(); return t >= EVT.from && t < EVT.to; };
+  const evtFor = (elite, n) => evtOn() && (elite ? n <= EVT.maxSt : n >= 40);
   /* elite rewards x2 (gold and gems) */
   const eGoldK = n => 2 * (1.3 + .1 * (n - 1));
   const eGem = n => 2 * (40 + 3 * (n - 1) + (n % 5 === 0 ? 40 : 0));
@@ -1916,6 +1922,32 @@ input { -webkit-user-select: text; user-select: text; }
     cactus: [-.5, .7, 0, .3, 0],
     sprout: [-.5, .7, 0, .3, 0]
   };
+  /* Stage themes: every 10 stages a new place with its own monsters (same roles = same base stats as the desert set).
+     roles: fast(말벌형) basic(운석형) basic2(무법자형) tank(골렘형) armor(도마뱀형, 방어) split(선인장형, 죽으면 2마리로 쪼개짐) child */
+  const THEMES = [
+    { nm: '모래 황무지', k: { fast: 'bug', basic: 'rock', basic2: 'bandit', tank: 'golem', armor: 'lizard', split: 'cactus' }, child: 'sprout' },
+    { nm: '어둠의 동굴', k: { fast: 'bat', basic: 'spider', basic2: 'goblin', tank: 'troll', armor: 'crab', split: 'slime' }, child: 'slimelet' },
+    { nm: '얼어붙은 설원', k: { fast: 'penguin', basic: 'wisp', basic2: 'wolf', tank: 'yeti', armor: 'turtle', split: 'snowman' }, child: 'snowball' },
+    { nm: '불타는 화산', k: { fast: 'imp', basic: 'ember', basic2: 'hound', tank: 'magma', armor: 'salam', split: 'lavaslime' }, child: 'lavalet' },
+    { nm: '저주받은 묘지', k: { fast: 'vbat', basic: 'skel', basic2: 'ghost', tank: 'zombie', armor: 'knight', split: 'pumpkin' }, child: 'skull' }
+  ];
+  const ROLE_BASE = { fast: 'bug', basic: 'rock', basic2: 'bandit', tank: 'golem', armor: 'lizard', split: 'cactus' };
+  const SPLIT = {}, FLY = { bat: 1, vbat: 1, wisp: 1, ghost: 1 };
+  for (const T of THEMES) { for (const role in T.k) if (!ET[T.k[role]]) ET[T.k[role]] = Object.assign({}, ET[ROLE_BASE[role]]); if (!ET[T.child]) ET[T.child] = Object.assign({}, ET.sprout); SPLIT[T.k.split] = T.child; }
+  ET.bat.r = 10; ET.vbat.r = 10; ET.penguin.r = 11; ET.imp.r = 10; ET.wisp.r = 12; ET.ghost.r = 13; ET.troll.r = 22; ET.yeti.r = 22; ET.zombie.r = 19; ET.magma.r = 21;
+  Object.assign(ENAME, { bat: '동굴 박쥐', spider: '독거미', goblin: '고블린 광부', troll: '동굴 트롤', crab: '바위 게', slime: '슬라임', slimelet: '꼬마 슬라임',
+    penguin: '썰매 펭귄', wisp: '얼음 정령', wolf: '설원 늑대', yeti: '예티', turtle: '얼음 거북', snowman: '눈사람', snowball: '눈뭉치',
+    imp: '불꽃 임프', ember: '불덩이', hound: '용암 사냥개', magma: '마그마 골렘', salam: '방패 도롱뇽', lavaslime: '용암 슬라임', lavalet: '꼬마 용암',
+    vbat: '흡혈 박쥐', skel: '해골 병사', ghost: '유령', zombie: '좀비', knight: '해골 기사', pumpkin: '호박 유령', skull: '굴러가는 해골' });
+  /* fire, water, lightning, earth, wind */
+  Object.assign(RES, {
+    bat: [0, .3, -.4, 0, .5], spider: [-.4, 0, .3, .5, 0], goblin: [0, -.3, .4, .4, 0], troll: [-.4, .5, .3, .6, 0], crab: [.4, .6, -.5, .3, 0], slime: [0, .7, -.4, 0, .3], slimelet: [0, .7, -.4, 0, .3],
+    penguin: [-.4, .6, 0, 0, .3], wisp: [-.5, .6, 0, .3, .4], wolf: [-.3, .4, 0, .3, 0], yeti: [-.5, .7, .3, .4, 0], turtle: [-.4, .7, 0, .5, 0], snowman: [-.6, .7, .3, 0, 0], snowball: [-.6, .7, .3, 0, 0],
+    imp: [.6, -.4, 0, 0, .3], ember: [.7, -.5, .3, 0, 0], hound: [.5, -.4, 0, .4, 0], magma: [.7, -.4, .3, .6, -.3], salam: [.6, -.3, .4, 0, 0], lavaslime: [.7, -.5, 0, .3, 0], lavalet: [.7, -.5, 0, .3, 0],
+    vbat: [0, 0, -.3, .3, .6], skel: [.3, .3, -.4, .4, 0], ghost: [0, 0, .5, .7, .5], zombie: [-.5, .3, .3, .5, 0], knight: [.4, .3, -.4, .6, .3], pumpkin: [-.5, .4, 0, .3, 0], skull: [-.5, .4, 0, .3, 0]
+  });
+  const themeOf = n => clamp(Math.floor((n - 1) / 10), 0, THEMES.length - 1);
+  const curTheme = () => THEMES[themeOf(S ? S.n : trk().cur)];
   const resOf = e => e.res || (e.k === 'boss' ? BOSSES[e.bi || 0].res : (RES[e.k] || [0, 0, 0, 0, 0]));
   /* extra random elemental defence: normal stage 45+ and every elite stage.
      normal 45~50: 2 extra elements +50~60%. elite: 45% of monsters guard 4 elements (+60%, one element left open), the rest 2 elements +55%. */
@@ -1968,7 +2000,7 @@ input { -webkit-user-select: text; user-select: text; }
     [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, ps: x.s, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
-      elite, n, P, sh, avg, g: G, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
+      elite, n, P, sh, avg, g: G, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
       lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
@@ -2015,11 +2047,12 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function pickKind() {
     const n = S.n, w = S.wave;
-    const W = { bug: 1, rock: 1, bandit: n >= 2 ? .9 : 0, golem: n >= 4 ? Math.min(.45, .08 + n * .02 + w * .04) : 0, lizard: n >= 6 ? Math.min(.5, .1 + n * .02) : 0, cactus: n >= 8 ? Math.min(.45, .08 + n * .018) : 0 };
+    const K = THEMES[themeOf(n)].k;
+    const W = { fast: 1, basic: 1, basic2: n >= 2 ? .9 : 0, tank: n >= 4 ? Math.min(.45, .08 + n * .02 + w * .04) : 0, armor: n >= 6 ? Math.min(.5, .1 + n * .02) : 0, split: n >= 8 ? Math.min(.45, .08 + n * .018) : 0 };
     let tot = 0; for (const k in W) tot += W[k];
     let r = Math.random() * tot;
-    for (const k in W) { r -= W[k]; if (r <= 0) return k; }
-    return 'bug';
+    for (const k in W) { r -= W[k]; if (r <= 0) return K[k]; }
+    return K.fast;
   }
   function spawn() {
     const el = S.elite || Math.random() < Math.min(.8, .1 + S.P.d * .03) ? Math.floor(Math.random() * 5) : -1;
@@ -2030,6 +2063,13 @@ input { -webkit-user-select: text; user-select: text; }
   const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk);
   function skPow(id) { return S.avg * atkMul() * (1 + .15 * (skOf(id).lv - 1)); }
 
+  /* damage numbers in Korean units: 1234조 5678억 9012만 3456 (empty groups are left out) */
+  function krNum(v) {
+    v = Math.max(0, Math.round(v)); if (v < 10000) return String(v);
+    const U = ['', '만', '억', '조', '경'], out = [];
+    for (let i = 0; v > 0 && i < U.length; i++) { const g = v % 10000; if (g) out.unshift(g + U[i]); v = Math.floor(v / 10000); }
+    return out.join(' ');
+  }
   function dmgNum(x, y, v, kind) {
     if (!vfx() && kind !== 'crit') return;
     if (S.dn.length > 40) S.dn.shift();
@@ -2065,7 +2105,7 @@ input { -webkit-user-select: text; user-select: text; }
     gainXp(T.xp);
     burst(e.x, e.y, e.k === 'boss' ? 40 : 10, e.el >= 0 ? EC[e.el] : '#ffd27a');
     Snd.kill();
-    if (e.k === 'cactus') for (const dy of [-12, 12]) S.en.push(mkE('sprout', e.x - 4, clamp(e.y + dy, FIELD0, FIELD1), e.el));
+    if (SPLIT[e.k]) for (const dy of [-12, 12]) S.en.push(mkE(SPLIT[e.k], e.x - 4, clamp(e.y + dy, FIELD0, FIELD1), e.el));
     if (S.bosses.includes(e)) { S.bossKills++; S.bossK = true; S.banner = { t: 2.2, s: S.bosses.length > 1 ? '보스 처치! (' + S.bossKills + '/' + S.bosses.length + ')' : '보스 처치!' }; Snd.win(); S.shake = .8; }
     if (e === S.rare) { S.rareK = true; S.banner = { t: 3, s: '희귀 보스 처치!!' }; Snd.win(); S.shake = 1; }
   }
@@ -2128,7 +2168,7 @@ input { -webkit-user-select: text; user-select: text; }
         if (S.r.chain && Math.random() < S.r.chain) { const hl = [e]; for (let i = 0; i < S.r.chainN; i++) { const p0 = hl[hl.length - 1], o = nearest(p0.x, p0.y, hl, 110); if (!o) break; S.fx.push({ k: 'zap', x1: p0.x, y1: p0.y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * .5, b.el, false, false); hl.push(o); } }
         if (e.hp > 0) {
           if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
-          if (S.r.gust && Math.random() < S.r.gust) { e.x -= e.k === 'boss' ? 20 : 40; e.fl = .1; }
+          if (S.r.gust && e.k !== 'boss' && e.x > visL + 40 && Math.random() < S.r.gust) { e.x = Math.max(visL + 10, e.x - 40); e.fl = .1; }
           if (b.burn) { e.burn = 3; e.bd = Math.max(e.bd, b.dmg * b.burn * emul([0], e)); }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
@@ -2253,6 +2293,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (S.tstop > 0 && e.ts !== S.wave) { e.ts = S.wave; e.frz = Math.max(e.frz, S.tstop); }
       let sp = e.sp * S.fs;
       if (S.r.swamp && e.x > edgeX(e.y) - 110) sp *= 1 - S.r.swamp;
+      if (FLY[e.k] && e.frz <= 0) e.y = clamp(e.y + Math.cos(e.ph * .6) * 40 * dt, FIELD0, FIELD1);
       if (e.slow > 0) { e.slow -= dt; sp *= 1 - e.sf; } else e.sf = 0;
       if (e.frz > 0) { e.frz -= dt; sp = 0; }
       const ex = edgeX(e.y) - e.r * .7;
@@ -2264,8 +2305,8 @@ input { -webkit-user-select: text; user-select: text; }
           e.atkT -= dt; if (e.atkT <= 0) { e.atkT = 1; dmgNum(ex + 10, e.y - 10, e.atk * S.dr, 'hurt'); Snd.wall(); }
         }
       }
-      if (e === S.rare) { e.sumT -= dt; if (e.sumT <= 0) { e.sumT = 3; for (let i = 0; i < 2; i++) S.en.push(mkE(Math.random() < .5 ? 'golem' : 'lizard', e.x - 30, clamp(e.y + rnd(-90, 90), FIELD0, FIELD1), Math.floor(Math.random() * 5))); } }
-      if (e.k === 'boss' && e !== S.rare) { e.sumT -= dt; if (e.sumT <= 0) { e.sumT = 4; for (let i = 0; i < 3; i++) S.en.push(mkE('bug', e.x - 20, clamp(e.y + rnd(-70, 70), FIELD0, FIELD1), -1)); } }
+      if (e === S.rare) { e.sumT -= dt; if (e.sumT <= 0) { e.sumT = 3; for (let i = 0; i < 2; i++) S.en.push(mkE(Math.random() < .5 ? curTheme().k.tank : curTheme().k.armor, e.x - 30, clamp(e.y + rnd(-90, 90), FIELD0, FIELD1), Math.floor(Math.random() * 5))); } }
+      if (e.k === 'boss' && e !== S.rare) { e.sumT -= dt; if (e.sumT <= 0) { e.sumT = 4; for (let i = 0; i < 3; i++) S.en.push(mkE(curTheme().k.fast, e.x - 20, clamp(e.y + rnd(-70, 70), FIELD0, FIELD1), -1)); } }
     }
     S.en = S.en.filter(e => e.hp > 0);
   }
@@ -2363,6 +2404,7 @@ input { -webkit-user-select: text; user-select: text; }
     const n = S.n, i = n - 1, hpPct = Math.round(Math.max(0, S.hp) / S.mh * 100);
     const rn = S.elite ? 50 : n, rk = S.elite ? eGoldK(n) : 1;
     let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) * Math.max(1, S.bossKills) * (S.sk.bounty ? 1.3 : 1) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
+    if (S.evt) gold *= EVT.mul;
     let drops = [];
     if (win && S.elite) drops = drops.concat(dropItems(1, ODDS.eliteWin));
     if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills), ODDS.eliteBoss) : dropItems(1, ODDS.stage));
@@ -2375,9 +2417,9 @@ input { -webkit-user-select: text; user-select: text; }
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
-    if (win && S.elite) save.gem += eGem(n);
+    if (win && S.elite) save.gem += eGem(n) * (S.evt ? EVT.mul : 1);
     const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
-    save.gem += sGem;
+    save.gem += sGem * (S.evt ? EVT.mul : 1);
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
     let bclrBonus = 0; const bclrOn = win && !S.elite && n >= BCLR_MIN && isBossStage(n);
     if (bclrOn) { save.bclr++; if (save.bclr % BCLR_N === 0) { bclrBonus = BCLR_G; save.gold += BCLR_G; rep.gold += BCLR_G; } }
@@ -2401,8 +2443,9 @@ input { -webkit-user-select: text; user-select: text; }
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + starBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
-      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem + '개</p>' : '') +
-      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) + '개</p>' : '') +
+      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
+      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
+      (S.evt ? '<p class="desc" style="text-align:center;color:#ffb72e;font-size:16px"><b>🔥 이벤트 보상 ' + EVT.mul + '배 적용!</b></p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! LV.' + save.lv + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + stageLabel(n + 1) + ' · ' + NAMES[n] + '</b> 해금!' + (S.elite ? '' : ' · 보관함 +1칸 (' + capOf() + '칸)') + '</p>' : '<p class="desc" style="text-align:center">' + (n === tk.unlocked && n < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + save.plays[i] + '번') + '</p>') +
@@ -2456,13 +2499,13 @@ input { -webkit-user-select: text; user-select: text; }
   const BBC = ['#e2332a', '#f08a3a', '#e8c23a', '#7ac04a', '#3fb8a0', '#3fa9f5', '#5a6ef0', '#a05af0', '#e05ac0', '#ff6a8a'];
   let bbKey = '';
   function updBoss() {
-    const alive = S.bosses.filter(b => b.hp > 0), hb = S.rare && S.rare.hp > 0 ? S.rare : alive.sort((a, b) => b.hp - a.hp)[0], el = $('bBoss');
+    const alive = S.bosses.filter(b => b.hp > 0).concat(S.rare && S.rare.hp > 0 ? [S.rare] : []), hb = alive.slice().sort((a, b) => (b.x - edgeX(b.y)) - (a.x - edgeX(a.y)))[0], el = $('bBoss');
     if (!hb || hb.hp <= 0 || S.over) { if (!el.hidden) el.hidden = true; bbKey = ''; return; }
     const per = hb.mh / 10, hp = Math.max(0, hb.hp), li = Math.max(0, Math.ceil(hp / per) - 1), inL = (hp - li * per) / per, B = BOSSES[hb.bi];
     const k = li + '|' + Math.round(inL * 400) + '|' + (hb === S.rare) + '|' + alive.length + '|' + hb.bi;
     if (k === bbKey) return; bbKey = k;
     el.hidden = false;
-    $('bbName').textContent = (hb === S.rare ? '희귀 ' : '') + B.nm + (B.el >= 0 ? ' (' + ENM[B.el] + ')' : '') + (hb !== S.rare && alive.length > 1 ? ' 외 ' + (alive.length - 1) + '마리' : '');
+    $('bbName').textContent = (hb === S.rare ? '희귀 ' : '') + B.nm + (B.el >= 0 ? ' (' + ENM[B.el] + ')' : '') + (alive.length > 1 ? ' 외 ' + (alive.length - 1) + '마리' : '');
     $('bbX').textContent = '×' + (li + 1);
     $('bbF').style.cssText = 'width:' + (inL * 100) + '%;background:' + BBC[li];
     $('bbU').style.cssText = 'width:100%;background:' + (li > 0 ? BBC[li - 1] : '#2a1820');
@@ -2520,8 +2563,57 @@ input { -webkit-user-select: text; user-select: text; }
     c.strokeStyle = '#2a1410'; c.lineWidth = 4; c.beginPath(); c.moveTo(60, GROUND - 4); c.lineTo(62, GROUND - 22); c.moveTo(100, GROUND - 4); c.lineTo(96, GROUND - 16); c.moveTo(56, GROUND - 18); c.lineTo(78, GROUND - 14); c.stroke();
     for (let i = 0; i < 26; i++) { const sx = (i * 97.3) % (BW + 500) - 420, sp = 18 + (i % 5) * 6, y = (i * 53 + t * sp) % (BH + 40) - 20, x = sx + Math.sin(t * .8 + i) * 12; c.fillStyle = i % 4 ? 'rgba(190,180,180,.55)' : 'rgba(255,120,50,.85)'; c.fillRect(x, y, i % 4 ? 2.2 : 2.6, i % 4 ? 2.2 : 2.6); }
   }
+  /* themed backgrounds for normal stages 11~50 (1~10 keep the desert) */
+  function bgSky(c, stops) { const g = c.createLinearGradient(0, 0, 0, BH); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(-900, -400, BW + 1300, BH + 800); }
+  function bgGround(c, top, bot, lip) { const g = c.createLinearGradient(0, GROUND, 0, BH); g.addColorStop(0, top); g.addColorStop(1, bot); c.fillStyle = g; c.fillRect(-900, GROUND, BW + 1300, BH); c.fillStyle = lip; c.fillRect(-900, GROUND - 6, BW + 1300, 10); }
+  function bgCave(c, t) {
+    bgSky(c, ['#0e0a1a', '#221a36', '#2e2446', '#1e1830']);
+    c.fillStyle = '#140f22';
+    for (let i = 0; i < 16; i++) { const x = -440 + i * 58, h = 50 + (i * 37 % 70); c.beginPath(); c.moveTo(x, -10); c.lineTo(x + 24, h); c.lineTo(x + 48, -10); c.fill(); }
+    for (const [x, y, s, col] of [[-260, 470, 1, '#7a5aff'], [60, 500, .8, '#4ad0ff'], [-60, 420, .6, '#c07aff'], [230, 470, .7, '#4ad0ff']]) {
+      c.save(); c.translate(x, y); c.scale(s, s); c.globalAlpha = .25 + .15 * Math.sin(t * 2 + x); c.fillStyle = col; c.beginPath(); c.arc(0, -10, 30, 0, 6.283); c.fill(); c.globalAlpha = 1;
+      c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-10, 0); c.lineTo(-4, -34); c.lineTo(2, 0); c.moveTo(0, 0); c.lineTo(8, -24); c.lineTo(14, 0); c.fill(); c.stroke(); c.restore(); }
+    c.fillStyle = '#241c36'; c.beginPath(); c.moveTo(-440, GROUND); for (let i = 0; i <= 14; i++) c.lineTo(-440 + i * 60, GROUND - 30 - (i * 53 % 50)); c.lineTo(500, GROUND); c.fill();
+    bgGround(c, '#2a2240', '#0e0a18', '#3a2e54');
+    c.fillStyle = 'rgba(160,140,255,.35)'; for (let i = 0; i < 14; i++) { const x = (i * 83.7) % (BW + 400) - 380, y = 140 + (i * 61) % 380 + Math.sin(t + i) * 8; c.fillRect(x, y, 2, 2); }
+  }
+  function bgSnow(c, t) {
+    bgSky(c, ['#7fa8d8', '#a8c8ec', '#d4e8f8', '#eaf4fc']);
+    c.fillStyle = '#c4d8ee'; c.beginPath(); c.moveTo(-440, 520); c.lineTo(-320, 360); c.lineTo(-240, 440); c.lineTo(-140, 330); c.lineTo(-20, 470); c.lineTo(80, 380); c.lineTo(200, 500); c.lineTo(300, 420); c.lineTo(460, 540); c.lineTo(460, GROUND); c.lineTo(-440, GROUND); c.fill();
+    c.fillStyle = '#f4faff'; for (const [x, y] of [[-320, 360], [-140, 330], [80, 380]]) { c.beginPath(); c.moveTo(x - 30, y + 36); c.lineTo(x, y); c.lineTo(x + 30, y + 36); c.lineTo(x + 12, y + 28); c.lineTo(x, y + 40); c.lineTo(x - 12, y + 28); c.fill(); }
+    for (const [x, s] of [[-200, 1], [-60, .8], [30, 1.1], [240, .9], [-360, .9]]) { c.save(); c.translate(x, GROUND - 2); c.scale(s, s); c.fillStyle = '#3a6a5a'; c.strokeStyle = INK; c.lineWidth = 2.5; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(-18 + k * 3, -k * 16); c.lineTo(0, -30 - k * 16); c.lineTo(18 - k * 3, -k * 16); c.closePath(); c.fill(); c.stroke(); } c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-8, -46); c.lineTo(0, -62); c.lineTo(8, -46); c.fill(); c.restore(); }
+    bgGround(c, '#f2f8fe', '#b8d0e8', '#ffffff');
+    c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 40; i++) { const x = (i * 71.3 + Math.sin(t + i) * 20) % (BW + 500) - 420, y = (i * 47 + t * (20 + i % 4 * 8)) % (BH + 40) - 20; c.beginPath(); c.arc(x, y, 1.5 + i % 3, 0, 6.283); c.fill(); }
+  }
+  function bgVolcano(c, t) {
+    bgSky(c, ['#1a0806', '#3a120a', '#7a2410', '#a8401a']);
+    c.fillStyle = '#2a0e0a'; c.beginPath(); c.moveTo(-440, GROUND); c.lineTo(-300, 420); c.lineTo(-200, 300); c.lineTo(-150, 300); c.lineTo(-40, 440); c.lineTo(60, 520); c.lineTo(60, GROUND); c.fill();
+    c.fillStyle = 'rgba(255,120,30,' + (.5 + .2 * Math.sin(t * 3)) + ')'; c.beginPath(); c.ellipse(-175, 300, 30, 8, 0, 0, 6.283); c.fill();
+    c.strokeStyle = '#ff6a1e'; c.lineWidth = 4; c.beginPath(); c.moveTo(-180, 302); c.quadraticCurveTo(-200, 360, -240, 400); c.moveTo(-165, 302); c.quadraticCurveTo(-140, 380, -110, 420); c.stroke();
+    for (let k = 0; k < 4; k++) { const p = (t * 18 + k * 30) % 120; c.fillStyle = 'rgba(70,40,40,' + (.45 - p / 300) + ')'; c.beginPath(); c.arc(-175 + Math.sin(t + k) * 10, 290 - p, 14 + p * .2, 0, 6.283); c.fill(); }
+    c.fillStyle = '#3a1410'; c.beginPath(); c.moveTo(60, GROUND); c.lineTo(80, 540); c.lineTo(150, 560); c.lineTo(200, 530); c.lineTo(260, 570); c.lineTo(300, GROUND); c.fill();
+    bgGround(c, '#3a1810', '#140604', '#5a2010');
+    c.strokeStyle = 'rgba(255,110,30,' + (.6 + .25 * Math.sin(t * 2)) + ')'; c.lineWidth = 3;
+    for (let i = 0; i < 8; i++) { const x = i * 58 - 40, y = GROUND + 22 + (i % 3) * 22; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 14, y + 6); c.lineTo(x + 28, y - 3); c.lineTo(x + 44, y + 5); c.stroke(); }
+    for (let i = 0; i < 24; i++) { const x = (i * 89.3) % (BW + 500) - 420 + Math.sin(t + i) * 10, y = BH - ((i * 61 + t * (24 + i % 5 * 8)) % (BH + 40)); c.fillStyle = i % 3 ? 'rgba(255,150,50,.85)' : 'rgba(255,220,90,.9)'; c.fillRect(x, y, 3, 3); }
+  }
+  function bgGrave(c, t) {
+    bgSky(c, ['#080c20', '#141c3a', '#222c52', '#2c2c48']);
+    c.fillStyle = 'rgba(230,236,255,.18)'; c.beginPath(); c.arc(110, 150, 72, 0, 6.283); c.fill();
+    c.fillStyle = '#e8ecf8'; c.beginPath(); c.arc(110, 150, 48, 0, 6.283); c.fill(); c.fillStyle = 'rgba(160,170,200,.5)'; c.beginPath(); c.arc(96, 140, 9, 0, 6.283); c.arc(124, 164, 6, 0, 6.283); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.7)'; for (let i = 0; i < 20; i++) c.fillRect((i * 113.7) % (BW + 500) - 420, (i * 37) % 300 + 20, 2, 2);
+    c.fillStyle = '#141a30'; c.beginPath(); c.moveTo(-440, GROUND); c.lineTo(-440, 540); c.lineTo(-380, 540); c.lineTo(-380, 470); c.lineTo(-360, 440); c.lineTo(-340, 470); c.lineTo(-340, 500); c.lineTo(-290, 500); c.lineTo(-290, 455); c.lineTo(-270, 420); c.lineTo(-250, 455); c.lineTo(-250, 540); c.lineTo(-200, 540); c.lineTo(-200, GROUND); c.fill();
+    c.strokeStyle = '#141a30'; c.lineWidth = 5; c.lineCap = 'round';
+    for (const [x, s] of [[-120, 1], [200, .8]]) { c.save(); c.translate(x, GROUND - 2); c.scale(s, s); c.beginPath(); c.moveTo(0, 0); c.lineTo(-3, -80); c.moveTo(-2, -50); c.lineTo(-26, -70); c.moveTo(-3, -66); c.lineTo(16, -92); c.moveTo(-14, -60); c.lineTo(-20, -84); c.stroke(); c.restore(); }
+    c.lineCap = 'butt';
+    bgGround(c, '#1e2438', '#0a0c16', '#2a3048');
+    for (const [x, h] of [[-330, 30], [-250, 24], [-40, 28], [40, 22], [140, 26], [280, 30]]) { c.fillStyle = '#5a6074'; c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x - 10, GROUND + 2); c.lineTo(x - 10, GROUND - h + 8); c.quadraticCurveTo(x, GROUND - h - 4, x + 10, GROUND - h + 8); c.lineTo(x + 10, GROUND + 2); c.fill(); c.stroke(); c.strokeStyle = '#3a4054'; c.beginPath(); c.moveTo(x, GROUND - h + 6); c.lineTo(x, GROUND - h + 18); c.moveTo(x - 5, GROUND - h + 11); c.lineTo(x + 5, GROUND - h + 11); c.stroke(); }
+    c.fillStyle = 'rgba(180,190,230,.12)'; for (let i = 0; i < 4; i++) { const x = ((i * 171 + t * 12) % (BW + 300)) - 150, y = GROUND - 30 + i * 6; c.beginPath(); c.ellipse(x, y, 120, 14, 0, 0, 6.283); c.fill(); }
+  }
+  const BG_TH = [null, bgCave, bgSnow, bgVolcano, bgGrave];
   function drawBg(c, t) {
     if (S ? S.elite : isElite()) { drawBgElite(c, t); return; }
+    { const th = themeOf(S ? S.n : trk().cur); if (BG_TH[th]) { BG_TH[th](c, t); return; } }
     const g = c.createLinearGradient(0, 0, 0, BH);
     g.addColorStop(0, '#a63a26'); g.addColorStop(.35, '#cf5e30'); g.addColorStop(.75, '#e58d45'); g.addColorStop(1, '#d9773a');
     c.fillStyle = g; c.fillRect(-900, -400, BW + 1300, BH + 800);
@@ -2740,6 +2832,119 @@ input { -webkit-user-select: text; user-select: text; }
     c.fillStyle = '#3fa9f5'; c.beginPath(); c.arc(-18, 0, 4.5, 0, 6.283); c.arc(18, 0, 4.5, 0, 6.283); c.fill(); c.stroke();
     c.restore();
   }
+  /* sprites for the themed monsters (desert ones are drawn above) */
+  const eye2 = (c, x, y, d, col) => { c.fillStyle = col || INK; c.beginPath(); c.arc(x, y - d, 2.2, 0, 6.283); c.arc(x, y + d, 2.2, 0, 6.283); c.fill(); };
+  const blob = (c, r, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(-r, r * .7); c.quadraticCurveTo(-r * 1.1, -r * .9, 0, -r); c.quadraticCurveTo(r * 1.1, -r * .9, r, r * .7); c.closePath(); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(-r * .35, -r * .45, r * .22, r * .14, -.5, 0, 6.283); c.fill(); };
+  const DRAW2 = {
+    bat(c, e, r, f, bob, red) { c.translate(0, bob * 2); const w = Math.sin(e.ph * 3.2); c.fillStyle = red ? '#a8203a' : '#8a6ac8';
+      for (const s of [-1, 1]) { c.beginPath(); c.moveTo(-2, 0); c.lineTo(-6, s * (r + 10) * (.6 + .4 * w)); c.lineTo(-12, s * (r + 4) * (.6 + .4 * w)); c.lineTo(-16, s * (r + 9) * (.6 + .4 * w)); c.lineTo(-4, s * 3); c.closePath(); c.fill(); c.stroke(); }
+      c.fillStyle = f ? '#fff' : red ? '#5a1424' : '#5a4a7a'; c.beginPath(); c.arc(0, 0, r * .8, 0, 6.283); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(r * .2, -r * .6); c.lineTo(r * .6, -r * 1.1); c.lineTo(r * .7, -r * .4); c.moveTo(r * .2, r * .6); c.lineTo(r * .6, r * 1.1); c.lineTo(r * .7, r * .4); c.fill(); c.stroke();
+      eye2(c, r * .35, 0, 3, red ? '#ffe14a' : '#ff4a4a'); if (red) { c.fillStyle = '#fff'; c.fillRect(r * .6, -2, 3, 2); c.fillRect(r * .6, 1, 3, 2); } },
+    vbat(c, e, r, f, bob) { DRAW2.bat(c, e, r, f, bob, 1); },
+    spider(c, e, r, f) { c.strokeStyle = INK; c.lineWidth = 2.4; const k = Math.sin(e.ph * 2) * 3;
+      for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const x0 = -r * .5 + i * r * .35; c.beginPath(); c.moveTo(x0, 0); c.lineTo(x0 - 4 + (i % 2 ? k : -k), s * (r + 6)); c.lineTo(x0 - 8, s * (r + 9)); c.stroke(); }
+      c.fillStyle = f ? '#fff' : '#2a2030'; c.beginPath(); c.ellipse(-r * .3, 0, r * .85, r * .75, 0, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = f ? '#fff' : '#3a2a40'; c.beginPath(); c.arc(r * .55, 0, r * .45, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#c0392b'; c.beginPath(); c.moveTo(-r * .6, -3); c.lineTo(-r * .3, 0); c.lineTo(-r * .6, 3); c.lineTo(-r * .9, 0); c.closePath(); c.fill();
+      c.fillStyle = '#ff4a4a'; for (const [x, y] of [[.65, -.2], [.65, .2], [.8, -.1], [.8, .1]]) { c.beginPath(); c.arc(r * x, r * y, 1.6, 0, 6.283); c.fill(); } },
+    goblin(c, e, r, f, bob) { c.translate(0, Math.abs(bob));
+      c.fillStyle = f ? '#fff' : '#6aa84a'; c.beginPath(); c.moveTo(-r * .4, -r * .7); c.lineTo(-r * 1.3, -r * 1.1); c.lineTo(-r * .7, -r * .2); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(-r * .4, r * .7); c.lineTo(-r * 1.3, r * 1.1); c.lineTo(-r * .7, r * .2); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#e8b830'; c.beginPath(); c.arc(-r * .1, 0, r * .95, Math.PI * .6, Math.PI * 1.4); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#fff6a0'; c.beginPath(); c.arc(-r * .55, 0, 3, 0, 6.283); c.fill(); eye2(c, r * .45, 0, 4, '#ffe14a'); },
+    troll(c, e, r, f, bob) { c.translate(0, Math.abs(bob) * .5);
+      c.fillStyle = f ? '#fff' : '#5a7088'; c.beginPath(); c.ellipse(0, 0, r, r * .9, 0, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#3e5266'; c.beginPath(); c.arc(-r * .3, -r * .4, r * .22, 0, 6.283); c.arc(-r * .5, r * .3, r * .16, 0, 6.283); c.fill();
+      c.fillStyle = '#f2ead0'; c.beginPath(); c.moveTo(r * .6, -r * .35); c.lineTo(r * 1.05, -r * .55); c.lineTo(r * .7, -r * .15); c.moveTo(r * .6, r * .35); c.lineTo(r * 1.05, r * .55); c.lineTo(r * .7, r * .15); c.fill(); c.stroke();
+      eye2(c, r * .45, 0, 5, '#ffcf3f'); },
+    crab(c, e, r, f) { const k = Math.sin(e.ph * 2) * .3;
+      c.fillStyle = f ? '#fff' : '#d0603a';
+      for (const s of [-1, 1]) { c.save(); c.translate(r * .6, s * r * .8); c.rotate(s * k); c.beginPath(); c.arc(4, 0, 6, 0, 6.283); c.fill(); c.stroke(); c.beginPath(); c.moveTo(6, -2); c.lineTo(13, -6); c.lineTo(10, 0); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+      c.beginPath(); c.ellipse(0, 0, r * .8, r, 0, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = f ? '#fff' : '#8a8a92'; c.beginPath(); c.moveTo(-r * .9, -r * .6); c.lineTo(-r * .2, -r * 1.05); c.lineTo(r * .3, -r * .5); c.lineTo(r * .2, r * .6); c.lineTo(-r * .3, r * 1.05); c.lineTo(-r * .9, r * .5); c.closePath(); c.fill(); c.stroke();
+      eye2(c, r * .75, 0, 4); },
+    slime(c, e, r, f, bob, col) { c.save(); c.scale(1 + Math.sin(e.ph * 1.5) * .07, 1 - Math.sin(e.ph * 1.5) * .07); blob(c, r, f ? '#fff' : col || '#3fd0a8'); c.restore(); eye2(c, r * .1, 0, 4); },
+    slimelet(c, e, r, f, bob) { DRAW2.slime(c, e, r, f, bob); },
+    lavaslime(c, e, r, f, bob) { DRAW2.slime(c, e, r, f, bob, '#ff6a2a'); c.fillStyle = '#ffe14a'; c.beginPath(); c.arc(-r * .3, r * .2, 2.5, 0, 6.283); c.arc(r * .3, r * .4, 2, 0, 6.283); c.fill(); },
+    lavalet(c, e, r, f, bob) { DRAW2.lavaslime(c, e, r, f, bob); },
+    penguin(c, e, r, f) { c.rotate(.25);
+      c.fillStyle = f ? '#fff' : '#1e2430'; c.beginPath(); c.ellipse(0, 0, r, r * .8, 0, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#f2f6fa'; c.beginPath(); c.ellipse(r * .15, 0, r * .65, r * .55, 0, 0, 6.283); c.fill();
+      c.fillStyle = '#ff9a2a'; c.beginPath(); c.moveTo(r * .85, -3); c.lineTo(r + 7, 0); c.lineTo(r * .85, 3); c.closePath(); c.fill(); c.stroke();
+      eye2(c, r * .55, 0, 3.5); },
+    wisp(c, e, r, f, bob) { c.translate(0, bob * 2); c.save(); c.globalAlpha = .35; c.fillStyle = '#9de8ff'; c.beginPath(); c.arc(0, 0, r + 6, 0, 6.283); c.fill(); c.restore();
+      c.fillStyle = f ? '#fff' : '#c8f2ff'; c.beginPath(); c.moveTo(r, 0); c.quadraticCurveTo(r * .6, -r, -r * .2, -r * .8); c.quadraticCurveTo(-r * 1.6 - Math.sin(e.ph * 3) * 4, 0, -r * .2, r * .8); c.quadraticCurveTo(r * .6, r, r, 0); c.fill(); c.stroke();
+      eye2(c, r * .35, 0, 3.5, '#2a7ab8'); },
+    wolf(c, e, r, f, bob) { c.translate(0, Math.abs(bob));
+      c.fillStyle = f ? '#fff' : '#8a96a8'; c.beginPath(); c.moveTo(-r - 10, -2); c.quadraticCurveTo(-r - 4, 6, -r, 0); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(0, 0, r, r * .75, 0, 0, 6.283); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(r * .5, -r * .5); c.lineTo(r * .2, -r * 1.15); c.lineTo(r * .05, -r * .5); c.moveTo(r * .5, r * .5); c.lineTo(r * .2, r * 1.15); c.lineTo(r * .05, r * .5); c.fill(); c.stroke();
+      c.fillStyle = '#d8dee8'; c.beginPath(); c.ellipse(r * .75, 0, r * .45, r * .32, 0, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.arc(r * 1.15, 0, 2.2, 0, 6.283); c.fill(); eye2(c, r * .45, 0, 4, '#5fd0ff'); },
+    yeti(c, e, r, f, bob) { c.translate(0, Math.abs(bob) * .5);
+      c.fillStyle = f ? '#fff' : '#eef4fa'; c.beginPath(); for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283, rr = i % 2 ? r * .9 : r * 1.05; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#7ab8e0'; c.beginPath(); c.ellipse(r * .35, 0, r * .45, r * .5, 0, 0, 6.283); c.fill(); c.stroke();
+      eye2(c, r * .45, 0, 5); c.fillStyle = '#fff'; c.fillRect(r * .65, -4, 4, 3); c.fillRect(r * .65, 1, 4, 3); },
+    turtle(c, e, r, f) {
+      c.fillStyle = f ? '#fff' : '#6ab08a'; c.beginPath(); c.arc(r * .9, 0, r * .4, 0, 6.283); c.fill(); c.stroke(); eye2(c, r * 1.05, 0, 2.5);
+      c.fillStyle = f ? '#fff' : '#9fd8f0'; c.beginPath(); c.ellipse(0, 0, r, r * .85, 0, 0, 6.283); c.fill(); c.stroke();
+      c.strokeStyle = '#4a8ab0'; c.lineWidth = 2; c.beginPath(); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283; c.lineTo(Math.cos(a) * r * .45, Math.sin(a) * r * .45); } c.closePath(); c.stroke();
+      for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283; c.beginPath(); c.moveTo(Math.cos(a) * r * .45, Math.sin(a) * r * .45); c.lineTo(Math.cos(a) * r * .9, Math.sin(a) * r * .75); c.stroke(); } },
+    snowman(c, e, r, f) { c.fillStyle = f ? '#fff' : '#f4f8fc';
+      c.beginPath(); c.arc(-r * .35, 0, r * .75, 0, 6.283); c.fill(); c.stroke(); c.beginPath(); c.arc(r * .5, 0, r * .55, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#ff8a2a'; c.beginPath(); c.moveTo(r * .9, -2); c.lineTo(r * 1.35, 0); c.lineTo(r * .9, 2); c.closePath(); c.fill(); c.stroke();
+      eye2(c, r * .6, 0, 3); c.fillStyle = '#c0392b'; c.fillRect(-r * .05, -r * .5, 4, r); },
+    snowball(c, e, r, f) { c.rotate(e.ph * .6); c.fillStyle = f ? '#fff' : '#f4f8fc'; c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill(); c.stroke(); c.fillStyle = '#c8dcec'; c.beginPath(); c.arc(-2, 2, 2.5, 0, 6.283); c.fill(); eye2(c, r * .3, 0, 2.5); },
+    imp(c, e, r, f, bob) { c.translate(0, bob);
+      c.strokeStyle = INK; c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(-r - 10, 8, -r - 12, -2); c.stroke(); c.fillStyle = '#e0402a'; c.beginPath(); c.moveTo(-r - 12, -6); c.lineTo(-r - 16, -1); c.lineTo(-r - 10, 1); c.fill();
+      c.fillStyle = f ? '#fff' : '#d8402a'; c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#3a1a14'; c.beginPath(); c.moveTo(r * .1, -r * .7); c.lineTo(r * .5, -r * 1.3); c.lineTo(r * .5, -r * .6); c.moveTo(r * .1, r * .7); c.lineTo(r * .5, r * 1.3); c.lineTo(r * .5, r * .6); c.fill(); c.stroke();
+      eye2(c, r * .45, 0, 3.5, '#ffe14a'); },
+    ember(c, e, r, f, bob) {
+      c.fillStyle = 'rgba(255,140,40,.6)'; c.beginPath(); c.moveTo(-r * .6, -r * .8); c.quadraticCurveTo(-r * 2.4, -r * .3 + bob, -r * 3, 0); c.quadraticCurveTo(-r * 2.4, r * .3 - bob, -r * .6, r * .8); c.fill();
+      c.fillStyle = f ? '#fff' : '#ff6a1e'; c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = '#ffe14a'; c.beginPath(); c.arc(r * .1, 0, r * .5, 0, 6.283); c.fill(); eye2(c, r * .35, 0, 3.5); },
+    hound(c, e, r, f, bob) { c.translate(0, Math.abs(bob));
+      c.fillStyle = f ? '#fff' : '#4a1e18'; c.beginPath(); c.ellipse(0, 0, r, r * .72, 0, 0, 6.283); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(r * .8, 0, r * .45, r * .35, 0, 0, 6.283); c.fill(); c.stroke();
+      c.strokeStyle = '#ff7a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(-r * .6, -r * .3); c.lineTo(-r * .1, r * .1); c.lineTo(r * .3, -r * .2); c.stroke();
+      c.fillStyle = '#ff7a2a'; c.beginPath(); c.moveTo(-r * .2, -r * .65); c.lineTo(0, -r * 1.1); c.lineTo(r * .2, -r * .65); c.fill(); eye2(c, r * .85, 0, 3, '#ffe14a'); },
+    magma(c, e, r, f) {
+      c.fillStyle = f ? '#fff' : '#3a2a28'; c.beginPath(); c.moveTo(-r, -r * .3); c.lineTo(-r * .5, -r); c.lineTo(r * .6, -r * .9); c.lineTo(r, -r * .1); c.lineTo(r * .7, r * .9); c.lineTo(-r * .7, r); c.closePath(); c.fill(); c.stroke();
+      c.strokeStyle = '#ff8a2a'; c.lineWidth = 3; c.beginPath(); c.moveTo(-r * .5, -r * .6); c.lineTo(-r * .1, -r * .1); c.lineTo(-r * .5, r * .5); c.moveTo(-r * .1, -r * .1); c.lineTo(r * .4, r * .4); c.stroke();
+      c.fillStyle = '#ffe14a'; c.fillRect(r * .2, -r * .35, 5, 5); c.fillRect(r * .5, -r * .35, 5, 5); },
+    salam(c, e, r, f, bob) { c.translate(0, Math.abs(bob) * .6);
+      c.fillStyle = f ? '#fff' : '#e0602a'; c.beginPath(); c.ellipse(0, 0, r, r * .8, 0, 0, 6.283); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(-r - 14, 6, -r - 18, -2); c.stroke();
+      c.fillStyle = '#ffd34a'; c.beginPath(); c.arc(-r * .3, -r * .3, 2.5, 0, 6.283); c.arc(-r * .1, r * .35, 2.5, 0, 6.283); c.fill();
+      c.fillStyle = '#5a5a62'; c.beginPath(); c.ellipse(r * .7, 0, 6, r + 2, 0, 0, 6.283); c.fill(); c.stroke(); c.fillStyle = INK; c.fillRect(2, -6, 3, 3); },
+    skel(c, e, r, f, bob) { c.translate(0, Math.abs(bob));
+      c.strokeStyle = '#e8e4d8'; c.lineWidth = 3; c.beginPath(); c.moveTo(-r * .2, 0); c.lineTo(-r, 0); c.moveTo(-r * .6, -r * .5); c.lineTo(-r * .6, r * .5); c.stroke(); c.strokeStyle = INK; c.lineWidth = 2.6;
+      c.fillStyle = f ? '#fff' : '#f2eee2'; c.beginPath(); c.arc(r * .15, 0, r * .8, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.arc(r * .35, -r * .3, r * .2, 0, 6.283); c.arc(r * .35, r * .3, r * .2, 0, 6.283); c.fill(); c.fillRect(r * .7, -3, 3, 6); },
+    ghost(c, e, r, f, bob) { c.translate(0, bob * 2); c.save(); c.globalAlpha = .82;
+      c.fillStyle = f ? '#fff' : '#e8eef8'; c.beginPath(); c.arc(r * .2, 0, r, -Math.PI / 2, Math.PI / 2); const w = Math.sin(e.ph * 2) * 3;
+      c.lineTo(-r * .6, r); c.lineTo(-r - 4 + w, r * .5); c.lineTo(-r * .7, r * .15); c.lineTo(-r - 6 - w, -r * .2); c.lineTo(-r * .7, -r * .55); c.lineTo(-r - 3 + w, -r * .9); c.closePath(); c.fill(); c.stroke(); c.restore();
+      c.fillStyle = INK; c.beginPath(); c.ellipse(r * .55, -r * .3, 2.5, 3.5, 0, 0, 6.283); c.ellipse(r * .55, r * .3, 2.5, 3.5, 0, 0, 6.283); c.fill(); c.beginPath(); c.ellipse(r * .9, 0, 2, 3, 0, 0, 6.283); c.fill(); },
+    zombie(c, e, r, f, bob) { c.translate(0, Math.abs(bob) * .5);
+      c.fillStyle = f ? '#fff' : '#7aa860'; c.beginPath(); c.roundRect(r * .3, -r * .75, r * .9, r * .3, 4); c.roundRect(r * .3, r * .45, r * .9, r * .3, 4); c.fill(); c.stroke();
+      c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill(); c.stroke();
+      c.strokeStyle = '#3a4a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(-r * .5, -r * .5); c.lineTo(-r * .1, -r * .2); for (let k = 0; k < 3; k++) { const x = -r * .45 + k * r * .15, y = -r * .45 + k * r * .1; c.moveTo(x - 3, y + 3); c.lineTo(x + 3, y - 3); } c.stroke();
+      c.fillStyle = '#ffe14a'; c.beginPath(); c.arc(r * .45, -r * .3, 3, 0, 6.283); c.fill(); c.fillStyle = INK; c.beginPath(); c.arc(r * .45, r * .3, 2, 0, 6.283); c.fill(); },
+    knight(c, e, r, f, bob) { c.translate(0, Math.abs(bob) * .6);
+      c.fillStyle = f ? '#fff' : '#8a94a4'; c.beginPath(); c.arc(0, 0, r * .9, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = INK; c.fillRect(r * .3, -r * .45, 4, r * .9); c.fillStyle = '#ff4a4a'; c.beginPath(); c.arc(r * .4, -r * .2, 1.8, 0, 6.283); c.arc(r * .4, r * .2, 1.8, 0, 6.283); c.fill();
+      c.fillStyle = '#c0392b'; c.beginPath(); c.moveTo(-r * .6, -r * .5); c.quadraticCurveTo(-r * 1.4, -r * .9, -r * 1.2, -r * .1); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = f ? '#fff' : '#5a6474'; c.beginPath(); c.moveTo(r * .55, -r - 2); c.lineTo(r * 1.05, -r * .6); c.lineTo(r * 1.05, r * .6); c.lineTo(r * .55, r + 2); c.closePath(); c.fill(); c.stroke(); },
+    pumpkin(c, e, r, f, bob) { c.translate(0, Math.abs(bob) * .5);
+      c.fillStyle = f ? '#fff' : '#f08a1e'; for (const dy of [-r * .45, r * .45, 0]) { c.beginPath(); c.ellipse(0, dy, r * .85, r * .6, 0, 0, 6.283); c.fill(); c.stroke(); }
+      c.fillStyle = '#4a7a2a'; c.beginPath(); c.roundRect(-r - 4, -3, 8, 6, 2); c.fill(); c.stroke();
+      c.fillStyle = '#ffe14a'; c.beginPath(); c.moveTo(r * .3, -r * .45); c.lineTo(r * .55, -r * .25); c.lineTo(r * .3, -r * .1); c.closePath(); c.moveTo(r * .3, r * .45); c.lineTo(r * .55, r * .25); c.lineTo(r * .3, r * .1); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(r * .65, -r * .35); c.lineTo(r * .75, 0); c.lineTo(r * .65, r * .35); c.lineTo(r * .7, 0); c.closePath(); c.fill(); },
+    skull(c, e, r, f) { c.rotate(Math.sin(e.ph) * .3); c.fillStyle = f ? '#fff' : '#f2eee2'; c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(r * .3, -r * .35, r * .25, 0, 6.283); c.arc(r * .3, r * .35, r * .25, 0, 6.283); c.fill(); }
+  };
   function drawEnemy(c, e, t) {
     c.save(); c.translate(e.x, e.y);
     const r = e.r, flash = e.fl > 0;
@@ -2783,12 +2988,14 @@ input { -webkit-user-select: text; user-select: text; }
       if (e.k === 'cactus') { c.beginPath(); c.roundRect(-r * 1.2, -r * .4, r * .5, r * .9, 4); c.fill(); c.stroke(); c.beginPath(); c.roundRect(r * .7, -r * .7, r * .5, r * .8, 4); c.fill(); c.stroke(); }
       c.fillStyle = INK; c.fillRect(1, -r * .4, 3, 3); c.fillRect(-5, -r * .4, 3, 3);
       c.fillStyle = '#ff7ab8'; c.beginPath(); c.arc(0, -r, 3.5, 0, 6.283); c.fill();
+    } else if (DRAW2[e.k]) { DRAW2[e.k](c, e, r, flash, bob);
     } else if (e.k === 'boss') {
       const B = BOSSES[e.bi || 0];
       c.translate(0, bob);
-      c.fillStyle = flash ? '#fff' : B.c;
+      c.fillStyle = flash ? '#fff' : (e.col || B.c);
       c.beginPath();
-      for (let i = 0; i < 18; i++) { const a = i / 18 * 6.283, rr = i % 2 ? r * .82 : r * 1.12; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      const spk = e.spk || 18;
+      for (let i = 0; i < spk; i++) { const a = i / spk * 6.283, rr = i % 2 ? r * .82 : r * 1.12; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
       c.closePath(); c.fill(); c.stroke();
       c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(0, 0, r * .62, 0, 6.283); c.fill();
       c.fillStyle = '#ffe14a'; c.beginPath(); c.arc(r * .25, -r * .2, 6, 0, 6.283); c.arc(r * .25, r * .2, 6, 0, 6.283); c.fill(); c.stroke();
@@ -2858,7 +3065,7 @@ input { -webkit-user-select: text; user-select: text; }
       c.globalAlpha = Math.min(1, d.l * 3);
       const big = d.k === 'crit';
       c.font = (big ? '400 22px' : d.k === 'hurt' ? '400 13px' : '400 15px') + " 'Black Han Sans', sans-serif";
-      strokeT(c, String(d.v) + (d.k === 'weak' ? '!' : ''), d.x, d.y, big ? '#ffe36a' : d.k === 'hurt' ? '#ff4a4a' : d.k === 'weak' ? '#ffcf3f' : d.k === 'res' ? '#a8b4c4' : '#fff', big ? 5 : 4);
+      strokeT(c, krNum(d.v) + (d.k === 'weak' ? '!' : ''), d.x, d.y, big ? '#ffe36a' : d.k === 'hurt' ? '#ff4a4a' : d.k === 'weak' ? '#ffcf3f' : d.k === 'res' ? '#a8b4c4' : '#fff', big ? 5 : 4);
     }
     c.globalAlpha = 1;
     if (S.banner && !S.over) {
@@ -2886,7 +3093,7 @@ input { -webkit-user-select: text; user-select: text; }
     c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#c8612e'; c.fillRect(0, 0, hc.width, hc.height);
     c.setTransform(s, 0, 0, s, hc.width - BW * s, (hc.height - BH * s) / 2 + BH * s * .02);
     drawField(c, null, t);
-    const dem = [['bug', 0], ['rock', 1], ['bandit', 2], ['golem', 3], ['lizard', 4], ['cactus', 0]];
+    const TK = THEMES[themeOf(trk().cur)].k, dem = [[TK.fast, 0], [TK.basic, 1], [TK.basic2, 2], [TK.tank, 3], [TK.armor, 4], [TK.split, 0]];
     dem.forEach(([k, el], i) => {
       const T = ET[k], x = ((t * T.sp * .6 + i * 70) % 300) - 20, y = 170 + i * 72;
       drawEnemy(c, { k, x, y, r: T.r, hp: 1, mh: 1, el: save.unlocked > 3 && i % 2 ? el : -1, ph: t * 6 + i, fl: 0 }, t);
@@ -2929,7 +3136,11 @@ input { -webkit-user-select: text; user-select: text; }
   const bossBadge = () => sentN(slotNow()) < WB_SEND || bossRewards().length > 0;
   function supportDmg(u) { const b = wbOf(slotNow()); return Math.round(dps(hstat(u)) * 60 * elMul(u.e, b.el)); }
   function nameOf(o) { return (o.nick && String(o.nick).slice(0, 10)) || NET.nameOf(o.id) || (o.me ? '나' : '친구'); }
+  /* the boss tab used to be rebuilt every second, which swallowed taps and stopped scrolling on phones; now only the countdown ticks */
+  let wbShown = null;
+  const wbLeftTxt = () => { const rem = Math.max(0, slotEnd(slotNow()) - Date.now()); return String(Math.floor(rem / 3600e3)).padStart(2, '0') + ':' + String(Math.floor(rem % 3600e3 / 60e3)).padStart(2, '0') + ':' + String(Math.floor(rem % 60e3 / 1e3)).padStart(2, '0'); };
   function renderBoss() {
+    wbShown = slotNow();
     const s = slotNow(), B = wbOf(s), hp = wbHp(s), d = Math.min(hp, dealt(s)), left = hp - d, list = hitsFor(s), mine = save.boss[s];
     const rem = Math.max(0, slotEnd(s) - Date.now());
     const hh = Math.floor(rem / 3600e3), mm = Math.floor(rem % 3600e3 / 60e3), ss = Math.floor(rem % 60e3 / 1e3);
@@ -2937,7 +3148,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<div class="hpbar"><i style="width:' + (left / hp * 100) + '%"></i><b class="ol-s">' + (left <= 0 ? '격파!' : (left / hp * 100).toFixed(1) + '%') + '</b></div>' +
       '<div class="sub"><span>남은 체력 ' + fmt(left) + ' / ' + fmt(hp) + '</span><span>참여 ' + list.length + '명</span></div>' +
       '<div class="art"><canvas id="bcv"></canvas></div>' +
-      '<div class="note">총잡이를 3명까지 지원 보내면 바로 피해를 줘요.<small>다음 보스까지 ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + ' · 4시간마다 새 보스가 나타나요</small></div>';
+      '<div class="note">총잡이를 3명까지 지원 보내면 바로 피해를 줘요.<small>다음 보스까지 <span id="wbTime">' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + '</span> · 4시간마다 새 보스가 나타나요</small></div>';
     if (mine) h += '<div class="result">✅ 이번 보스에 <b>' + sentN(s) + '/' + WB_SEND + '명</b> 지원 보냈어요 · 내 피해 합계 <b>' + fmt(mine.d) + '</b></div>';
     const used = mine && mine.k ? mine.k.split(',') : [];
     if (sentN(s) >= WB_SEND) {
@@ -2983,7 +3194,8 @@ input { -webkit-user-select: text; user-select: text; }
     c.globalAlpha = .5; c.fillStyle = '#b48cff';
     for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + t * .3; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 130, Math.sin(a) * 70); c.lineTo(Math.cos(a + .2) * 120, Math.sin(a + .2) * 64); c.fill(); }
     c.globalAlpha = 1;
-    drawEnemy(c, { k: 'boss', bi: 0, x: 0, y: 0, r: 58, hp: 1, mh: 1, el: B.el, ph: t * 3, fl: 0 }, t);
+    const wi = ((s % WB.length) + WB.length) % WB.length;
+    drawEnemy(c, { k: 'boss', bi: 0, col: B.c, spk: [18, 12, 22, 10, 8, 16][wi], x: 0, y: 0, r: 58, hp: 1, mh: 1, el: B.el, ph: t * 3, fl: 0 }, t);
     c.fillStyle = B.c; c.globalAlpha = .35; c.beginPath(); c.arc(0, 0, 60, 0, 6.283); c.fill(); c.globalAlpha = 1;
   }
   function bossSend() {
@@ -3184,7 +3396,11 @@ input { -webkit-user-select: text; user-select: text; }
     mode: el => { if (el.dataset.m === 'e' && !save.elOn) return; save.mode = el.dataset.m === 'e' ? 'e' : 'n'; persist(); render(); toast(isElite() ? '정예 모드 · 몬스터 체력 ' + fmt(ELITE.hp) + '배!' : '일반 모드'); },
     eliteBuy: () => { if (save.elOn || !eliteReq().every(r => r.ok)) return; save.gold -= ELITE.cost; save.elOn = 1; save.mode = 'e'; Snd.win(); toast('정예 모드 해금!'); persist(true); closePop(); },
     stageinfo: () => openPop('스테이지 정보', stageInfoBody(), 'info'),
-    start: () => startRun(),
+    start: () => { tickEnergy(); const n = trk().cur, ok = save.en >= RUN_COST;
+      openPop('몇 번 할까요?', '<p class="desc" style="text-align:center;color:#fff">' + stageLabel(n) + ' · ' + NAMES[n - 1] + '<br>한 판에 에너지 ' + RUN_COST + ' · 지금 ' + save.en + '/' + EN_MAX + '</p>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + [1, 10, 20, 30].map(c => '<button class="btn ' + (c === 1 ? 'g' : 'y') + ' ol-s" style="font-size:22px;padding:14px 4px" data-act="startN" data-c="' + c + '"' + (ok ? '' : ' disabled') + '>' + c + '회</button>').join('') + '</div>' +
+        '<p class="desc" style="text-align:center">' + (ok ? '연속 전투는 에너지가 떨어지면 자동으로 멈춰요.' : '에너지가 부족해요. 상단 + 버튼에서 젬으로 충전할 수 있어요.') + '</p>', 'startn'); },
+    startN: el => { const c = +el.dataset.c || 1; closePop(); repStart(c); startRun(); },
     chest: () => openPop('스테이지 상자', chestBody(), 'chest'),
     claimall: () => {
       const tot = { gold: 0, gem: 0, cards: 0 };
@@ -3343,7 +3559,7 @@ input { -webkit-user-select: text; user-select: text; }
     else if (tab === 'boss') drawBossArt();
     tick += dt; autoSaveT += dt;
     if (autoSaveT >= 600) { autoSaveT = 0; persist(true); toast('💾 게임이 자동 저장되었어요'); }
-    if (tick > 1) { tick = 0; tickEnergy(); if (!S) { $('vEn').textContent = save.en + '/' + EN_MAX; if (tab === 'boss' && $('pop').hidden) { const sc = document.querySelector('.scroll'); const y = sc ? sc.scrollTop : 0; renderBoss(); const sc2 = document.querySelector('.scroll'); if (sc2) sc2.scrollTop = y; } } }
+    if (tick > 1) { tick = 0; tickEnergy(); if (!S) { $('vEn').textContent = save.en + '/' + EN_MAX; if (tab === 'boss' && $('pop').hidden) { if (wbShown !== slotNow()) { const sc = document.querySelector('.scroll'); const y = sc ? sc.scrollTop : 0; renderBoss(); const sc2 = document.querySelector('.scroll'); if (sc2) sc2.scrollTop = y; } else { const tm = $('wbTime'); if (tm) tm.textContent = wbLeftTxt(); } } } }
     raf = requestAnimationFrame(frame);
   }
   new ResizeObserver(() => { if (S) fitBattle(); sizeHome(); }).observe($('app'));
