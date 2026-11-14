@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0146';
+  const APP_VER = 'v.261115-0208';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2530,19 +2530,22 @@ input { -webkit-user-select: text; user-select: text; }
     const rn = S.elite ? 50 : n, rk = S.elite ? eGoldK(n) : 1;
     let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) * Math.max(1, S.bossKills) * (S.sk.bounty ? 1.3 : 1) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
     if (S.evt) gold *= EVT.mul;
+    /* stages 1~5 (normal and elite): gold, gems and items x5 */
+    const LOW = n <= 5 ? 5 : 1;
+    gold *= LOW;
     let drops = [];
-    if (win && S.elite) drops = drops.concat(dropItems(1, ODDS.eliteWin));
-    if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills), ODDS.eliteBoss) : dropItems(1, ODDS.stage));
-    if (S.rareK) drops = drops.concat(dropItems(3, ODDS.rare));
+    if (win && S.elite) drops = drops.concat(dropItems(1 * LOW, ODDS.eliteWin));
+    if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills) * LOW, ODDS.eliteBoss) : dropItems(1 * LOW, ODDS.stage));
+    if (S.rareK) drops = drops.concat(dropItems(3 * LOW, ODDS.rare));
     /* rings: elite stage 30+, each boss killed has a 40% (30~39) / 60% (40~50) chance */
     let rdrops = [];
     if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
-    if (S.rareK) { save.gem += 100; save.rareK = (save.rareK || 0) + 1; }
+    if (S.rareK) { save.gem += 100 * LOW; save.rareK = (save.rareK || 0) + 1; }
     const xp = 2 + Math.floor(n / 3) + (win ? 3 : 0);
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
-    if (win && S.elite) save.gem += eGem(n) * (S.evt ? EVT.mul : 1);
+    if (win && S.elite) save.gem += eGem(n) * (S.evt ? EVT.mul : 1) * LOW;
     const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
     save.gem += sGem * (S.evt ? EVT.mul : 1);
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
@@ -2569,7 +2572,8 @@ input { -webkit-user-select: text; user-select: text; }
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
       (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
-      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
+      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) * LOW + '개</p>' : '') +
+      (LOW > 1 ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>🎁 1~5단계 보상 5배 (골드·젬·장비)</b></p>' : '') +
       (S.evt ? '<p class="desc" style="text-align:center;color:#ffb72e;font-size:16px"><b>🔥 이벤트 보상 ' + EVT.mul + '배 적용!</b></p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! ' + lvName(save.lv) + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
