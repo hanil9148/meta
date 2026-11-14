@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0223';
+  const APP_VER = 'v.261115-0238';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1565,7 +1565,7 @@ input { -webkit-user-select: text; user-select: text; }
       h += o.chance ? '<div class="msg ok">찬스타임! 이번 강화는 100% 성공해요.</div>' :
         '<div class="kv"><div class="ok"><span>성공</span><b class="ol-s">' + pct(o.p) + '</b></div><div class="mid"><span>' + (o.drop ? '실패(하락)' : '실패(유지)') + '</span><b class="ol-s">' + pct(o.keep + o.drop) + '</b></div><div class="bad"><span>파괴</span><b class="ol-s">' + pct(o.boom) + '</b></div></div>';
       h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 성공 15% · 파괴(★15로) · 나머지는 하락, 파괴 방지 없음</span>' : '') + '</p>';
-      h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">15~21성에서 파괴를 막아요. 비용 2배</span></span><button class="tog' + (prot ? ' on' : '') + '" data-act="prot"' + (canProt ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (prot ? 'ON' : 'OFF') + '</i></button></div>';
+      h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">미리 켜둘 수 있어요 · 15~21성에서만 파괴를 막고 그때만 비용 2배</span></span><button class="tog' + (protect && !u.m ? ' on' : '') + '" data-act="prot"' + (!u.m && u.s <= 21 ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (protect && !u.m ? 'ON' : 'OFF') + '</i></button></div>';
       if (autoWarn && !autoOn) h += '<div class="rmbar"><p class="desc" style="color:#fff;text-align:center"><b>' + esc(autoWarn.t) + '</b></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn r ol-s" data-act="autoRisk">위험 감수하고 계속</button><button class="btn ol-s" data-act="autoWarnNo">여기서 그만</button></div></div>';
       if (autoOn) h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">자동 강화 중 · 목표 <b>★' + autoTo + '</b> · 지금 ★' + u.s + '</p><button class="btn r wide ol-s" data-act="auto">자동 멈춤</button></div>';
       else if (autoPick) {
@@ -2531,12 +2531,14 @@ input { -webkit-user-select: text; user-select: text; }
     let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) * Math.max(1, S.bossKills) * (S.sk.bounty ? 1.3 : 1) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
     if (S.evt) gold *= EVT.mul;
     /* stages 1~5 (normal and elite): gold, gems and items x5 */
-    const LOW = n <= 5 ? 5 : 1;
+    const LOW = !S.elite || n <= 5 ? 5 : 1; /* normal: every stage x5 */
     gold *= LOW;
-    const GEMK = n <= 5 ? 5 : 3; /* gems: x5 for 1~5, x3 for 6+ */
+    const GEMK = !S.elite || n <= 5 ? 5 : 3; /* gems: x5 for 1~5, x3 for 6+ */
     let drops = [];
     if (win && S.elite) drops = drops.concat(dropItems(1 * LOW, ODDS.eliteWin));
     if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills) * LOW, ODDS.eliteBoss) : dropItems(1 * LOW, ODDS.stage));
+    /* normal 1~5 has no boss on 1~4, so every clear there drops gear too (x5) */
+    if (win && !S.elite && n <= 5 && !S.bossK) drops = drops.concat(dropItems(1 * LOW, ODDS.stage));
     if (S.rareK) drops = drops.concat(dropItems(3 * LOW, ODDS.rare));
     /* rings: elite stage 30+, each boss killed has a 40% (30~39) / 60% (40~50) chance */
     let rdrops = [];
@@ -2547,7 +2549,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
     if (win && S.elite) save.gem += eGem(n) * (S.evt ? EVT.mul : 1) * GEMK;
-    const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
+    const sGem = win && !S.elite ? (n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : n <= 5 ? 2 : 0) : 0;
     save.gem += sGem * (S.evt ? EVT.mul : 1) * GEMK;
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
     let bclrBonus = 0; const bclrOn = win && !S.elite && n >= BCLR_MIN && isBossStage(n);
@@ -2572,9 +2574,9 @@ input { -webkit-user-select: text; user-select: text; }
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + lvBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 ' + 100 * GEMK + '개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
-      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
+      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>' + (n <= 5 ? '클리어 보상' : '고단계 보상') + '</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
       (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
-      (LOW > 1 ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>🎁 1~5단계 보상 5배 (골드·젬·장비)</b></p>' : '') +
+      (LOW > 1 ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>🎁 ' + (S.elite ? '1~5단계' : '일반 모드') + ' 보상 5배 (골드·젬·장비)</b></p>' : '') +
       (S.evt ? '<p class="desc" style="text-align:center;color:#ffb72e;font-size:16px"><b>🔥 이벤트 보상 ' + EVT.mul + '배 적용!</b></p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! ' + lvName(save.lv) + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
@@ -3281,7 +3283,11 @@ input { -webkit-user-select: text; user-select: text; }
     }
     if (e.el >= 0) {
       c.strokeStyle = EC[e.el]; c.lineWidth = 2.6; c.beginPath(); c.arc(0, 0, r + 4, 0, 6.283); c.stroke();
-      if (r >= 12) { c.font = '700 ' + Math.round(Math.min(r * .8, 22)) + "px 'Black Han Sans', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; strokeT(c, EGL[e.el], -r * .15, 1, EC[e.el], 3); }
+      /* element badge: solid colored chip with a white letter, top-left of the monster */
+      const br = Math.max(11, Math.min(r * .55, 15)), bx = -r * .8, by = -r * .8;
+      c.fillStyle = EC[e.el]; c.strokeStyle = INK; c.lineWidth = 2.4; c.beginPath(); c.arc(bx, by, br, 0, 6.283); c.fill(); c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.beginPath(); c.arc(bx, by, br - 2.2, 0, 6.283); c.stroke();
+      c.font = "400 " + Math.round(br * 1.05) + "px 'Black Han Sans', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; strokeT(c, EGL[e.el], bx, by + 1, '#fff', 2.2);
     }
     if (e.xres) { const sx = r * .75, sy = -r * .75, w = e.xres >= 4 ? 7 : 5.5; c.fillStyle = e.xres >= 4 ? '#c27bff' : '#8fb4d8'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(sx, sy - w); c.lineTo(sx + w, sy - w * .5); c.lineTo(sx + w * .8, sy + w * .4); c.lineTo(sx, sy + w); c.lineTo(sx - w * .8, sy + w * .4); c.lineTo(sx - w, sy - w * .5); c.closePath(); c.fill(); c.stroke(); }
     if (e.burn > 0) { c.fillStyle = '#ff6a3d'; c.beginPath(); c.arc(-r * .5, -r - 4, 3, 0, 6.283); c.fill(); }
