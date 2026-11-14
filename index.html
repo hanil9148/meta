@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0434';
+  const APP_VER = 'v.261115-0559';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1231,6 +1231,11 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.gem) { save.gem += r.gem; out.push(r.gem + ' 젬'); }
     if (r.en) { save.en += r.en; out.push('에너지 ' + r.en); }
     if (r.cards) { const got = giveCards(r.cards); out.push(got); }
+    /* bulk run rewards (gift mail): gear, rings and profile xp of k elite clears with 3 bosses each */
+    if (r.runs) { const k = r.runs; let it = dropItems(k, ODDS.eliteWin).length + dropItems(6 * k, ODDS.eliteBoss).length + dropItems(Math.round(k * .03), ODDS.rare).length;
+      const rc = Math.round(3 * k * .6); dropRings(rc, RODDS.r40);
+      save.xp += 36 * k; let up = 0; while (save.lv < LV_MAX && save.xp >= lvNeed(save.lv)) { save.xp -= lvNeed(save.lv); save.lv++; save.gem += 10; up++; }
+      out.push('장비 ' + fmt(it) + '개', '반지 ' + fmt(rc) + '개', '경험치 ' + fmt(36 * k) + (up ? ' (레벨 +' + up + ')' : '')); }
     return out.join(', ');
   }
   function giveCards(n) {
@@ -1962,13 +1967,14 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'g261115rhi', to: '류한일', t: '🎁 정예 40 3000판 보상', s: '정예 40단계(보스 3마리) 3,000판 클리어 보상 · 골드 72.6억 · 젬 355.5만 · 스킬 카드 39,000장 · 장비 21,090개 · 반지 5,400개 · 경험치 108,000', r: { gold: 7260000000, gem: 3555000, cards: 39000, runs: 3000 }, until: Date.UTC(2026, 11, 31, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
   const leftTxt = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간' : h ? h + '시간 ' + m + '분' : m + '분'; };
   function mailItems() {
     const out = [];
-    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
+    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until && (!n.to || save.name === n.to)) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
     for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · ' + fmt(WB_GIFT) + ' 골드', r: { gold: WB_GIFT } });
     return out;
@@ -3616,7 +3622,7 @@ input { -webkit-user-select: text; user-select: text; }
       this.api = {
         sub(name, cb) { const go = () => { let un = null; un = db.collection(name).onSnapshot(s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => { try { un && un(); } catch (e) {} setTimeout(go, 5000); }); }; go(); },
         put(name, data) { return self.uid ? db.collection(name).doc(self.uid).set(data) : Promise.resolve(); },
-        async loadSave() { if (!self.uid) return null; try { const s = await db.collection('data/users/' + self.uid).doc('save').get(); return s && s.exists ? s.data() : null; } catch (e) { return null; } },
+        async loadSave() { if (!self.uid) return null; const s = await db.collection('data/users/' + self.uid).doc('save').get(); return s && s.exists ? s.data() : null; },
         storeSave(j) { return self.uid ? db.collection('data/users/' + self.uid).doc('save').set({ json: j, t: Date.now() }) : Promise.resolve(); },
         presence(p) { if (room) room.presence(p).catch(() => {}); },
         async names(ids) { if (!user) return {}; try { const ps = await user.profiles(ids); const o = {}; for (const k in ps) o[k] = ps[k] && ps[k].name || ''; return o; } catch (e) { return {}; } }
@@ -3626,14 +3632,7 @@ input { -webkit-user-select: text; user-select: text; }
     },
     async afterLogin() {
       const self = this;
-      try {
-        const c = await this.api.loadSave();
-        if (c && c.json) {
-          const r = JSON.parse(c.json), sum = a => (Array.isArray(a) ? a : []).reduce((x, y) => x + (+y || 0), 0);
-          /* only adopt saves written by this game (an old bunker build stores a different shape in the same account slot) */
-          if (r && Array.isArray(r.slots) && Array.isArray(r.plays) && r.plays.length >= STAGES && sum(r.plays) > sum(save.plays)) { save = loadFrom(r); try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} toast('계정에 저장된 진행 상황을 불러왔어요'); }
-        }
-      } catch (e) {}
+      await this.loadCloud();
       this.api.sub('rank', docs => { rankDocs = docs; self.resolveNames(); if (tab === 'boss') render(); if (popKind === 'friends') refreshPop(friendsBody()); });
       this.api.sub('bosshits', docs => { hitDocs = docs; if (tab === 'boss') render(); else badges(); });
       this.presence(); this.sync();
@@ -3641,6 +3640,42 @@ input { -webkit-user-select: text; user-select: text; }
       setInterval(() => this.sync(), 60000);
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persist(true); else { this.presence(true); this.sync(); } });
       render();
+    },
+    /* ---- cloud save safety ----
+       The cloud copy is never overwritten until it has been read successfully this session, and never by a save with
+       fewer plays than the cloud copy. When this device and the cloud disagree (e.g. PC played, then the phone opened
+       with its older local copy), the player picks which one to keep; the other is kept as a local backup. */
+    cloudOk: false, cloudPlays: 0, choosing: false, cloudRaw: null,
+    async loadCloud() {
+      let c;
+      try { c = await Promise.race([this.api.loadSave(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000))]); }
+      catch (e) { this.cloudOk = false; return false; }
+      this.cloudOk = true;
+      const sum = a => (Array.isArray(a) ? a : []).reduce((x, y) => x + (+y || 0), 0);
+      let r = null; try { r = c && c.json ? JSON.parse(c.json) : null; } catch (e) {}
+      /* only saves written by this game count (an old bunker build stores a different shape in the same slot) */
+      if (!(r && Array.isArray(r.slots) && Array.isArray(r.plays) && r.plays.length >= STAGES)) { this.cloudPlays = 0; return true; }
+      const cs = sum(r.plays), ls = sum(save.plays), ct = +r.saved || 0, lt = +save.saved || 0;
+      this.cloudPlays = cs;
+      if (cs === ls) return true;
+      if (ls === 0 || (cs > ls && ct >= lt)) { this.adopt(r); return true; }
+      if (ls > cs && lt >= ct) { this.cloudPlays = 0; return true; }
+      this.choosing = true; this.cloudRaw = r; this.askSave();
+      return true;
+    },
+    adopt(r) {
+      try { localStorage.setItem(KEY + '-bak', JSON.stringify({ t: Date.now(), save })); } catch (e) {}
+      save = loadFrom(r); try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {}
+      this.cloudPlays = save.plays.reduce((a, b) => a + b, 0);
+      toast('계정에 저장된 진행 상황을 불러왔어요'); render();
+    },
+    askSave() {
+      const r = this.cloudRaw, sum = a => (Array.isArray(a) ? a : []).reduce((x, y) => x + (+y || 0), 0);
+      const card = (w, o, title) => { const el = o.el || {}, my = (Array.isArray(o.coll) ? o.coll : []).filter(u => u && u.m).length, t = +o.saved || 0;
+        return '<div class="card dark" style="padding:12px;gap:4px"><b class="ol-s" style="font-family:var(--display);font-size:17px">' + title + '</b>' +
+          '<p class="desc" style="margin:0;color:#fff">레벨 <b>' + (o.lv || 1) + '</b> · 일반 <b>' + (o.unlocked || 1) + '</b> · 정예 <b>' + (o.elOn ? el.unlocked || 1 : '-') + '</b><br>누적 <b>' + fmt(sum(o.plays)) + '판</b> · 신화 <b>' + my + '</b> · 골드 <b>' + fmt(o.gold || 0) + '</b> · 젬 <b>' + fmt(o.gem || 0) + '</b><br>마지막 저장 ' + (t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '알 수 없음') + '</p>' +
+          '<button class="btn ' + (w === 'cloud' ? 'p' : 'y') + ' wide ol-s" data-act="pickSave" data-w="' + w + '">이걸로 할게요</button></div>'; };
+      openPop('진행 상황 고르기', '<p class="desc" style="color:#fff">이 기기와 계정(서버)의 진행 상황이 달라요. <b>계속할 쪽</b>을 골라 주세요. 고르지 않은 쪽은 이 기기에 백업으로 남겨둬요.</p>' + card('cloud', r, '☁ 계정(서버) 저장') + card('local', save, '📱 이 기기 저장'), 'savepick', true);
     },
     async resolveNames() {
       const ids = rankDocs.map(r => r.id).filter(id => !this.names[id]);
@@ -3658,8 +3693,10 @@ input { -webkit-user-select: text; user-select: text; }
         if (rk !== this.lastRank && (save.plays.some(Boolean) || save.name)) await step('친구 정보', async () => { await this.api.put('rank', rp); this.lastRank = rk; });
         const hk = JSON.stringify(save.boss) + save.name;
         if (hk !== this.lastHits && Object.keys(save.boss).length) await step('보스 기록', async () => { await this.api.put('bosshits', { h: save.boss, nick: save.name, t: Date.now() }); this.lastHits = hk; });
-        const j = JSON.stringify(save);
-        if (j !== this.lastCloud) await step('진행 저장', async () => { await this.api.storeSave(j); this.lastCloud = j; });
+        if (this.choosing && popKind !== 'savepick') this.askSave();
+        if (!this.cloudOk) await step('계정 저장 확인', async () => { if (!(await this.loadCloud())) throw { code: '서버 응답 없음' }; });
+        const j = JSON.stringify(save), myPlays = save.plays.reduce((a, b) => a + b, 0);
+        if (j !== this.lastCloud && this.cloudOk && !this.choosing && myPlays >= this.cloudPlays) await step('진행 저장', async () => { await this.api.storeSave(j); this.lastCloud = j; this.cloudPlays = myPlays; });
         if (errs.length) { this.syncErr = errs.join(', '); this.pending = true; } else { this.syncedAt = Date.now(); this.syncErr = ''; }
       } catch (e) { this.syncErr = (e && (e.code || e.message)) || 'error'; this.pending = true; }
       this.busy = false;
@@ -3867,6 +3904,7 @@ input { -webkit-user-select: text; user-select: text; }
     pullfill: () => pull(10, true),
     cardbox: () => { qDay(); if (save.gem < 40 || save.shop.card >= 5) return; save.gem -= 40; save.shop.card++; giveCards(20); Snd.coin(); toast('스킬 카드 20장 받았어요'); persist(); render(); },
     buyen: () => { qDay(); if (save.gem < EN_GEM || save.shop.en >= 3) return; save.gem -= EN_GEM; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
+    pickSave: el => { const N = NET; if (!N.choosing) return; N.choosing = false; if (el.dataset.w === 'cloud') N.adopt(N.cloudRaw); else { try { localStorage.setItem(KEY + '-bak', JSON.stringify({ t: Date.now(), save: N.cloudRaw })); } catch (e) {} N.cloudPlays = 0; toast('이 기기 진행 상황으로 계속해요'); } N.cloudRaw = null; closePop(); persist(true); },
     goldbag: () => { if (save.gem < BAG_GEM) return; save.gem -= BAG_GEM; save.gold += goldBag(); Snd.coin(); toast(fmt(goldBag()) + ' 골드 받았어요'); persist(); render(); },
     bpick: el => { bossSel = el.dataset.k; bossMsg = null; render(); },
     bsend: () => bossSend(),
