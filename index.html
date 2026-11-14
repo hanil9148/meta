@@ -527,7 +527,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261114-1358';
+  const APP_VER = 'v.261114-1427';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1587,7 +1587,9 @@ input { -webkit-user-select: text; user-select: text; }
     const lg = pulls.filter(r => r.u.e.length >= 4);
     if (lg.length) legendFlash(face(HATS[lg[0].u.n], EC[lg[0].u.e[0]], { n: lg[0].u.n }), '4속성 총잡이!' + (lg.length > 1 ? ' ×' + lg.length : ''), lg.slice(0, 4).map(r => NMS[r.u.n] + ' ' + r.u.e.map(e => ENM[e]).join('')).join(' · '));
   }
-  const goldBag = () => Math.round(1500 * (1 + save.unlocked * .35) / 10) * 10;
+  /* normal stages: up to ~28k; elite: 200k at stage 1, ×1.048 per elite stage opened (~2M at 50) */
+  const bagElite = () => save.elOn && save.el ? clamp(+save.el.unlocked || 0, 0, ESTAGES) : 0;
+  const goldBag = () => { const e = bagElite(); return Math.round((1500 * (1 + save.unlocked * .35) + (e ? 200000 * Math.pow(1.048, e - 1) : 0)) / 1000) * 1000; };
   function renderShop() {
     qDay();
     const item = (ico, nm, p, price, left, act, dis) => '<div class="shopi"><span class="ico">' + ico + '</span><div style="min-width:0"><b class="ol-s">' + nm + '</b><p>' + p + '</p></div><div class="buy"><span class="price ol-s">' + price + '</span><button class="btn y sm ol-s" data-act="' + act + '"' + (dis ? ' disabled' : '') + '>' + (left === '0' ? '품절' : '구매') + '</button>' + (left ? '<span class="left">남은 ' + left + '</span>' : '') + '</div></div>';
@@ -1602,7 +1604,7 @@ input { -webkit-user-select: text; user-select: text; }
     h += item(I.bolt, '에너지 충전', '에너지 30을 바로 채워요.', I.gem + EN_GEM, (3 - save.shop.en) + '/3', 'buyen', save.gem < EN_GEM || save.shop.en >= 3);
     h += item(itemIcon('rv1'), '장비 상자', '장비 1개 · 일반 90 · 고급 6.4 · 희귀 2.8 · 영웅 0.7 · 전설 0.1%', I.gem + EBOX[0].p, '', 'ebox1', save.gem < EBOX[0].p);
     h += item(itemIcon('sg4'), '고급 장비 상자', '고급 80 · 희귀 14 · 영웅 5 · 전설 1% · ' + PITY + '번 안에 전설 확정 (남은 ' + (PITY - save.pity) + '번)', I.gem + EBOX[1].p, '', 'ebox2', save.gem < EBOX[1].p);
-    h += item(I.coin, '골드 주머니', fmt(goldBag()) + ' 골드. 높은 단계를 열수록 많이 들어 있어요.', I.gem + '50', '', 'goldbag', save.gem < 50);
+    h += item(I.coin, '골드 주머니', fmt(goldBag()) + ' 골드. ' + (bagElite() ? '정예 ' + bagElite() + '단계 보너스 포함 · 정예를 열수록 크게 늘어요.' : '정예 모드를 열면 크게 늘어나요.'), I.gem + '50', '', 'goldbag', save.gem < 50);
     h += '<p class="desc">뽑기 확률: 단일 속성 <b>' + pct(RATES[0]) + '</b> · 2속성 <b>' + pct(RATES[1]) + '</b> · 3속성 <b>' + pct(RATES[2]) + '</b> · 4속성 <b>' + pct(RATES[3]) + '</b>. 새 총잡이는 빈 슬롯에 자동으로 출전해요.</p></div>';
     if (petPulls) {
       const pshow = petPulls.length > 20 ? petPulls.filter(r => r.g > 0 && !r.full).slice(0, 40) : petPulls;
