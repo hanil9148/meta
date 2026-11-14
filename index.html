@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0400';
+  const APP_VER = 'v.261115-0434';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1840,7 +1840,7 @@ input { -webkit-user-select: text; user-select: text; }
   const bagElite = () => save.elOn && save.el ? clamp(+save.el.unlocked || 0, 0, ESTAGES) : 0;
   /* gold pouch: 250 gems for 5x the old 50-gem amount */
   const BAG_GEM = 250;
-  const goldBag = () => { const e = bagElite(); return Math.round(5 * (1500 * (1 + save.unlocked * .35) + (e ? 200000 * Math.pow(1.048, e - 1) : 0)) / 1000) * 1000; };
+  const goldBag = () => { const e = bagElite(); return Math.round(10 * (1500 * (1 + save.unlocked * .35) + (e ? 200000 * Math.pow(1.048, e - 1) : 0)) / 1000) * 1000; };
   function renderShop() {
     qDay();
     const item = (ico, nm, p, price, left, act, dis) => '<div class="shopi"><span class="ico">' + ico + '</span><div style="min-width:0"><b class="ol-s">' + nm + '</b><p>' + p + '</p></div><div class="buy"><span class="price ol-s">' + price + '</span><button class="btn y sm ol-s" data-act="' + act + '"' + (dis ? ' disabled' : '') + '>' + (left === '0' ? '품절' : '구매') + '</button>' + (left ? '<span class="left">남은 ' + left + '</span>' : '') + '</div></div>';
@@ -2037,7 +2037,9 @@ input { -webkit-user-select: text; user-select: text; }
   /* elite rewards x2 (gold and gems) */
   const eGoldK = n => 2 * (1.3 + .1 * (n - 1));
   const eGem = n => 2 * (40 + 3 * (n - 1) + (n % 5 === 0 ? 40 : 0));
-  function eParams(n, elite) { const P = params(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: 2 * params(50).gm * params(50).cnt / (P.cnt * ELITE.cnt) * eGoldK(n), cnt: P.cnt * ELITE.cnt, spm: P.spm * ELITE.spd }) : P; }
+  /* monster HP cut (elite only, bosses included): stage 40~45 -30%, 46~50 -20% */
+  const hpCut = n => n >= 46 ? .8 : n >= 40 ? .7 : 1;
+  function eParams(n, elite) { const P = Object.assign({}, params(n)); if (elite) P.hpm *= hpCut(n); return elite ? Object.assign({}, P, { hpm: P.hpm * ELITE.hp, dm: P.dm * ELITE.atk, gm: 2 * params(50).gm * params(50).cnt / (P.cnt * ELITE.cnt) * eGoldK(n), cnt: P.cnt * ELITE.cnt, spm: P.spm * ELITE.spd }) : P; }
   const ET = {
     bug:    { hp: 14,  sp: 74, r: 11, atk: 4,  xp: 1,  g: 2 },
     rock:   { hp: 34,  sp: 30, r: 13, atk: 7,  xp: 1,  g: 3 },
@@ -3568,17 +3570,17 @@ input { -webkit-user-select: text; user-select: text; }
     if (rows.length > 1) h += '<div class="myrank ol-s">⚔ 전투력 순위 <b>' + myRank + '위</b> / ' + rows.length + '명</div>';
     rows.slice(0, 50).forEach((r, ri) => {
       const d = r.d, isMe = r.id === me || r.id === '__me', on = isMe || !!peers[r.id];
-      const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s] : null).filter(Boolean);
+      const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s, x.m ? 1 : 0, x.se] : null).filter(Boolean);
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
       h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
-        '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 50) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
+        '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>' + (+d.es > 0 ? '정예 단계' : '스테이지') + '</span><b class="ol-s"' + (+d.es > 0 ? ' style="color:#d9b8ff"' : '') + '>' + (+d.es > 0 ? '정예 ' + clamp(+d.es, 1, 50) : clamp(+d.st || 1, 1, 50)) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
         (isMe ? '' : (() => { const pv = on && peers[r.id] && peers[r.id].v ? String(peers[r.id].v) : '', dv = String(d.v || ''), cv = pv || dv;
           if (cv >= APP_VER) return '';
           return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
             : (() => { const ls = lastSeen[r.id], lt = Math.max(ls ? ls.t : 0, +d.t || 0), lv = (ls && ls.v > dv ? ls.v : dv);
                 return '<div class="desc" style="font-size:11px">💤 <b>' + (lt ? agoTxt(lt) : '오래 전') + '</b> 마지막 접속 · 그때 버전 ' + esc(lv || '예전 버전') + '<br>아직 새 버전을 안 켰어요. 다음에 켜면 자동으로 최신 버전이 돼요</div>'; })(); })()) +
-        '<div class="desc" style="font-size:11px">' + (isMe ? '내 정보는 바뀔 때마다 자동으로 올라가요' : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">' + NMS[n] + ' ★' + clamp(+x[2] || 0, 0, 30) + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
+        '<div class="desc" style="font-size:11px">' + (isMe ? '내 정보는 바뀔 때마다 자동으로 올라가요' : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), st = clamp(+x[2] || 0, 0, 30); if (x[3]) { const se = clamp(+x[4] || 0, 0, 4); return '<span class="chip" style="background:linear-gradient(90deg,#ff9ad8,#ffe36a,#8ff0b0,#8fd0ff,#d9b8ff);font-weight:900">신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + '</span>'; } const es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">전설 ' + NMS[n] + ' ★' + st + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
     });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
     return h;
@@ -3593,7 +3595,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function rankPayload() {
     return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, pl: save.plays.reduce((a, b) => a + b, 0), pw: power(), hl: save.hl, dl: save.dl,
-      v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => ({ n: u.n, e: u.e.join(''), s: u.s })), t: Date.now() };
+      v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? { n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se } : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
   }
 
   /* ================= network (claude.ai artifact capabilities, or Firebase build) ================= */
@@ -3612,7 +3614,7 @@ input { -webkit-user-select: text; user-select: text; }
       this.mode = 'claude';
       const self = this;
       this.api = {
-        sub(name, cb) { db.collection(name).onSnapshot(s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => {}); },
+        sub(name, cb) { const go = () => { let un = null; un = db.collection(name).onSnapshot(s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => { try { un && un(); } catch (e) {} setTimeout(go, 5000); }); }; go(); },
         put(name, data) { return self.uid ? db.collection(name).doc(self.uid).set(data) : Promise.resolve(); },
         async loadSave() { if (!self.uid) return null; try { const s = await db.collection('data/users/' + self.uid).doc('save').get(); return s && s.exists ? s.data() : null; } catch (e) { return null; } },
         storeSave(j) { return self.uid ? db.collection('data/users/' + self.uid).doc('save').set({ json: j, t: Date.now() }) : Promise.resolve(); },
@@ -3637,7 +3639,7 @@ input { -webkit-user-select: text; user-select: text; }
       this.presence(); this.sync();
       setInterval(() => this.presence(true), 30000);
       setInterval(() => this.sync(), 60000);
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persist(true); });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persist(true); else { this.presence(true); this.sync(); } });
       render();
     },
     async resolveNames() {
@@ -3647,11 +3649,11 @@ input { -webkit-user-select: text; user-select: text; }
     },
     async sync() {
       if (!this.api) return;
-      if (this.busy) { this.pending = true; return; }
-      this.busy = true; this.pending = false;
+      if (this.busy && Date.now() - this.busyT < 60000) { this.pending = true; return; }
+      this.busy = true; this.busyT = Date.now(); this.pending = false;
       try {
         const errs = [];
-        const step = async (nm, f) => { try { await f(); } catch (e) { errs.push(nm + ': ' + ((e && (e.code || e.message)) || 'error')); } };
+        const step = async (nm, f) => { let tm; try { await Promise.race([f(), new Promise((_, rej) => { tm = setTimeout(() => rej({ code: '응답 없음' }), 15000); })]); } catch (e) { errs.push(nm + ': ' + ((e && (e.code || e.message)) || 'error')); } clearTimeout(tm); };
         const rp = rankPayload(), rk = JSON.stringify(Object.assign({}, rp, { t: 0 }));
         if (rk !== this.lastRank && (save.plays.some(Boolean) || save.name)) await step('친구 정보', async () => { await this.api.put('rank', rp); this.lastRank = rk; });
         const hk = JSON.stringify(save.boss) + save.name;
@@ -3763,7 +3765,7 @@ input { -webkit-user-select: text; user-select: text; }
     mailget: el => { mailGet(el.dataset.id); refreshPop(mailBody()); },
     mailall: () => { for (const m of mailItems()) mailGet(m.id); refreshPop(mailBody()); },
     friends: () => { NET.sync(); openPop('랭킹', friendsBody(), 'friends'); },
-    frsync: () => { NET.lastRank = ''; NET.sync().then(() => { if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
+    frsync: () => { NET.lastRank = ''; NET.busy = false; NET.sync().then(() => { if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
     tab: el => setTab(el.dataset.t),
     enh: el => enhance(el.dataset.k),
     slot: el => { selSlot = +el.dataset.i; const k = save.slots[selSlot]; if (k) openHero(k); else render(); },
@@ -3985,7 +3987,8 @@ try {
       catch (e) { if (e && /popup-blocked|operation-not-supported/.test(e.code || "")) await A.signInWithRedirect(auth, p); else throw e; }
     },
     signOut: () => A.signOut(auth),
-    sub: (name, cb) => F.onSnapshot(F.collection(db, name), s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => {}),
+    /* a listener that errors (network drop, token refresh) is re-attached after 5 s instead of going silent */
+    sub: (name, cb) => { const go = () => { let un = null; un = F.onSnapshot(F.collection(db, name), s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => { try { un && un(); } catch (e) {} setTimeout(go, 5000); }); }; go(); },
     put: (name, id, data) => F.setDoc(F.doc(db, name, id), data),
     getSave: async id => { const s = await F.getDoc(F.doc(db, "saves", id)); return s.exists() ? s.data() : null; },
     setSave: (id, d) => F.setDoc(F.doc(db, "saves", id), d)
