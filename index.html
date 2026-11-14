@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0238';
+  const APP_VER = 'v.261115-0245';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2544,7 +2544,7 @@ input { -webkit-user-select: text; user-select: text; }
     let rdrops = [];
     if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
     if (S.rareK) { save.gem += 100 * GEMK; save.rareK = (save.rareK || 0) + 1; }
-    const xp = 2 + Math.floor(n / 3) + (win ? 3 : 0);
+    const xp = (2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1); /* elite 30+: profile xp x2 */
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
