@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0308';
+  const APP_VER = 'v.261115-0312';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1943,7 +1943,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   const TUT = [
     ['찍먹메타에 오신 걸 환영해요', '<p>왼쪽에서 몬스터가 몰려와요. 오른쪽 <b>거점</b>을 지키면 이겨요. 총잡이들은 <b>자동으로</b> 쏘니까 따로 조작할 건 없어요.</p>'],
-    ['전투 중 레벨업', '<p>적을 쓰러뜨리면 경험치가 차요. 레벨이 오르면 스킬을 <b>자동으로 1~2개씩</b>(프로필 Lv80부터 2개) 얻어요. 같은 스킬이 또 나오면 더 강해져요(최대 5). 왼쪽 ▶ 버튼으로 <b>1·2·3배속</b>을 바꿀 수 있어요.</p>'],
+    ['전투 중 레벨업', '<p>적을 쓰러뜨리면 경험치가 차요. 레벨이 오르면 스킬을 <b>자동으로 1~2개씩</b>(프로필 Lv80부터 2개) 얻어요. 같은 스킬이 또 나오면 더 강해져요(최대 5). 왼쪽 ▶ 버튼으로 <b>1·2·3·4배속</b>을 바꿀 수 있어요.</p>'],
     ['골드로 강해지기', '<p>전투가 끝나면 골드를 받아요. <b>총잡이</b> 탭 보관함에서 총잡이를 뽑고, <b>총잡이</b> 탭에서 출전·<b>스타포스 강화</b>와 <b>거점 강화</b>를 해요. 단계를 <b>클리어</b>하면 다음 단계가 열려요. 막히면 강화하고 다시 도전하세요.</p>'],
     ['속성 상성', '<p>몬스터 테두리 색과 글자가 속성이에요. 아래 순서로 앞이 뒤를 이겨요. 약점이면 피해 <b>×1.6</b>, 반대면 <b>×0.6</b>.</p><div class="wheel"><i class="chip e0">불</i>›<i class="chip e4">바람</i>›<i class="chip e3">땅</i>›<i class="chip e2">번개</i>›<i class="chip e1">물</i>›<i class="chip e0">불</i></div>'],
     ['몬스터 속성 방어', '<p>몬스터마다 <b>강한 속성</b>(피해 감소)과 <b>약한 속성</b>(피해 증가)이 있어요. 예를 들어 말벌은 바람에 강하고 번개에 약해요. 홈 화면 스테이지 이름 옆 <b>?</b>를 누르면 그 단계 몬스터의 속성 방어를 볼 수 있어요. 여러 속성을 섞어 출전시키세요.</p>'],
@@ -3816,7 +3816,7 @@ input { -webkit-user-select: text; user-select: text; }
     bskip: () => skipStage(),
     resume: () => { $('bpop').hidden = true; if (S) S.pause = false; },
     giveup: () => { if (S) endRun(false, true); },
-    bspeed: () => { speed = speed >= 3 ? 1 : speed + 1; updHud(true); toast(speed + '배속'); },
+    bspeed: () => { speed = speed >= 4 ? 1 : speed + 1; updHud(true); toast(speed + '배속'); },
     btarget: () => { tmode = tmode ? 0 : 1; $('bTarget').classList.toggle('gray', !tmode); toast(tmode ? '체력이 많은 적부터 조준' : '거점에 가까운 적부터 조준'); },
     bcards: () => openCards(),
     choose: el => choose(+el.dataset.i),
