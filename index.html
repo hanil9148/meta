@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0208';
+  const APP_VER = 'v.261115-0223';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -661,7 +661,7 @@ input { -webkit-user-select: text; user-select: text; }
   const STAR_B = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, .021, .021, .021, .028, .028, .07, .07, .10, .12, .14, .16, .18, .20, .22, .25];
   const starCost = n => Math.round(200 * Math.pow(1.15, n) / 10) * 10;
   /* mythic star force: 500k x 1.2^star a try; from ★17 destruction (back to ★15), a failure keeps the star, no protection */
-  const MSTAR_P = STAR_P.slice(0, 17).concat([.30, .28, .26, .24, .22, .18, .16, .14, .12, .10, .09, .08, .07]);
+  const MSTAR_P = STAR_P.slice(0, 17).concat(Array(13).fill(.15)); /* ★17+ : 15% flat */
   const MSTAR_B = Array(17).fill(0).concat([.02, .025, .03, .035, .04, .05, .06, .07, .08, .09, .10, .11, .12]);
   const MYTH_BACK = 15;
   const starCostU = u => u.m ? Math.round(500000 * Math.pow(1.2, u.s) / 1000) * 1000 : starCost(u.s);
@@ -1482,7 +1482,7 @@ input { -webkit-user-select: text; user-select: text; }
   function starOdds(u, prot) {
     const n = u.s;
     if (u.dc >= 2) return { p: 1, keep: 0, drop: 0, boom: 0, chance: true };
-    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0 || n >= 17; return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false }; }
+    if (u.m) { const p = MSTAR_P[n], boom = MSTAR_B[n], f = 1 - p - boom, safe = n < 10 || (n < 17 && n % 5 === 0); return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false }; }
     const boom = (prot && n >= 15 && n <= 21) ? 0 : STAR_B[n];
     const p = STAR_P[n], f = 1 - p - boom, safe = n < 10 || n % 5 === 0;
     return { p, keep: safe ? f : 0, drop: safe ? 0 : f, boom, chance: false };
@@ -1564,7 +1564,7 @@ input { -webkit-user-select: text; user-select: text; }
       h += '<div class="row" style="justify-content:space-between"><b class="ol" style="font-family:var(--display);font-size:20px">' + u.s + '성 → ' + (u.s + 1) + '성</b><span class="ol-s" style="font-family:var(--display);display:flex;align-items:center;gap:3px">' + I.coin + fmt(save.gold) + '</span></div>';
       h += o.chance ? '<div class="msg ok">찬스타임! 이번 강화는 100% 성공해요.</div>' :
         '<div class="kv"><div class="ok"><span>성공</span><b class="ol-s">' + pct(o.p) + '</b></div><div class="mid"><span>' + (o.drop ? '실패(하락)' : '실패(유지)') + '</span><b class="ol-s">' + pct(o.keep + o.drop) + '</b></div><div class="bad"><span>파괴</span><b class="ol-s">' + pct(o.boom) + '</b></div></div>';
-      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 파괴(★15로), 실패하면 별 유지, 파괴 방지 없음</span>' : '') + '</p>';
+      h += '<p class="desc" style="text-align:center">비용 <b>' + fmt(cost) + ' 골드</b>' + (o.boom ? ' · 파괴되면 ' + boomTo(u) + '성이 돼요.' : '') + (u.m ? '<br><span style="color:#ffd0ff">신화 강화 · ★17부터 성공 15% · 파괴(★15로) · 나머지는 하락, 파괴 방지 없음</span>' : '') + '</p>';
       h += '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">파괴 방지</b><br><span class="desc">15~21성에서 파괴를 막아요. 비용 2배</span></span><button class="tog' + (prot ? ' on' : '') + '" data-act="prot"' + (canProt ? '' : ' disabled style="opacity:.4"') + '><i class="ol-s">' + (prot ? 'ON' : 'OFF') + '</i></button></div>';
       if (autoWarn && !autoOn) h += '<div class="rmbar"><p class="desc" style="color:#fff;text-align:center"><b>' + esc(autoWarn.t) + '</b></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn r ol-s" data-act="autoRisk">위험 감수하고 계속</button><button class="btn ol-s" data-act="autoWarnNo">여기서 그만</button></div></div>';
       if (autoOn) h += '<div class="rmbar" style="border-color:var(--cya)"><p class="desc" style="color:#fff;text-align:center">자동 강화 중 · 목표 <b>★' + autoTo + '</b> · 지금 ★' + u.s + '</p><button class="btn r wide ol-s" data-act="auto">자동 멈춤</button></div>';
@@ -2533,6 +2533,7 @@ input { -webkit-user-select: text; user-select: text; }
     /* stages 1~5 (normal and elite): gold, gems and items x5 */
     const LOW = n <= 5 ? 5 : 1;
     gold *= LOW;
+    const GEMK = n <= 5 ? 5 : 3; /* gems: x5 for 1~5, x3 for 6+ */
     let drops = [];
     if (win && S.elite) drops = drops.concat(dropItems(1 * LOW, ODDS.eliteWin));
     if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills) * LOW, ODDS.eliteBoss) : dropItems(1 * LOW, ODDS.stage));
@@ -2540,14 +2541,14 @@ input { -webkit-user-select: text; user-select: text; }
     /* rings: elite stage 30+, each boss killed has a 40% (30~39) / 60% (40~50) chance */
     let rdrops = [];
     if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
-    if (S.rareK) { save.gem += 100 * LOW; save.rareK = (save.rareK || 0) + 1; }
+    if (S.rareK) { save.gem += 100 * GEMK; save.rareK = (save.rareK || 0) + 1; }
     const xp = 2 + Math.floor(n / 3) + (win ? 3 : 0);
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
-    if (win && S.elite) save.gem += eGem(n) * (S.evt ? EVT.mul : 1) * LOW;
+    if (win && S.elite) save.gem += eGem(n) * (S.evt ? EVT.mul : 1) * GEMK;
     const sGem = win && !S.elite && n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : 0;
-    save.gem += sGem * (S.evt ? EVT.mul : 1);
+    save.gem += sGem * (S.evt ? EVT.mul : 1) * GEMK;
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
     let bclrBonus = 0; const bclrOn = win && !S.elite && n >= BCLR_MIN && isBossStage(n);
     if (bclrOn) { save.bclr++; if (save.bclr % BCLR_N === 0) { bclrBonus = BCLR_G; save.gold += BCLR_G; rep.gold += BCLR_G; } }
@@ -2569,10 +2570,10 @@ input { -webkit-user-select: text; user-select: text; }
       (drops.length ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>장비 획득!</b></p><div class="rewards">' + drops.map(d => '<div class="rw">' + itemIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + iK(d.id).nm + '</b><span style="color:' + RAR[iG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[iG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       (rdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0ff"><b>💍 반지 획득!</b></p><div class="rewards">' + rdrops.map(d => '<div class="rw">' + ringIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + rK(d.id).nm + '</b><span style="color:' + RAR[rG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[rG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + lvBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
-      (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 100개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
+      (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 ' + 100 * GEMK + '개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
-      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) + '개</p>' : '') +
-      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) * LOW + '개</p>' : '') +
+      (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>고단계 보상</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
+      (win && S.elite ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
       (LOW > 1 ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>🎁 1~5단계 보상 5배 (골드·젬·장비)</b></p>' : '') +
       (S.evt ? '<p class="desc" style="text-align:center;color:#ffb72e;font-size:16px"><b>🔥 이벤트 보상 ' + EVT.mul + '배 적용!</b></p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
@@ -3890,7 +3891,7 @@ input { -webkit-user-select: text; user-select: text; }
   last = performance.now();
   raf = requestAnimationFrame(frame);
   NET.init();
-  window.__G = { forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS };
+  window.__G = { forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
 })();
 </script>
 <script type="module">
