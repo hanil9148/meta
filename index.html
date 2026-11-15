@@ -532,7 +532,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-1100';
+  const APP_VER = 'v.261115-1107';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1434,7 +1434,6 @@ input { -webkit-user-select: text; user-select: text; }
       const id = save.gear[k], d = id && save.items[id];
       h += '<div class="htile' + (d ? ' gr' + iG(id) : ' emp') + '" data-act="gearbag" data-s="' + k + '" role="button">' + (d ? '<span style="width:48px;height:48px;display:block">' + itemIcon(id) + '</span><span class="hn ol-s" style="font-size:12px;text-align:center">' + iK(id).nm + '</span><span class="st ol-s" style="color:' + RAR[iG(id)].c + '">' + RAR[iG(id)].nm + ' · Lv ' + d.lv + '</span>' : '<span class="ol-s">' + SLOTN[k] + '<br>비어 있음</span>') + '</div>';
     }
-    { const eq = ['w', 'h', 'n'].filter(k => { const id = save.gear[k], d = id && save.items[id]; return d && d.lv < GMAX[iG(id)]; }); h += '</div>' + (eq.length ? '<button class="btn p wide ol-s" data-act="gearUp50" style="margin-top:8px">⬆ 무기→모자→목걸이 순서로 강화 (최대 50회)</button>' : ''); h += '<div>'; }
     h += '</div>' + (canCombine() ? '<button class="btn y wide ol-s" data-act="gearComb" data-s="" style="margin-top:8px">조합 가능한 장비 모두 조합</button>' : '') + '</div>';
     h += '<div class="card"><div class="row"><h3 class="ol grow">💍 반지</h3><span class="desc" style="color:#fff">' + Object.keys(save.rings).length + '/75 종</span></div><p class="desc">반지는 3개까지 껴요(같은 종류는 1개만). <b>정예 30단계 이상 보스</b>를 잡으면 나와요. 일반·고급은 강화할 수 없고, 희귀 Lv20 · 영웅 Lv30 · 전설 Lv50까지 올라가요. 같은 반지 3개를 조합하면 다음 등급이 돼요.</p><div class="slots4">';
     for (let i = 0; i < 3; i++) {
@@ -1709,6 +1708,7 @@ input { -webkit-user-select: text; user-select: text; }
         (!mx ? '<p style="opacity:.75">다음 Lv: ' + statTxt(itemStats(id, d.lv + 1)) + '</p>' + (gearRate(id, d.lv) < 1 ? '<p style="color:var(--yel)">강화 성공 ' + Math.round(gearRate(id, d.lv) * 100) + '% · 실패하면 레벨 유지</p>' : '') : '') + '</div>' +
         '<div class="buy">' + (on ? '<button class="btn sm ol-s" disabled>장착 중</button>' : '<button class="btn g sm ol-s" data-act="gearEq" data-id="' + id + '">장착</button>') +
         '<button class="btn y sm ol-s" data-act="gearUp" data-id="' + id + '"' + (!mx && save.gold >= cost ? '' : ' disabled') + '>' + (mx ? 'MAX' : '강화 ' + fmt(cost)) + '</button>' +
+        (!mx ? '<button class="btn p sm ol-s" data-act="gearUp50" data-id="' + id + '"' + (save.gold >= cost ? '' : ' disabled') + '>50회 강화</button>' : '') +
         (g < 4 ? '<button class="btn sm ol-s" data-act="gearCb1" data-id="' + id + '"' + (d.n >= 3 ? '' : ' disabled') + '>조합 ' + Math.min(d.n, 3) + '/3</button>' : '') + '</div></div>' + (g === 4 && mx ? awBox(id, d) : '');
     }
     if (save.gear[gearSlot]) h += '<button class="btn r sm ol-s" data-act="gearOff">장착 해제</button>';
@@ -3873,15 +3873,12 @@ input { -webkit-user-select: text; user-select: text; }
     awTry: el => { const id = el.dataset.id, d = save.items[id]; if (!d || iG(id) !== 4 || d.lv < 99 || (d.aw || 0) >= 10 || d.ae == null || d.ae < 0) return; if (save.gold < AW_GOLD || save.gem < AW_GEM) return; save.gold -= AW_GOLD; save.gem -= AW_GEM; const k = d.aw || 0;
       if (Math.random() < AW_P[k]) { d.aw = k + 1; Snd.lvup(); toast('✨ 속성 각성 성공! ' + ENM[d.ae] + ' ' + d.aw + '단계 · 피해 +' + Math.round(AW_V[k] * 100) + '%'); } else { Snd.bad(); toast('각성 실패 (성공 ' + Math.round(AW_P[k] * 100) + '%) · ' + k + '단계 유지'); }
       persist(); topbar(); refreshPop(gearBody()); },
-    /* up to 50 single enhance tries, cycling weapon -> hat -> necklace; an item it can't afford or that is maxed is skipped, so the gold gets used up */
-    gearUp50: () => { const ks = ['w', 'h', 'n'], NM = { w: '무기', h: '모자', n: '목걸이' }, st = {}; let tries = 0, ok = 0, spent = 0, i = 0, idle = 0;
-      for (const k of ks) { const id = save.gear[k]; if (id && save.items[id]) st[k] = { a: save.items[id].lv, ok: 0, t: 0 }; }
-      while (tries < 50 && idle < 3) { const k = ks[i++ % 3], id = save.gear[k], d = id && save.items[id];
-        if (!d || d.lv >= GMAX[iG(id)] || save.gold < upCost(id, d.lv)) { idle++; continue; } idle = 0;
-        const c = upCost(id, d.lv); save.gold -= c; spent += c; tries++; st[k].t++; if (Math.random() < gearRate(id, d.lv)) { d.lv++; ok++; st[k].ok++; } }
-      if (!tries) { toast('골드가 부족하거나 모두 최대 레벨이에요'); return; }
-      Snd.lvup(); toast('강화 ' + tries + '회 · 성공 ' + ok + ' · ' + fmt(spent) + ' 골드 · ' + Object.keys(st).filter(k => st[k].t).map(k => NM[k] + ' Lv' + st[k].a + '→' + save.items[save.gear[k]].lv).join(' · '));
-      persist(); topbar(); render(); },
+    /* 50 single tries on one item in a row; stops early at max level or when the gold runs out */
+    gearUp50: el => { const id = el.dataset.id, d = save.items[id]; if (!d) return; const lv0 = d.lv; let t = 0, ok = 0, spent = 0;
+      while (t < 50 && d.lv < GMAX[iG(id)]) { const c = upCost(id, d.lv); if (save.gold < c) break; save.gold -= c; spent += c; t++; if (Math.random() < gearRate(id, d.lv)) { d.lv++; ok++; } }
+      if (!t) return; ok ? Snd.lvup() : Snd.bad();
+      toast(itemName(id) + ' ' + t + '회 강화 · 성공 ' + ok + '회 · Lv ' + lv0 + '→' + d.lv + ' · ' + fmt(spent) + ' 골드' + (t < 50 && d.lv < GMAX[iG(id)] ? ' (골드 부족으로 멈춤)' : d.lv >= GMAX[iG(id)] ? ' (최대 레벨)' : ''));
+      persist(); topbar(); refreshPop(gearBody()); },
     gearUp: el => { const id = el.dataset.id, d = save.items[id]; if (!d || d.lv >= GMAX[iG(id)]) return; const c = upCost(id, d.lv); if (save.gold < c) return; save.gold -= c; const rt = gearRate(id, d.lv); if (Math.random() >= rt) { Snd.bad(); toast('강화 실패 (성공 ' + Math.round(rt * 100) + '%) · Lv ' + d.lv + ' 유지'); persist(); topbar(); refreshPop(gearBody()); return; } d.lv++; Snd.lvup(); toast(itemName(id) + ' Lv ' + d.lv + '!'); persist(); topbar(); refreshPop(gearBody()); },
     gearCb1: el => { const nx = combine(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + itemName(nx)); persist(); refreshPop(gearBody()); },
     gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else render(); },
