@@ -532,7 +532,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-1253';
+  const APP_VER = 'v.261115-1316';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1213,7 +1213,7 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'perfect', nm: n => '체력 100%로 클리어 ' + n + '번', ns: [1, 2, 3, 5, 8], rk: 'gem', rs: [15, 25, 35, 50, 70], go: 'home' },
     { id: 'enh', nm: n => '강화 ' + n + '회 (스타포스·거점)', ns: [3, 6, 10, 15, 25], rk: 'gold', rs: [600, 1200, 2000, 3500, 6000], go: 'hero' },
     { id: 'pull', nm: n => '총잡이 뽑기 ' + n + '회', ns: [1, 3, 6, 10, 20], rk: 'gem', rs: [15, 25, 40, 55, 75], go: 'shop' },
-    { id: 'boss', nm: () => '공동 보스에 지원 보내기', ns: [1, 1, 1, 1, 1], rk: 'en', rs: [10, 15, 20, 25, 30], go: 'boss' }
+    { id: 'boss', nm: () => '심연의 탑 1층 정복하기', ns: [1, 1, 1, 1, 1], rk: 'en', rs: [10, 15, 20, 25, 30], go: 'boss' }
   ];
   function qSlot(id) { let m = save.q.m[id]; if (!m) m = save.q.m[id] = { t: 1, p: 0, c: 0 }; return m; }
   const qNeed = q => q.ns[qSlot(q.id).t - 1];
@@ -1460,7 +1460,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<span class="hn ol-s">' + NMS[u.n] + '</span><span class="chips">' + (u.m ? '<i class="chip e' + u.se + ' se">' + ENM[u.se] + '★</i><i class="chip" style="background:#fff">5속성</i>' : u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + '</i>').join('')) + '</span>' +
       '<span class="st ol-s">★' + u.s + '</span></div>';
   }
-  function fortBody() { return (popBack ? invBackBtn() : '') + '<p class="desc">오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.</p>' +
+  function fortBody() { return (popBack ? invBackBtn() : '') + tipBox('오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.') +
       enhRow('hp') + enhRow('dl') + enhRow('sl') + (gmsg ? '<div class="msg ' + gmsg.c + '">' + esc(gmsg.t) + '</div>' : ''); }
   /* ---------- 심연의 탑 tab ---------- */
   const abLeft = () => Math.max(0, save.ab.next - Date.now());
@@ -1490,20 +1490,27 @@ input { -webkit-user-select: text; user-select: text; }
     const f = save.ab.pend;
     return '<p class="desc" style="text-align:center;color:#fff"><b>심연 ' + f + '층 정복!</b> 아래 3장 중 <b>1장</b>을 골라요.</p><div style="display:grid;gap:8px">' + abPicks(f).map((o, k) => '<button class="btn ' + ['y', 'p', 'c'][k] + ' wide ol-s" style="font-size:17px;padding:14px" data-act="abPick" data-k="' + k + '">' + o.nm + '</button>').join('') + '</div>';
   }
+  const tipBox = txt => '<details style="margin:2px 0 6px"><summary class="desc" style="color:#cfe0ff;cursor:pointer;font-weight:900">❔ 설명 보기</summary><p class="desc" style="color:#fff;margin:6px 0 0">' + txt + '</p></details>';
+  function mythHubBody() {
+    let h = '';
+    { const elig = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).length;
+      h += '<div class="card" style="border-color:#c27bff;margin:0"><div class="row"><h3 class="ol grow">✨ 신화 강화</h3><span class="desc" style="color:#fff">★' + MYTH_STAR + ' 이상 ' + elig + '명</span></div><p class="desc">★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 합치면 <b>무작위 신화 총잡이</b> 1명이 나와요. 신화는 <b>5속성 전부</b> · 피해 ×1.3 · 무작위 <b>강속성</b> 1개(그 속성으로 때리면 ×1.3 더) · 총잡이마다 고유 특성이 있고, <b>★0부터</b> 다시 키워요.</p>' +
+        '<button class="btn p wide ol-s" data-act="mythOpen"' + (elig >= MYTH_NEED ? '' : ' disabled') + '>' + (elig >= MYTH_NEED ? '재료 고르기' : '★' + MYTH_STAR + ' 이상이 ' + MYTH_NEED + '명 필요해요 (' + elig + '/' + MYTH_NEED + ')') + '</button>' +
+        (() => { const mc = save.coll.filter(u => u.m).length; return '<p class="desc" style="margin-top:8px"><b>신화 2명 조합</b> · 신화 2명을 합치면 8명 중 하나가 <b>똑같은 확률(12.5%)</b>로 나와요(강속성 무작위, ★0부터).</p><button class="btn y wide ol-s" data-act="mixOpen"' + (mc >= 2 ? '' : ' disabled') + '>' + (mc >= 2 ? '신화 2명 고르기' : '신화가 2명 필요해요 (' + mc + '/2)') + '</button>' + '<p class="desc" style="margin-top:8px"><b>신화 3명 지정 조합</b> · 신화 3명을 합치면 <b>원하는 총잡이</b>로 바꿔요(강속성 무작위, ★0부터).</p><button class="btn p wide ol-s" data-act="pickOpen"' + (mc >= 3 ? '' : ' disabled') + '>' + (mc >= 3 ? '신화 3명 고르기' : '신화가 3명 필요해요 (' + mc + '/3)') + '</button>'; })() + '</div>'; }
+    return h;
+  }
   function renderHero() {
     const tier = Math.min(5, Math.floor((save.hl + save.dl) / 10));
     let h = '<div class="scroll">';
     h += '<div class="card"><div class="row"><h3 class="ol grow">🎒 장비창</h3><span class="pwtag ol-s" style="font-size:15px">' + I.sword + fmt(power()) + '</span></div><p class="desc">장비·반지·펫·거점은 모두 장비창에서 관리해요. 아이템을 누르면 장착·강화·조합을 할 수 있어요.</p><button class="btn y wide ol-s" data-act="invOpen" style="font-size:18px">🎒 장비창 열기</button></div>';
-    h += '<div class="card"><h3 class="ol">출전 총잡이</h3><p class="desc">전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 위에 떠 있는 드론도 항상 같이 쏴요.</p><div class="slots4">';
+    h += '<div class="card"><h3 class="ol">출전 총잡이</h3>' + tipBox('전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 위에 떠 있는 드론도 항상 같이 쏴요.') + '<div class="slots4">';
     for (let i = 0; i < 3; i++) {
       const u = getUnit(save.slots[i]);
       h += u ? heroTile(u, ' data-act="slot" data-i="' + i + '" role="button"', i === selSlot ? 'sel' : '') : '<div class="htile emp ol-s' + (i === selSlot ? ' sel' : '') + '" data-act="slot" data-i="' + i + '" role="button">' + (i + 1) + '번 슬롯<br>비어 있음</div>';
     }
     h += '</div></div>';
-    { const elig = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).length;
-      h += '<div class="card" style="border-color:#c27bff"><div class="row"><h3 class="ol grow">✨ 신화 강화</h3><span class="desc" style="color:#fff">★' + MYTH_STAR + ' 이상 ' + elig + '명</span></div><p class="desc">★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 합치면 <b>무작위 신화 총잡이</b> 1명이 나와요. 신화는 <b>5속성 전부</b> · 피해 ×1.3 · 무작위 <b>강속성</b> 1개(그 속성으로 때리면 ×1.3 더) · 총잡이마다 고유 특성이 있고, <b>★0부터</b> 다시 키워요.</p>' +
-        '<button class="btn p wide ol-s" data-act="mythOpen"' + (elig >= MYTH_NEED ? '' : ' disabled') + '>' + (elig >= MYTH_NEED ? '재료 고르기' : '★' + MYTH_STAR + ' 이상이 ' + MYTH_NEED + '명 필요해요 (' + elig + '/' + MYTH_NEED + ')') + '</button>' +
-        (() => { const mc = save.coll.filter(u => u.m).length; return '<p class="desc" style="margin-top:8px"><b>신화 2명 조합</b> · 신화 2명을 합치면 8명 중 하나가 <b>똑같은 확률(12.5%)</b>로 나와요(강속성 무작위, ★0부터).</p><button class="btn y wide ol-s" data-act="mixOpen"' + (mc >= 2 ? '' : ' disabled') + '>' + (mc >= 2 ? '신화 2명 고르기' : '신화가 2명 필요해요 (' + mc + '/2)') + '</button>' + '<p class="desc" style="margin-top:8px"><b>신화 3명 지정 조합</b> · 신화 3명을 합치면 <b>원하는 총잡이</b>로 바꿔요(강속성 무작위, ★0부터).</p><button class="btn p wide ol-s" data-act="pickOpen"' + (mc >= 3 ? '' : ' disabled') + '>' + (mc >= 3 ? '신화 3명 고르기' : '신화가 3명 필요해요 (' + mc + '/3)') + '</button>'; })() + '</div>'; }
+    { const elig = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).length, mc = save.coll.filter(u => u.m).length;
+      h += '<div class="card" style="border-color:#c27bff"><div class="row"><h3 class="ol grow">✨ 신화 공방</h3><span class="desc" style="color:#fff">신화 ' + mc + '명 · ★' + MYTH_STAR + '+ ' + elig + '명</span></div><p class="desc">신화 만들기 · 2명 조합 · 3명 지정 조합을 한곳에서 해요.</p><button class="btn p wide ol-s" data-act="mythHub" style="font-size:18px">✨ 신화 공방 열기</button></div>'; }
     h += '<div class="card dark"><div class="row"><h3 class="ol grow">보관함 ' + save.coll.length + '/' + capOf() + '</h3>' + (save.coll.length ? '<button class="btn ' + (rmMode ? 'r' : '') + ' sm ol-s" data-act="rmmode">' + (rmMode ? '제거 취소' : '유닛 제거') + '</button>' : '') + '</div>' + unitPullBox();
     h += capOf() < CAP_MAX ? '<div class="prow" style="padding:6px 10px"><span><b style="font-size:15px">보관함 확장 +5칸</b><br><span class="desc">기본 10칸이고 스테이지를 하나 열 때마다 1칸씩 늘어나요. 골드로 늘리면 최대 ' + CAP_MAX + '칸까지 돼요.</span></span><button class="btn y sm ol-s" data-act="capup"' + (save.gold < capCost(save.capBuy) ? ' disabled' : '') + '>' + I.coin + fmt(capCost(save.capBuy)) + '</button></div>' : '<p class="desc">보관함이 최대 ' + CAP_MAX + '칸이에요.</p>';
     if (!save.coll.length) h += '<p class="empty">아직 총잡이가 없어요. 위의 뽑기 버튼으로 뽑아보세요.</p>';
@@ -1767,7 +1774,7 @@ input { -webkit-user-select: text; user-select: text; }
   function ringBody() {
     const i = ringSlot, cur = save.rslot[i];
     const ids = ringFocus && save.rings[ringFocus] ? [ringFocus] : Object.keys(save.rings).sort((a, b) => (save.rslot.includes(b) ? 1 : 0) - (save.rslot.includes(a) ? 1 : 0) || rG(b) - rG(a) || (a < b ? -1 : 1));
-    let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">' + (i + 1) + '번 반지 칸에 낄 반지를 골라요. 같은 종류를 다른 칸에 끼고 있으면 그 칸에서 빠져요. 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%).</p>';
+    let h = (popBack ? invBackBtn() : '') + tipBox('' + (i + 1) + '번 반지 칸에 낄 반지를 골라요. 같은 종류를 다른 칸에 끼고 있으면 그 칸에서 빠져요. 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%).');
     if (!ids.length) h += '<p class="empty">아직 반지가 없어요.<br>정예 30단계 이상에서 보스를 잡아 보세요.</p>';
     for (const id of ids) {
       const d = save.rings[id], g = rG(id), K = rK(id), on = cur === id, other = !on && save.rslot.includes(id), mx = d.lv >= RMAX[g], cost = ringCost(id, d.lv), rt = ringRate(id, d.lv);
@@ -1794,7 +1801,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function gearBody() {
     const ids = gearFocus && save.items[gearFocus] ? [gearFocus] : Object.keys(save.items).filter(id => iK(id).slot === gearSlot).sort((a, b) => iG(b) - iG(a) || (a < b ? -1 : 1));
-    let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">같은 장비 <b>3개</b> → 다음 등급 1개 (새 장비는 Lv1). 레벨은 골드로 올리고 등급마다 최대 레벨이 달라요(일반 10 ~ 전설 99). 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%, 10강마다 1%씩 낮아져요).</p>';
+    let h = (popBack ? invBackBtn() : '') + tipBox('같은 장비 <b>3개</b> → 다음 등급 1개 (새 장비는 Lv1). 레벨은 골드로 올리고 등급마다 최대 레벨이 달라요(일반 10 ~ 전설 99). 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%, 10강마다 1%씩 낮아져요).');
     if (canCombine(gearSlot)) h += '<button class="btn y wide ol-s" data-act="gearComb" data-s="' + gearSlot + '">' + SLOTN[gearSlot] + ' 모두 조합</button>';
     if (!ids.length) h += '<p class="empty">아직 ' + SLOTN[gearSlot] + ' 장비가 없어요.<br>보스를 잡거나 상점 장비 상자를 열어 보세요.</p>';
     for (const id of ids) {
@@ -2078,13 +2085,12 @@ input { -webkit-user-select: text; user-select: text; }
     const out = [];
     for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until && (!n.to || save.name === n.to)) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
-    for (const b of bossRewards()) out.push({ id: 'boss' + b.slot, slot: b.slot, t: '공동 보스 ' + b.name + ' 격파 선물', s: '함께 쓰러뜨렸어요 · ' + fmt(WB_GIFT) + ' 골드', r: { gold: WB_GIFT } });
     return out;
   }
   const mailCount = () => mailItems().length;
   function mailBody() {
     const m = mailItems();
-    if (!m.length) return '<p class="empty">받을 우편이 없어요.<br>공동 보스를 함께 쓰러뜨리면 선물이 와요.</p>';
+    if (!m.length) return '<p class="empty">받을 우편이 없어요.<br>새 소식과 선물이 오면 여기에 쌓여요.</p>';
     return m.map(x => '<div class="prow"><span style="min-width:0"><b style="font-size:15px">' + esc(x.t) + '</b><br><span class="desc">' + esc(x.s) + '</span></span><button class="btn g sm ol-s" data-act="mailget" data-id="' + x.id + '">' + (x.r && Object.keys(x.r).length ? '선물 받기' : '확인') + '</button></div>').join('') +
       (m.length > 1 ? '<button class="btn y wide ol-s" data-act="mailall">모두 받기</button>' : '');
   }
@@ -2241,6 +2247,22 @@ input { -webkit-user-select: text; user-select: text; }
   }
   const vfx = () => !!save.set.vfx;
 
+  /* reward multipliers in one place
+     normal (all stages): gold x5 · gems x5 · gear x5
+     elite 1~5: gold x5 · gems x5 · gear x5     elite 6~50: gems x3
+     abyss: its own rewards (elite-40 gold x1.2, +5%/floor from 21F, curses x1.25 / x1.6) */
+  function rwMul(elite, n, ab) {
+    if (ab) return { gold: 1, gem: 1, item: 1 };
+    if (!elite || n <= 5) return { gold: 5, gem: 5, item: 5 };
+    return { gold: 1, gem: 3, item: 1 };
+  }
+  function rwTxt(RW, evt, ab) {
+    const p = [];
+    if (ab) { p.push('골드 ×' + (1.2 * (1 + .05 * Math.max(0, ab - 20))).toFixed(2).replace(/\.?0+$/, '')); if (abMul(ab) > 1) p.push('특성 ×' + abMul(ab)); }
+    else { if (RW.gold > 1) p.push('골드 ×' + RW.gold); if (RW.gem > 1) p.push('젬 ×' + RW.gem); if (RW.item > 1) p.push('장비 ×' + RW.item); }
+    if (evt) p.push('이벤트 ×' + EVT.mul);
+    return p.length ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>📈 적용 배율 · ' + p.join(' · ') + '</b></p>' : '';
+  }
   function abParams(f) { const P = eParams(AB_UNLOCK, true), af = abAff(f); P.hpm *= .8 * Math.pow(1.12, f - 1); P.dm *= .8 * Math.pow(1.08, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
   function startRun(abF) {
     if (window.__jmUpdateNow && window.__jmUpdateNow()) return;
@@ -2697,10 +2719,9 @@ input { -webkit-user-select: text; user-select: text; }
     const rn = S.elite ? 50 : n, rk = S.elite ? eGoldK(n) : 1;
     let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) * Math.max(1, S.bossKills) * (S.sk.bounty ? 1.3 : 1) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
     if (S.evt) gold *= EVT.mul;
-    /* stages 1~5 (normal and elite): gold, gems and items x5 */
-    const LOW = !S.elite || n <= 5 ? 5 : 1; /* normal: every stage x5 */
-    gold *= LOW;
-    const GEMK = !S.elite || n <= 5 ? 5 : 3; /* gems: x5 for 1~5, x3 for 6+ */
+    /* one reward table for every mode: see rwMul() */
+    const RW = rwMul(S.elite, n, S.ab), LOW = RW.item, GEMK = RW.gem;
+    gold *= RW.gold;
     const AF = S.ab ? abMul(S.ab) : 1; if (S.ab) gold = gold * 1.2 * (1 + .05 * Math.max(0, S.ab - 20)) * AF;
     let drops = [];
     if (win && S.elite) drops = drops.concat(dropItems(1 * LOW, ODDS.eliteWin));
@@ -2718,7 +2739,7 @@ input { -webkit-user-select: text; user-select: text; }
     const tk = S.elite ? save.el : save;
     if (win && S.elite && !S.ab) save.gem += eGem(n) * (S.evt ? EVT.mul : 1) * GEMK;
     const abGem = win && S.ab ? Math.round(100 * AF) : 0; save.gem += abGem;
-    let abUp = false; if (win && S.ab) { save.ab.best = Math.max(save.ab.best, S.ab); if (S.ab === save.ab.fl) { save.ab.fl++; save.ab.next = Date.now() + AB_WAIT; abUp = true; } if (S.ab % 10 === 0 && !save.ab.got[S.ab]) save.ab.pend = S.ab; }
+    let abUp = false; if (win && S.ab) { qAdd('boss'); save.ab.best = Math.max(save.ab.best, S.ab); if (S.ab === save.ab.fl) { save.ab.fl++; save.ab.next = Date.now() + AB_WAIT; abUp = true; } if (S.ab % 10 === 0 && !save.ab.got[S.ab]) save.ab.pend = S.ab; }
     const sGem = win && !S.elite ? (n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : n <= 5 ? 2 : 0) : 0;
     save.gem += sGem * (S.evt ? EVT.mul : 1) * GEMK;
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
@@ -2748,8 +2769,7 @@ input { -webkit-user-select: text; user-select: text; }
       (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>' + (n <= 5 ? '클리어 보상' : '고단계 보상') + '</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
       (S.ab && win ? '<p class="desc" style="text-align:center;color:#b98cff;font-size:15px"><b>🕳 심연 ' + S.ab + '층 정복!</b> · 젬 +' + abGem + (AF > 1 ? ' · 특성 보상 ×' + AF : '') + (abUp ? '<br>다음 층은 25분 뒤에 열려요' : '') + '</p>' + (save.ab.pend ? '<button class="btn p wide ol-s" data-act="abPickOpen">🎁 ' + save.ab.pend + '층 보상 고르기</button>' : '') : '') +
       (win && S.elite && !S.ab ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>정예 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * 100) + '% 골드 + 젬 ' + eGem(n) * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
-      (LOW > 1 ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>🎁 ' + (S.elite ? '1~5단계' : '일반 모드') + ' 보상 5배 (골드·젬·장비)</b></p>' : '') +
-      (S.evt ? '<p class="desc" style="text-align:center;color:#ffb72e;font-size:16px"><b>🔥 이벤트 보상 ' + EVT.mul + '배 적용!</b></p>' : '') +
+      rwTxt(RW, S.evt, S.ab) +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! ' + lvName(save.lv) + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + stageLabel(n + 1) + ' · ' + NAMES[n] + '</b> 해금!' + (S.elite ? '' : ' · 보관함 +1칸 (' + capOf() + '칸)') + '</p>' : '<p class="desc" style="text-align:center">' + (n === tk.unlocked && n < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + save.plays[i] + '번') + '</p>') +
@@ -3571,127 +3591,9 @@ input { -webkit-user-select: text; user-select: text; }
     });
   }
 
-  /* ================= co-op world boss (every 4 h, KST) ================= */
-  const SLOT = 4 * 3600e3, WB_GIFT = 990000, WB_HP = 1500000, WB_HP_UP = 50000, WB_SEND = 3;
-  const slotNow = () => Math.floor((Date.now() + KST) / SLOT);
-  const slotEnd = s => (s + 1) * SLOT - KST;
-  const WB = [
-    { nm: '모래폭풍 거대전갈', el: 3, c: '#b4532a' }, { nm: '재앙의 독수리', el: 4, c: '#5a2a8a' }, { nm: '불꽃 운석왕', el: 0, c: '#d0562a' },
-    { nm: '심해 크라켄', el: 1, c: '#2a5ab8' }, { nm: '번개 골렘', el: 2, c: '#c8a82a' }, { nm: '무법자 대두목', el: -1, c: '#7a3a2a' }
-  ];
-  const wbOf = s => WB[((s % WB.length) + WB.length) % WB.length];
   let rankDocs = [], hitDocs = [], peers = {}, lastSeen = {}, bossMsg = null, presDocs = [];
   /* ranking rows: the rank collection merged with the rank card every connected player now carries in its presence ping (newest wins) */
   function rankRows() { const m = {}; for (const r of rankDocs) if (r.d && typeof r.d === 'object') m[r.id] = r.d; for (const r of presDocs) { const x = r.d && r.d.r; if (x && typeof x === 'object' && (!m[r.id] || (+r.d.t || 0) > (+m[r.id].t || 0))) m[r.id] = Object.assign({}, x, { t: +r.d.t || 0 }); } return Object.keys(m).map(id => ({ id, d: m[id] })); }
-  /* boss HP starts at 1.5M (boss of 14 Nov 03:33 KST) and grows 50k with every new boss; up to 3 gunslingers per player per boss */
-  const WB_S0 = Math.floor((Date.UTC(2026, 10, 13, 18, 33) + KST) / SLOT);
-  const wbHp = s => WB_HP + WB_HP_UP * Math.max(0, (s == null ? slotNow() : s) - WB_S0);
-  function hitsFor(s) {
-    const out = [], seen = {};
-    for (const r of hitDocs) { const h = r.d && r.d.h && r.d.h[s]; if (h && +h.d > 0) { out.push({ id: r.id, d: Math.min(1e9, +h.d), u: Array.isArray(h.u) ? h.u : null, nick: r.d.nick }); seen[r.id] = 1; } }
-    const mine = save.boss[s];
-    if (mine && !seen[NET.uid || '__me']) out.push({ id: NET.uid || '__me', d: mine.d, u: mine.u, nick: save.name, me: true });
-    for (const o of out) if (o.id === NET.uid) o.me = true;
-    return out.sort((a, b) => b.d - a.d);
-  }
-  const dealt = s => hitsFor(s).reduce((a, b) => a + b.d, 0);
-  const defeated = s => dealt(s) >= wbHp(s);
-  function bossRewards() {
-    const out = [], now = slotNow();
-    /* everyone gets the gift when a boss falls, whether they sent help or not */
-    for (let s = now - 6; s <= now; s++) {
-      if (save.bossClaim.includes(s)) continue;
-      if (defeated(s)) out.push({ slot: s, name: wbOf(s).nm });
-    }
-    return out;
-  }
-  const sentN = s => { const m = save.boss[s]; return m ? (m.n || 1) : 0; };
-  const bossBadge = () => sentN(slotNow()) < WB_SEND || bossRewards().length > 0;
-  function supportDmg(u) { const b = wbOf(slotNow()); return Math.round(dps(hstat(u)) * 60 * elMul(u.e, b.el)); }
-  function nameOf(o) { return (o.nick && String(o.nick).slice(0, 10)) || NET.nameOf(o.id) || (o.me ? '나' : '친구'); }
-  /* the boss tab used to be rebuilt every second, which swallowed taps and stopped scrolling on phones; now only the countdown ticks */
-  let wbShown = null;
-  const wbLeftTxt = () => { const rem = Math.max(0, slotEnd(slotNow()) - Date.now()); return String(Math.floor(rem / 3600e3)).padStart(2, '0') + ':' + String(Math.floor(rem % 3600e3 / 60e3)).padStart(2, '0') + ':' + String(Math.floor(rem % 60e3 / 1e3)).padStart(2, '0'); };
-  function renderBoss() {
-    wbShown = slotNow();
-    const s = slotNow(), B = wbOf(s), hp = wbHp(s), d = Math.min(hp, dealt(s)), left = hp - d, list = hitsFor(s), mine = save.boss[s];
-    const rem = Math.max(0, slotEnd(s) - Date.now());
-    const hh = Math.floor(rem / 3600e3), mm = Math.floor(rem % 3600e3 / 60e3), ss = Math.floor(rem % 60e3 / 1e3);
-    let h = '<div class="scroll"><div class="boss"><div class="bh"><b class="ol">' + B.nm + '</b><span class="tagw">WORLD · ' + (B.el >= 0 ? ENM[B.el] : '무속성') + '</span></div>' +
-      '<div class="hpbar"><i style="width:' + (left / hp * 100) + '%"></i><b class="ol-s">' + (left <= 0 ? '격파!' : (left / hp * 100).toFixed(1) + '%') + '</b></div>' +
-      '<div class="sub"><span>남은 체력 ' + fmt(left) + ' / ' + fmt(hp) + '</span><span>참여 ' + list.length + '명</span></div>' +
-      '<div class="art"><canvas id="bcv"></canvas></div>' +
-      '<div class="note">총잡이를 3명까지 지원 보내면 바로 피해를 줘요.<small>다음 보스까지 <span id="wbTime">' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + '</span> · 4시간마다 새 보스가 나타나요</small></div>';
-    if (mine) h += '<div class="result">✅ 이번 보스에 <b>' + sentN(s) + '/' + WB_SEND + '명</b> 지원 보냈어요 · 내 피해 합계 <b>' + fmt(mine.d) + '</b></div>';
-    const used = mine && mine.k ? mine.k.split(',') : [];
-    if (sentN(s) >= WB_SEND) {
-    } else if (!save.coll.length) {
-      h += '<div class="result">지원 보낼 총잡이가 없어요. 총잡이 탭 보관함에서 먼저 뽑아보세요.</div>';
-    } else {
-      h += '<div class="pickrow">';
-      const list2 = save.coll.filter(u => !used.includes(ukey(u))).sort((a, b) => supportDmg(b) - supportDmg(a)).slice(0, 8);
-      for (const u of list2) {
-        const k = ukey(u), m = elMul(u.e, B.el);
-        h += '<div class="htile r' + uRar(u) + (k === bossSel ? ' sel' : '') + '" data-act="bpick" data-k="' + k + '" role="button">' + face(HATS[u.n], uCol(u), { n: u.n }) + '<span class="hn ol-s" style="font-size:12px">' + NMS[u.n] + ' ★' + u.s + '</span><span class="dmg">' + fmt(supportDmg(u)) + (m > 1 ? ' 약점!' : m < 1 ? ' 저항' : '') + '</span></div>';
-      }
-      h += '</div><button class="btn p wide ol-s" data-act="bsend"' + (bossSel ? '' : ' disabled') + '>⚔ 지원 보내기 (' + (sentN(s) + 1) + '/' + WB_SEND + ')</button>';
-      h += '<p class="desc" style="color:#cdb9ef">보스 속성의 약점을 찌르는 총잡이를 보내면 피해가 1.6배예요. 보스 하나에 총잡이 <b>3명</b>까지, 같은 총잡이는 한 번만 보낼 수 있어요.</p>';
-    }
-    if (bossMsg) h += '<div class="msg ok">' + esc(bossMsg) + '</div>';
-    if (list.length) {
-      h += '<div class="ranklist">' + list.slice(0, 10).map((o, i) => '<div class="' + (o.me ? 'me' : '') + '"><em>' + (i + 1) + '</em><span>' + esc(nameOf(o)) + (o.u ? ' · ' + NMS[o.u[0]] : '') + '</span><span>' + fmt(o.d) + '</span></div>').join('') + '</div>';
-    }
-    h += '<div class="medals"><div class="m1"><b class="ol-s">🥇 1등</b><span>' + (list[0] ? esc(nameOf(list[0])) : '-') + '</span></div><div class="m2"><b class="ol-s">🥈 2등</b><span>' + (list[1] ? esc(nameOf(list[1])) : '-') + '</span></div><div class="m3"><b class="ol-s">🥉 3등</b><span>' + (list[2] ? esc(nameOf(list[2])) : '-') + '</span></div></div>';
-    const rw = bossRewards();
-    h += '<p class="desc" style="color:#e6dcff">격파하면 지원을 보냈든 안 보냈든 <b>모두에게 99만 골드</b> 선물이 와요. 보스 체력은 150만에서 시작해 새 보스마다 5만씩 늘어나요. 시간 안에 못 잡으면 보스는 도망가요.</p>';
-    if (rw.length) h += '<button class="btn y wide ol-s" data-act="bclaim">' + I.gift + ' ' + fmt(WB_GIFT) + ' 골드 선물 받기' + (rw.length > 1 ? ' ×' + rw.length : '') + '</button>';
-    const p = s - 1, pl = hitsFor(p);
-    if (pl.length) h += '<div class="result">🏆 지난 보스 <b>' + wbOf(p).nm + '</b> — ' + (defeated(p) ? '쓰러뜨렸어요.' : '도망갔어요.') + '<br>' + pl.slice(0, 3).map((o, i) => (i + 1) + '등 ' + esc(nameOf(o)) + ' (' + fmt(o.d) + ')').join(' · ') + '</div>';
-    if (NET.mode === 'none') h += '<p class="desc" style="color:#cdb9ef">친구들과 연결되지 않은 상태예요. 혼자서는 체력을 다 깎기 어려워요.</p>';
-    h += '</div></div>';
-    $('screen').innerHTML = h;
-    const bc = $('bcv');
-    if (bc) {
-      const r = bc.getBoundingClientRect(), dd = Math.min(2, window.devicePixelRatio || 1);
-      bc.width = Math.max(1, r.width * dd); bc.height = Math.max(1, r.height * dd);
-      drawBossArt();
-    }
-  }
-  let bossSel = null;
-  function drawBossArt() {
-    const bc = $('bcv'); if (!bc) return;
-    const c = bc.getContext('2d'), s = slotNow(), B = wbOf(s), t = performance.now() / 1000;
-    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, bc.width, bc.height);
-    const k = bc.height / 190;
-    c.setTransform(k, 0, 0, k, bc.width / 2, bc.height / 2 + 6 * k);
-    c.globalAlpha = .5; c.fillStyle = '#b48cff';
-    for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + t * .3; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 130, Math.sin(a) * 70); c.lineTo(Math.cos(a + .2) * 120, Math.sin(a + .2) * 64); c.fill(); }
-    c.globalAlpha = 1;
-    const wi = ((s % WB.length) + WB.length) % WB.length;
-    drawEnemy(c, { k: 'boss', bi: 0, col: B.c, spk: [18, 12, 22, 10, 8, 16][wi], x: 0, y: 0, r: 58, hp: 1, mh: 1, el: B.el, ph: t * 3, fl: 0 }, t);
-    c.fillStyle = B.c; c.globalAlpha = .35; c.beginPath(); c.arc(0, 0, 60, 0, 6.283); c.fill(); c.globalAlpha = 1;
-  }
-  function bossSend() {
-    const s = slotNow(), u = getUnit(bossSel);
-    const m = save.boss[s], k = ukey(u || {});
-    if (!u || sentN(s) >= WB_SEND || (m && m.k && m.k.split(',').includes(k))) return;
-    const d = supportDmg(u);
-    save.boss[s] = { d: (m ? m.d : 0) + d, u: [u.n, u.e.join(''), u.s], n: sentN(s) + 1, k: (m && m.k ? m.k + ',' : '') + k };
-    bossSel = null;
-    const ks = Object.keys(save.boss).map(Number).sort((a, b) => a - b);
-    while (ks.length > 6) delete save.boss[ks.shift()];
-    bossMsg = NMS[u.n] + '이(가) ' + fmt(d) + ' 피해를 줬어요!';
-    qAdd('boss'); Snd.boom(); persist(true); render();
-  }
-  function bossClaimAll() {
-    const rw = bossRewards(); if (!rw.length) return;
-    for (const r of rw) save.bossClaim.push(r.slot);
-    save.gold += WB_GIFT * rw.length;
-    const got = dropItems(rw.length, ODDS.wb);
-    toast('장비 선물: ' + got.map(d => itemName(d.id)).join(', '));
-    Snd.coin(); toast((WB_GIFT * rw.length).toLocaleString() + '골드 선물을 받았어요'); persist(); render();
-  }
-
   /* ================= friends ================= */
   function friendsBody() {
     const me = NET.uid;
@@ -3779,30 +3681,38 @@ input { -webkit-user-select: text; user-select: text; }
     async bootLoad(why) {
       if (this.booting) return; this.booting = true;
       const wait = ms => new Promise(r => setTimeout(r, ms)), lim = (pr, ms) => Promise.race([pr, wait(ms).then(() => 'timeout')]);
-      const steps = ['최신 버전 확인', '계정 진행 상황 불러오기', '랭킹에 내 정보 올리기', '친구 랭킹 받기'], st = steps.map(() => 'wait');
+      /* fast path: version check, account save and friend ranking run side by side; my own upload happens after the screen opens */
+      const steps = ['최신 버전 확인', '계정 진행 상황', '친구 랭킹'], st = steps.map(() => 'run'), mn = Math.floor(Math.random() * 8);
       let box = $('bootL'); if (!box) { box = document.createElement('div'); box.id = 'bootL'; box.style.cssText = 'position:fixed;inset:0;z-index:900;display:grid;place-items:center;background:rgba(14,22,34,.96);padding:24px'; document.body.appendChild(box); }
-      const draw = msg => { box.hidden = false; box.innerHTML = '<div style="width:min(340px,100%);display:grid;gap:14px;color:#fff;text-align:center"><b class="ol" style="font-family:var(--display);font-size:28px">찍먹메타</b><p style="margin:0;font-size:15px;opacity:.9">' + (msg || (why === 'back' ? '다시 오셨네요! 최신 정보로 맞추는 중이에요…' : '로딩 중입니다…')) + '</p><div style="display:grid;gap:8px;text-align:left;background:rgba(255,255,255,.07);border-radius:14px;padding:12px 14px">' + steps.map((t, i) => '<div style="display:flex;gap:10px;align-items:center;font-size:15px;opacity:' + (st[i] === 'wait' ? '.45' : '1') + '"><span style="width:22px;text-align:center">' + ({ wait: '·', run: '⏳', ok: '✅', warn: '⚠️' })[st[i]] + '</span>' + t + '</div>').join('') + '</div><p style="margin:0;font-size:12px;opacity:.6">' + APP_VER + '</p></div>'; };
-      const set = (i, v, msg) => { st[i] = v; draw(msg); };
+      const pic = typeof mythPortrait === 'function' ? mythPortrait(mn) : '';
+      const draw = msg => { box.hidden = false; box.innerHTML = '<div style="width:min(340px,100%);display:grid;gap:12px;color:#fff;text-align:center;justify-items:center"><b class="ol" style="font-family:var(--display);font-size:28px">찍먹메타</b>' +
+        '<div style="position:relative;background:#fff;color:#14202f;border:3px solid #14202f;border-radius:16px;padding:8px 14px;font-weight:900;font-size:15px">' + (msg || '<span style="color:#7a4ad0">' + NMS[mn] + '</span> : 로딩 중이니 기다려 주세요!') + '<span style="position:absolute;left:50%;bottom:-11px;width:16px;height:16px;background:#fff;border-right:3px solid #14202f;border-bottom:3px solid #14202f;transform:translateX(-50%) rotate(45deg)"></span></div>' +
+        (pic ? '<span style="display:block;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 50% 45%,#3a2a5a 0%,#1a1230 70%);border:3px solid #b98cff;overflow:hidden"><img src="' + pic + '" alt="" style="width:144%;max-width:none;margin:-18% 0 0 -24%;display:block"></span>' : '') +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font-size:13px">' + steps.map((t, i) => '<span style="opacity:' + (st[i] === 'run' ? '.55' : '1') + '">' + ({ run: '⏳', ok: '✅', warn: '⚠️' })[st[i]] + ' ' + t + '</span>').join('') + '</div><p style="margin:0;font-size:12px;opacity:.6">' + APP_VER + '</p></div>'; };
+      const set = (i, v) => { st[i] = v; draw(); };
+      draw();
       try {
-        set(0, 'run');
-        if (window.__jmVerGate) { const r = await lim(window.__jmVerGate(), 9000).catch(() => null); if (r === 'reload') { draw('새 버전으로 바꾸는 중이에요…'); return; } }
-        set(0, 'ok'); await wait(250);
-        set(1, 'run'); let ok = false; for (let k = 0; k < 3 && !ok; k++) { ok = await this.loadCloud(); if (!ok) await wait(1500); }
+        const vp = window.__jmVerGate ? lim(window.__jmVerGate().catch(() => null), 4000) : Promise.resolve(null);
+        const cp = (async () => { if (await this.loadCloud(6000)) return true; await wait(600); return this.loadCloud(6000); })();
+        const rp = this.api.refresh ? lim(this.api.refresh(), 6000) : Promise.resolve();
+        if ((await vp) === 'reload') { draw('새 버전으로 바꾸는 중이에요…'); return; }
+        set(0, 'ok');
+        const ok = await cp; set(1, ok ? 'ok' : 'warn');
         if (this.choosing) { box.hidden = true; while (this.choosing) await wait(300); }
-        set(1, ok ? 'ok' : 'warn', ok ? '' : '계정 저장을 못 불러왔어요. 연결되면 자동으로 다시 맞춰요.'); await wait(250);
-        set(2, 'run'); this.lastRank = ''; this.lastPres = ''; this.presence(true); await lim(this.sync(true), 20000); set(2, this.syncErr ? 'warn' : 'ok'); await wait(250);
-        set(3, 'run'); if (this.api.refresh) await lim(this.api.refresh(), 12000); for (let k = 0; k < 20 && !rankDocs.length; k++) await wait(200); set(3, rankDocs.length ? 'ok' : 'warn'); await wait(450);
+        await rp; set(2, 'ok');
       } catch (e) {}
       box.hidden = true; this.booting = false; render();
+      this.lastRank = ''; this.lastPres = ''; this.presence(true);
+      this.sync(true).then(() => { if (this.api.refresh) this.api.refresh(); });
     },
     /* ---- cloud save safety ----
        The cloud copy is never overwritten until it has been read successfully this session, and never by a save with
        fewer plays than the cloud copy. When this device and the cloud disagree (e.g. PC played, then the phone opened
        with its older local copy), the player picks which one to keep; the other is kept as a local backup. */
     cloudOk: false, cloudPlays: 0, choosing: false, cloudRaw: null,
-    async loadCloud() {
+    async loadCloud(ms) {
       let c;
-      try { c = await Promise.race([this.api.loadSave(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000))]); }
+      try { c = await Promise.race([this.api.loadSave(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms || 15000))]); }
       catch (e) { this.cloudOk = false; return false; }
       this.cloudOk = true;
       const sum = a => (Array.isArray(a) ? a : []).reduce((x, y) => x + (+y || 0), 0);
@@ -3849,8 +3759,6 @@ input { -webkit-user-select: text; user-select: text; }
         const step = async (nm, f) => { let tm; try { await Promise.race([f(), new Promise((_, rej) => { tm = setTimeout(() => rej({ code: '응답 없음' }), 15000); })]); } catch (e) { errs.push(nm + ': ' + ((e && (e.code || e.message)) || 'error')); } clearTimeout(tm); };
         const rp = rankPayload(), rk = JSON.stringify(Object.assign({}, rp, { t: 0 }));
         if (rk !== this.lastRank && (save.plays.some(Boolean) || save.name)) await step('친구 정보', async () => { await this.api.put('rank', rp); this.lastRank = rk; });
-        const hk = JSON.stringify(save.boss) + save.name;
-        if (hk !== this.lastHits && Object.keys(save.boss).length) await step('보스 기록', async () => { await this.api.put('bosshits', { h: save.boss, nick: save.name, t: Date.now() }); this.lastHits = hk; });
         if (this.choosing && popKind !== 'savepick') this.askSave();
         if (!this.cloudOk) await step('계정 저장 확인', async () => { if (!(await this.loadCloud())) throw { code: '서버 응답 없음' }; });
         const j = JSON.stringify(save), myPlays = save.plays.reduce((a, b) => a + b, 0);
@@ -4027,6 +3935,7 @@ input { -webkit-user-select: text; user-select: text; }
     pickPick: el => { const k = el.dataset.k; if (pickSel.has(k)) pickSel.delete(k); else if (pickSel.size < 3) pickSel.add(k); Snd.click(); refreshPop(pickBody()); },
     pickTo: el => { pickN = +el.dataset.n; Snd.click(); refreshPop(pickBody()); },
     pickGo: () => { const nu = mythPick(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 지정 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
+    mythHub: () => openPop('✨ 신화 공방', mythHubBody(), 'mythhub'),
     mixOpen: () => { mixSel.clear(); openPop('✨ 신화 2명 조합', mixBody(), 'mix'); },
     mixPick: el => { const k = el.dataset.k; if (mixSel.has(k)) mixSel.delete(k); else if (mixSel.size < 2) mixSel.add(k); Snd.click(); refreshPop(mixBody()); },
     mixGo: () => { const nu = mythMix(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
@@ -4083,9 +3992,6 @@ input { -webkit-user-select: text; user-select: text; }
     buyen: () => { qDay(); if (save.gem < EN_GEM || save.shop.en >= 3) return; save.gem -= EN_GEM; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
     pickSave: el => { const N = NET; if (!N.choosing) return; N.choosing = false; if (el.dataset.w === 'cloud') N.adopt(N.cloudRaw); else { try { localStorage.setItem(KEY + '-bak', JSON.stringify({ t: Date.now(), save: N.cloudRaw })); } catch (e) {} N.cloudPlays = 0; toast('이 기기 진행 상황으로 계속해요'); } N.cloudRaw = null; closePop(); persist(true); N.sync(true); },
     goldbag: () => { if (save.gem < BAG_GEM) return; save.gem -= BAG_GEM; save.gold += goldBag(); Snd.coin(); toast(fmt(goldBag()) + ' 골드 받았어요'); persist(); render(); },
-    bpick: el => { bossSel = el.dataset.k; bossMsg = null; render(); },
-    bsend: () => bossSend(),
-    bclaim: () => bossClaimAll(),
     bpause: () => openPause(),
     bskip: () => skipStage(),
     resume: () => { $('bpop').hidden = true; if (S) S.pause = false; },
@@ -4134,7 +4040,7 @@ input { -webkit-user-select: text; user-select: text; }
     tick += dt; autoSaveT += dt;
     if (!S && tab === 'boss' && tick > .99) { const tm = $('abTime'); if (tm) { const l = abLeft(); if (l <= 0) render(); else tm.textContent = mmss(l); } }
     if (autoSaveT >= 600) { autoSaveT = 0; persist(true); toast('💾 게임이 자동 저장되었어요'); }
-    if (tick > 1) { tick = 0; tickEnergy(); if (!S) { $('vEn').textContent = save.en + '/' + EN_MAX; if (tab === 'boss' && $('pop').hidden && false) { if (wbShown !== slotNow()) { const sc = document.querySelector('.scroll'); const y = sc ? sc.scrollTop : 0; renderBoss(); const sc2 = document.querySelector('.scroll'); if (sc2) sc2.scrollTop = y; } else { const tm = $('wbTime'); if (tm) tm.textContent = wbLeftTxt(); } } } }
+    if (tick > 1) { tick = 0; tickEnergy(); if (!S) { $('vEn').textContent = save.en + '/' + EN_MAX; } }
     raf = requestAnimationFrame(frame);
   }
   new ResizeObserver(() => { if (S) fitBattle(); sizeHome(); }).observe($('app'));
