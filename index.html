@@ -532,7 +532,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-1107';
+  const APP_VER = 'v.261115-1203';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1429,6 +1429,7 @@ input { -webkit-user-select: text; user-select: text; }
     h += '<div class="card"><div class="row"><h3 class="ol grow">거점 · ' + FORT_N[tier] + '</h3><span class="pwtag ol-s" style="font-size:15px">' + I.sword + fmt(power()) + '</span></div>' +
       '<p class="desc">오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.</p>' +
       enhRow('hp') + enhRow('dl') + enhRow('sl') + (gmsg ? '<div class="msg ' + gmsg.c + '">' + esc(gmsg.t) + '</div>' : '') + '</div>';
+    h += '<button class="btn y wide ol-s" data-act="invOpen" style="font-size:18px">🎒 장비창 열기 · 장비 · 펫 · 가방</button>';
     h += '<div class="card"><div class="row"><h3 class="ol grow">장비</h3><span class="desc" style="color:#fff">' + Object.keys(save.items).length + '/30 종</span></div><p class="desc">총·모자·목걸이를 하나씩 껴요. <b>같은 장비 3개</b>를 조합하면 다음 등급이 돼요(레벨은 Lv1부터). 레벨은 골드로 따로 올려요. 장비는 보스·정예·공동 보스 선물·상점 젬 상자에서 나와요.</p><div class="slots4">';
     for (const k of ['w', 'h', 'n']) {
       const id = save.gear[k], d = id && save.items[id];
@@ -1664,14 +1665,62 @@ input { -webkit-user-select: text; user-select: text; }
     if (autoOn) autoT = setTimeout(autoStep, 200);
   }
 
+
+  /* ================= 장비창 (MapleStory-style equipment window + bag) =================
+     tabs: 장비 (slots around a silhouette; unused slots stay blank for future gear) · 펫 · 가방 (owned gear + rings) · 기타 (empty for now).
+     Tapping an item opens its detail (the existing gear / ring / pet panels, narrowed to that one item). */
+  let invTab = 'eq', invSort = 'grade', gearFocus = null, ringFocus = null, petFocus = null, popBack = false;
+  const INV_CSS = '<style>.ivw{background:#d8dee6;border:3px solid #14202f;border-radius:12px;padding:8px;position:relative}.ivg{display:grid;gap:5px;position:relative}.ivs{aspect-ratio:1;border-radius:8px;position:relative;display:grid;place-items:center;min-width:0}.ivs.e{background:#c3ccd7;border:2px solid #aab5c2}.ivs.e>u{position:absolute;top:2px;left:3px;font-size:8px;font-weight:900;color:#8d99a8;text-decoration:none;letter-spacing:.3px}.ivs.lk{background:#b4bdc8;border:2px dashed #95a1b0;font-size:18px}.ivs.x{background:transparent}.ivs.it{background:#3a4f6c;border:3px solid var(--g);cursor:pointer}.ivs.it>svg,.ivs.it>span.ic{width:78%;height:78%;display:block}.ivs.it>span.ic>svg{width:100%;height:100%}.ivs b.lv{position:absolute;left:2px;top:0;font-size:9px;color:#fff;-webkit-text-stroke:.3px #000;font-weight:900}.ivs i.n{position:absolute;right:2px;bottom:0;font-style:normal;font-size:9px;font-weight:900;color:#ffe36a;-webkit-text-stroke:.3px #000}.ivs em.on{position:absolute;right:2px;top:1px;font-style:normal;font-size:8px;font-weight:900;background:#2fd06a;color:#fff;border-radius:4px;padding:0 3px}.ivsil{position:absolute;left:50%;top:44%;width:44%;height:62%;transform:translate(-50%,-50%);border:3px solid #b9c3cf;border-radius:999px 999px 40px 40px;opacity:.8;pointer-events:none}.ivtabs{display:flex;gap:4px;margin-bottom:-3px;position:relative;z-index:1}.ivtabs button{flex:1;font-family:var(--display);font-size:15px;padding:6px 0;border:3px solid #14202f;border-bottom:0;border-radius:10px 10px 0 0;background:#506a8c;color:#c8d6e8}.ivtabs button.on{background:linear-gradient(#ffb84a,#f08a20);color:#fff}.ivft{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:8px;color:#14202f;font-weight:900;font-size:13px;flex-wrap:wrap}</style>';
+  const ivSm = svg => '<span style="width:18px;height:18px;display:inline-block;vertical-align:-4px">' + svg + '</span>';
+  const ivIco = svg => '<span class="ic">' + svg + '</span>';
+  function ivGear(id, act) { const d = save.items[id], g = iG(id); return '<div class="ivs it" style="--g:' + RAR[g].c + '" ' + act + ' role="button">' + ivIco(itemIcon(id)) + '<b class="lv">Lv' + d.lv + '</b>' + (d.n > 1 ? '<i class="n">×' + fmt(d.n) + '</i>' : '') + (Object.values(save.gear).includes(id) ? '<em class="on">E</em>' : '') + '</div>'; }
+  function ivRing(id, act) { const d = save.rings[id], g = rG(id); return '<div class="ivs it" style="--g:' + RAR[g].c + '" ' + act + ' role="button">' + ivIco(ringIcon(id)) + '<b class="lv">' + (RMAX[g] > 1 ? 'Lv' + d.lv : '') + '</b>' + (d.n > 1 ? '<i class="n">×' + fmt(d.n) + '</i>' : '') + (save.rslot.includes(id) ? '<em class="on">E</em>' : '') + '</div>'; }
+  function ivPet(x, act) { return '<div class="ivs it" style="--g:' + PGR[x.g].c + '" ' + act + ' role="button">' + ivIco(petSvg(x.p)) + '<b class="lv">★' + x.s + '</b>' + (save.pslot.includes(x.id) ? '<em class="on">E</em>' : '') + '</div>'; }
+  const ivBlank = lab => '<div class="ivs e">' + (lab ? '<u>' + lab + '</u>' : '') + '</div>';
+  const ivFill = (cells, min) => { const n = Math.max(min, Math.ceil(cells.length / 6) * 6 + 6); while (cells.length < n) cells.push(ivBlank('')); return cells.join(''); };
+  function invBody() {
+    let h = INV_CSS + '<div class="ivtabs">' + [['eq', '장비'], ['pet', '펫'], ['bag', '가방'], ['etc', '기타']].map(([k, nm]) => '<button class="' + (invTab === k ? 'on' : '') + '" data-act="invTab" data-t="' + k + '">' + nm + '</button>').join('') + '</div><div class="ivw">';
+    if (invTab === 'eq') {
+      const gs = sl => { const id = save.gear[sl]; return id && save.items[id] ? ivGear(id, 'data-act="gearbag" data-s="' + sl + '"') : '<div class="ivs e" data-act="gearbag" data-s="' + sl + '" role="button" style="cursor:pointer"><u>' + { w: 'WEAPON', h: 'CAP', n: 'PENDANT' }[sl] + '</u></div>'; };
+      const rs = i => { const id = save.rslot[i]; return id && save.rings[id] ? ivRing(id, 'data-act="ringbag" data-i="' + i + '"') : '<div class="ivs e" data-act="ringbag" data-i="' + i + '" role="button" style="cursor:pointer"><u>RING</u></div>'; };
+      const X = '<div class="ivs x"></div>';
+      const cells = [rs(0), X, gs('h'), X, ivBlank('EMBLEM'),
+        rs(1), gs('n'), ivBlank('FACE'), X, ivBlank('BADGE'),
+        rs(2), ivBlank('POCKET'), ivBlank('EYE'), gs('w'), ivBlank('MEDAL'),
+        '<div class="ivs lk"><u style="position:absolute;top:2px;left:3px;font-size:8px;font-weight:900;color:#8d99a8;text-decoration:none">RING</u>🔒</div>', ivBlank('BELT'), ivBlank('CLOTHES'), ivBlank('SHOULDER'), ivBlank('TITLE'),
+        X, ivBlank('GLOVES'), ivBlank('PANTS'), ivBlank('CAPE'), X,
+        X, X, ivBlank('SHOES'), X, X];
+      h += '<div class="ivg" style="grid-template-columns:repeat(5,1fr)"><div class="ivsil"></div>' + cells.join('') + '</div>';
+      h += '<div class="ivft"><span>' + ivSm(I.sword) + ' 전투력 ' + fmt(power()) + '</span><span class="desc" style="color:#506070;font-size:11px">빈칸은 앞으로 생길 장비 자리예요</span></div>';
+    } else if (invTab === 'pet') {
+      h += '<p class="desc" style="color:#14202f;margin:0 0 4px"><b>데려가는 펫</b> · 짝 총잡이가 출전하면 시너지</p><div class="ivg" style="grid-template-columns:repeat(6,1fr);margin-bottom:8px">' +
+        [0, 1, 2].map(i => { const x = slotPet(i); return x ? ivPet(x, 'data-act="petslot" data-i="' + i + '"') : '<div class="ivs e" data-act="petslot" data-i="' + i + '" role="button" style="cursor:pointer"><u>PET ' + (i + 1) + '</u></div>'; }).join('') + ivBlank('') + ivBlank('') + ivBlank('') + '</div>';
+      const list = save.pcoll.slice().sort((a, b) => b.g - a.g || b.s - a.s || a.p - b.p);
+      h += '<p class="desc" style="color:#14202f;margin:0 0 4px"><b>펫 보관함</b> ' + save.pcoll.length + '/' + PCAP + '</p><div class="ivg" style="grid-template-columns:repeat(6,1fr)">' + ivFill(list.map(x => ivPet(x, 'data-act="invPet" data-id="' + x.id + '"')), 24) + '</div>';
+      h += '<div class="ivft"><span>' + ivSm(I.coin) + ' ' + fmt(save.gold) + '</span><button class="btn c sm ol-s" data-act="petbox">펫 뽑기 · 정리</button></div>';
+    } else if (invTab === 'bag') {
+      const so = invSort === 'grade' ? (a, b) => b.g - a.g || a.k - b.k : (a, b) => a.k - b.k || b.g - a.g;
+      const SO = { w: 0, h: 1, n: 2 };
+      const gi = Object.keys(save.items).map(id => ({ id, g: iG(id), k: SO[iK(id).slot] * 10 + KINDS.indexOf(iK(id)), r: 0 })), ri = Object.keys(save.rings).map(id => ({ id, g: rG(id), k: 100 + RINGS.indexOf(rK(id)), r: 1 }));
+      const all = gi.concat(ri).sort(so);
+      h += '<div class="ivg" style="grid-template-columns:repeat(6,1fr)">' + ivFill(all.map(o => o.r ? ivRing(o.id, 'data-act="invRing" data-id="' + o.id + '"') : ivGear(o.id, 'data-act="invGear" data-id="' + o.id + '"')), 36) + '</div>';
+      const cr = Object.keys(save.rings).some(id => save.rings[id].n >= 3 && rG(id) < 4);
+      h += '<div class="ivft"><span>' + ivSm(I.coin) + ' ' + fmt(save.gold) + ' · 💎 ' + fmt(save.gem) + '</span><span style="display:flex;gap:4px"><button class="btn c sm ol-s" data-act="invSort">' + (invSort === 'grade' ? '등급순' : '종류순') + '</button>' + (canCombine() ? '<button class="btn y sm ol-s" data-act="gearComb" data-s="">장비 조합</button>' : '') + (cr ? '<button class="btn y sm ol-s" data-act="ringComb">반지 조합</button>' : '') + '</span></div>';
+    } else {
+      h += '<div class="ivg" style="grid-template-columns:repeat(6,1fr)">' + ivFill([], 24) + '</div><div class="ivft"><span class="desc" style="color:#506070">심연석·각성권 같은 아이템이 생기면 여기에 들어와요</span></div>';
+    }
+    return h + '</div>';
+  }
+  const invBackBtn = () => '<button class="btn c sm ol-s" data-act="invOpen" style="margin-bottom:6px">← 장비창</button>';
+
   /* ---------- skill tab ---------- */
   let gearSlot = 'w';
   const canCombine = sl => Object.keys(save.items).some(id => save.items[id].n >= 3 && iG(id) < 4 && (!sl || iK(id).slot === sl));
   let ringSlot = 0;
   function ringBody() {
     const i = ringSlot, cur = save.rslot[i];
-    const ids = Object.keys(save.rings).sort((a, b) => (save.rslot.includes(b) ? 1 : 0) - (save.rslot.includes(a) ? 1 : 0) || rG(b) - rG(a) || (a < b ? -1 : 1));
-    let h = '<p class="desc" style="color:#fff">' + (i + 1) + '번 반지 칸에 낄 반지를 골라요. 같은 종류를 다른 칸에 끼고 있으면 그 칸에서 빠져요. 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%).</p>';
+    const ids = ringFocus && save.rings[ringFocus] ? [ringFocus] : Object.keys(save.rings).sort((a, b) => (save.rslot.includes(b) ? 1 : 0) - (save.rslot.includes(a) ? 1 : 0) || rG(b) - rG(a) || (a < b ? -1 : 1));
+    let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">' + (i + 1) + '번 반지 칸에 낄 반지를 골라요. 같은 종류를 다른 칸에 끼고 있으면 그 칸에서 빠져요. 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%).</p>';
     if (!ids.length) h += '<p class="empty">아직 반지가 없어요.<br>정예 30단계 이상에서 보스를 잡아 보세요.</p>';
     for (const id of ids) {
       const d = save.rings[id], g = rG(id), K = rK(id), on = cur === id, other = !on && save.rslot.includes(id), mx = d.lv >= RMAX[g], cost = ringCost(id, d.lv), rt = ringRate(id, d.lv);
@@ -1682,7 +1731,7 @@ input { -webkit-user-select: text; user-select: text; }
         (RMAX[g] > 1 ? '<button class="btn y sm ol-s" data-act="ringUp" data-id="' + id + '"' + (!mx && save.gold >= cost ? '' : ' disabled') + '>' + (mx ? 'MAX' : '강화 ' + fmt(cost)) + '</button>' : '') +
         (g < 4 ? '<button class="btn sm ol-s" data-act="ringCb1" data-id="' + id + '"' + (d.n >= 3 ? '' : ' disabled') + '>조합 ' + Math.min(d.n, 3) + '/3</button>' : '') + '</div></div>';
     }
-    if (cur) h += '<button class="btn r sm ol-s" data-act="ringOff">장착 해제</button>';
+    if (cur && (!ringFocus || cur === ringFocus)) h += '<button class="btn r sm ol-s" data-act="ringOff">장착 해제</button>';
     return h;
   }
   /* element awakening panel under a Lv99 legend item */
@@ -1697,8 +1746,8 @@ input { -webkit-user-select: text; user-select: text; }
     return h + '</div>';
   }
   function gearBody() {
-    const ids = Object.keys(save.items).filter(id => iK(id).slot === gearSlot).sort((a, b) => iG(b) - iG(a) || (a < b ? -1 : 1));
-    let h = '<p class="desc" style="color:#fff">같은 장비 <b>3개</b> → 다음 등급 1개 (새 장비는 Lv1). 레벨은 골드로 올리고 등급마다 최대 레벨이 달라요(일반 10 ~ 전설 99). 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%, 10강마다 1%씩 낮아져요).</p>';
+    const ids = gearFocus && save.items[gearFocus] ? [gearFocus] : Object.keys(save.items).filter(id => iK(id).slot === gearSlot).sort((a, b) => iG(b) - iG(a) || (a < b ? -1 : 1));
+    let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">같은 장비 <b>3개</b> → 다음 등급 1개 (새 장비는 Lv1). 레벨은 골드로 올리고 등급마다 최대 레벨이 달라요(일반 10 ~ 전설 99). 전설 Lv30부터는 한 번에 100만 골드, 성공 9%(40강부터 8%, 10강마다 1%씩 낮아져요).</p>';
     if (canCombine(gearSlot)) h += '<button class="btn y wide ol-s" data-act="gearComb" data-s="' + gearSlot + '">' + SLOTN[gearSlot] + ' 모두 조합</button>';
     if (!ids.length) h += '<p class="empty">아직 ' + SLOTN[gearSlot] + ' 장비가 없어요.<br>보스를 잡거나 상점 장비 상자를 열어 보세요.</p>';
     for (const id of ids) {
@@ -1711,7 +1760,7 @@ input { -webkit-user-select: text; user-select: text; }
         (!mx ? '<button class="btn p sm ol-s" data-act="gearUp50" data-id="' + id + '"' + (save.gold >= cost ? '' : ' disabled') + '>50회 강화</button>' : '') +
         (g < 4 ? '<button class="btn sm ol-s" data-act="gearCb1" data-id="' + id + '"' + (d.n >= 3 ? '' : ' disabled') + '>조합 ' + Math.min(d.n, 3) + '/3</button>' : '') + '</div></div>' + (g === 4 && mx ? awBox(id, d) : '');
     }
-    if (save.gear[gearSlot]) h += '<button class="btn r sm ol-s" data-act="gearOff">장착 해제</button>';
+    if (save.gear[gearSlot] && (!gearFocus || save.gear[gearSlot] === gearFocus)) h += '<button class="btn r sm ol-s" data-act="gearOff">장착 해제</button>';
     return h;
   }
   /* bulk upgrade: how many upgrades every unlocked skill can take right now with the cards and gold on hand */
@@ -1751,12 +1800,12 @@ input { -webkit-user-select: text; user-select: text; }
   function petBody() {
     const i = petSlot, cur = slotPet(i);
     const ord = x => { const j = save.pslot.indexOf(x.id); return j < 0 ? 9 : j; };
-    const list = save.pcoll.slice().sort((a, b) => ord(a) - ord(b) || b.g - a.g || b.s - a.s || a.p - b.p);
-    const junk = petJunkList();
-    let h = '<div class="card dark" style="margin-bottom:8px"><div class="row"><h3 class="ol grow">펫 뽑기</h3><span class="desc" style="color:#fff">보관함 ' + save.pcoll.length + '/' + PCAP + '</span></div>' + petPullBox() + '</div>';
+    const list = petFocus ? save.pcoll.filter(x => x.id === petFocus) : save.pcoll.slice().sort((a, b) => ord(a) - ord(b) || b.g - a.g || b.s - a.s || a.p - b.p);
+    const junk = petFocus ? [] : petJunkList();
+    let h = (popBack ? invBackBtn() : '') + (petFocus ? '' : '<div class="card dark" style="margin-bottom:8px"><div class="row"><h3 class="ol grow">펫 뽑기</h3><span class="desc" style="color:#fff">보관함 ' + save.pcoll.length + '/' + PCAP + '</span></div>' + petPullBox() + '</div>');
     h += '<p class="desc" style="color:#fff">' + (i + 1) + '번 칸에 데려갈 펫을 골라요.</p>';
     if (junk.length) h += petJunkAsk ? '<div class="rmbar"><p class="desc" style="color:#fff;text-align:center">전설이 아닌 펫 <b>' + junk.length + '마리</b>를 모두 팔아요(데려간 펫은 빼고). 매직·유니크도 같이 팔려요.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn r ol-s" data-act="petJunk">팔기 +' + fmt(junk.reduce((a, x) => a + petSell(x), 0)) + 'G</button><button class="btn ol-s" data-act="petJunkNo">취소</button></div></div>' : '<button class="btn sm wide ol-s" data-act="petJunkAsk">전설 외 ' + junk.length + '마리 모두 팔기 · +' + fmt(junk.reduce((a, x) => a + petSell(x), 0)) + 'G</button>';
-    if (save.pbroken.length) {
+    if (save.pbroken.length && !petFocus) {
       h += '<div class="rmbar"><p class="desc" style="color:#fff"><b>터진 펫</b> · 같은 종류·같은 등급 펫 1마리(별이 가장 낮은 것)와 골드를 쓰면 <b>터지기 전 별 그대로</b> 되살아나요.</p>';
       save.pbroken.forEach((b, k) => {
         const mats = restoreMats(b), c = restoreCost(b);
@@ -3585,7 +3634,7 @@ input { -webkit-user-select: text; user-select: text; }
       const d = r.d, isMe = r.id === me || r.id === '__me', on = isMe || !!peers[r.id];
       const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s, x.m ? 1 : 0, x.se] : null).filter(Boolean);
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
-      h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b><span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span></div>' +
+      h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b>' + (NET.mode === 'firebase' ? '' : '<span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span>') + '</div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
         '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>' + (+d.es > 0 ? '정예 단계' : '스테이지') + '</span><b class="ol-s"' + (+d.es > 0 ? ' style="color:#d9b8ff"' : '') + '>' + (+d.es > 0 ? '정예 ' + clamp(+d.es, 1, 50) : clamp(+d.st || 1, 1, 50)) + '</b></div><div><span>거점</span><b class="ol-s">' + clamp(+d.hl || 0, 0, 30) + '/' + clamp(+d.dl || 0, 0, 30) + '</b></div></div>' +
         (isMe ? '' : (() => { const pv = on && peers[r.id] && peers[r.id].v ? String(peers[r.id].v) : '', dv = String(d.v || ''), cv = pv || dv;
@@ -3593,7 +3642,7 @@ input { -webkit-user-select: text; user-select: text; }
           return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
             : (() => { const ls = lastSeen[r.id], lt = Math.max(ls ? ls.t : 0, +d.t || 0), lv = (ls && ls.v > dv ? ls.v : dv);
                 return '<div class="desc" style="font-size:11px">💤 <b>' + (lt ? agoTxt(lt) : '오래 전') + '</b> 마지막 접속 · 그때 버전 ' + esc(lv || '예전 버전') + '<br>아직 새 버전을 안 켰어요. 다음에 켜면 자동으로 최신 버전이 돼요</div>'; })(); })()) +
-        '<div class="desc" style="font-size:11px">' + (isMe ? '내 정보는 바뀔 때마다 자동으로 올라가요' : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), st = clamp(+x[2] || 0, 0, 30); if (x[3]) { const se = clamp(+x[4] || 0, 0, 4); return '<span class="chip" style="background:linear-gradient(90deg,#ff9ad8,#ffe36a,#8ff0b0,#8fd0ff,#d9b8ff);font-weight:900">신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + '</span>'; } const es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">전설 ' + NMS[n] + ' ★' + st + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
+        '<div class="desc" style="font-size:11px">' + (isMe ? (NET.mode === 'firebase' ? '내 정보는 접속할 때·10분마다·나갈 때 올라가요' : '내 정보는 바뀔 때마다 자동으로 올라가요') : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), st = clamp(+x[2] || 0, 0, 30); if (x[3]) { const se = clamp(+x[4] || 0, 0, 4); return '<span class="chip" style="background:linear-gradient(90deg,#ff9ad8,#ffe36a,#8ff0b0,#8fd0ff,#d9b8ff);font-weight:900">신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + '</span>'; } const es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">전설 ' + NMS[n] + ' ★' + st + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
     });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
     return h;
@@ -3642,12 +3691,14 @@ input { -webkit-user-select: text; user-select: text; }
       this.api.sub('rank', docs => { rankDocs = docs; self.resolveNames(); if (tab === 'boss') render(); if (popKind === 'friends') refreshPop(friendsBody()); });
       this.api.sub('bosshits', docs => { hitDocs = docs; if (tab === 'boss') render(); else badges(); });
       await this.bootLoad('start');
-      setInterval(() => this.presence(true), 30000);
-      setInterval(() => this.sync(), 60000);
+      /* Firestore free plan: 50k reads / 20k writes a day for the whole group. Every write is also read by every friend's
+         listener, so keep pings slow: presence every 3 min, account sync every 3 min (forced on leave / after loading). */
+      if (this.mode !== 'firebase') setInterval(() => { if (document.visibilityState === 'visible') this.presence(true); }, 180000);
+      setInterval(() => this.sync(true), this.mode === 'firebase' ? 600000 : 180000);
       /* leaving (tab hidden / app closed): save locally and push to the account right away.
          coming back after 3+ minutes away: run the loading screen again (version, account save, ranking). */
-      const leave = () => { persist(true); this.hiddenAt = Date.now(); this.lastPres = ''; this.sync(); };
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); else if (!S && Date.now() - (this.hiddenAt || Date.now()) > 180000) this.bootLoad('back'); else { this.presence(true); this.sync(); } });
+      const leave = () => { persist(true); this.hiddenAt = Date.now(); this.lastPres = ''; this.sync(true); };
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); else if (!S && Date.now() - (this.hiddenAt || Date.now()) > 180000) this.bootLoad('back'); else { this.presence(true); this.sync(true); } });
       window.addEventListener('pagehide', leave);
       render();
     },
@@ -3667,8 +3718,8 @@ input { -webkit-user-select: text; user-select: text; }
         set(1, 'run'); let ok = false; for (let k = 0; k < 3 && !ok; k++) { ok = await this.loadCloud(); if (!ok) await wait(1500); }
         if (this.choosing) { box.hidden = true; while (this.choosing) await wait(300); }
         set(1, ok ? 'ok' : 'warn', ok ? '' : '계정 저장을 못 불러왔어요. 연결되면 자동으로 다시 맞춰요.'); await wait(250);
-        set(2, 'run'); this.lastRank = ''; this.lastPres = ''; this.presence(true); await lim(this.sync(), 20000); set(2, this.syncErr ? 'warn' : 'ok'); await wait(250);
-        set(3, 'run'); for (let k = 0; k < 20 && !rankDocs.length; k++) await wait(200); set(3, rankDocs.length ? 'ok' : 'warn'); await wait(450);
+        set(2, 'run'); this.lastRank = ''; this.lastPres = ''; this.presence(true); await lim(this.sync(true), 20000); set(2, this.syncErr ? 'warn' : 'ok'); await wait(250);
+        set(3, 'run'); if (this.api.refresh) await lim(this.api.refresh(), 12000); for (let k = 0; k < 20 && !rankDocs.length; k++) await wait(200); set(3, rankDocs.length ? 'ok' : 'warn'); await wait(450);
       } catch (e) {}
       box.hidden = true; this.booting = false; render();
     },
@@ -3713,8 +3764,12 @@ input { -webkit-user-select: text; user-select: text; }
       if (!ids.length || !this.api.names) return;
       Object.assign(this.names, await this.api.names(ids));
     },
-    async sync() {
+    lastPush: 0,
+    async sync(force) {
       if (!this.api) return;
+      /* ordinary saves (every action calls persist) stay on this device; the server gets them on load, every 10 min and when leaving */
+      if (!force) return;
+      this.lastPush = Date.now();
       if (this.busy && Date.now() - this.busyT < 60000) { this.pending = true; return; }
       this.busy = true; this.busyT = Date.now(); this.pending = false;
       try {
@@ -3731,11 +3786,11 @@ input { -webkit-user-select: text; user-select: text; }
         if (errs.length) { this.syncErr = errs.join(', '); this.pending = true; } else { this.syncedAt = Date.now(); this.syncErr = ''; }
       } catch (e) { this.syncErr = (e && (e.code || e.message)) || 'error'; this.pending = true; }
       this.busy = false;
-      if (this.pending) { this.pending = false; setTimeout(() => this.sync(), this.syncErr ? 5000 : 300); }
+      if (this.pending) { this.pending = false; this.errN = this.syncErr ? (this.errN || 0) + 1 : 0; setTimeout(() => this.sync(true), this.syncErr ? Math.min(300000, 30000 * this.errN) : 300); }
     },
     lastPres: '',
     presence(force) {
-      if (!this.api) return;
+      if (!this.api || this.mode === 'firebase') return;
       const p = { n: save.name, s: save.unlocked, p: S && !S.over ? 1 : 0, v: APP_VER };
       const k = JSON.stringify(p);
       if (k === this.lastPres && !force) return;
@@ -3764,16 +3819,18 @@ input { -webkit-user-select: text; user-select: text; }
         if (!save.name) save.name = String(u.name || '').slice(0, 10);
         let presRaw = [];
         this.api = {
-          sub(name, cb) { jm.sub(name, cb); },
+          /* minimum server use: no live listeners and no presence pings; lists are read once when the game loads
+             (and when 새로고침 is pressed), my ranking card is written on load, every 10 min if changed, and when leaving */
+          subs: {}, sub(name, cb) { this.subs[name] = cb; },
+          async refresh() { for (const n in this.subs) { try { this.subs[n](await jm.list(n)); } catch (e) {} } },
           put(name, data) { return jm.put(name, u.id, data); },
           loadSave() { return jm.getSave(u.id); },
           storeSave(j) { return jm.setSave(u.id, { json: j, t: Date.now() }); },
-          presence(p) { jm.put('presence', u.id, Object.assign({}, p, { t: Date.now() })).catch(() => {}); },
+          presence() {},
           names: null
         };
-        const applyPres = () => { const now = Date.now(); peers = {}; for (const r of presRaw) { lastSeen[r.id] = { t: +r.d.t || 0, v: String(r.d.v || '') }; if (now - (+r.d.t || 0) < 75000) peers[r.id] = r.d; } if (popKind === 'friends') refreshPop(friendsBody()); };
-        jm.sub('presence', docs => { presRaw = docs; presDocs = docs; applyPres(); });
-        setInterval(applyPres, 20000);
+        const applyPres = () => { const now = Date.now(); peers = {}; for (const r of presRaw) { lastSeen[r.id] = { t: +r.d.t || 0, v: String(r.d.v || '') }; if (now - (+r.d.t || 0) < 240000) peers[r.id] = r.d; } if (popKind === 'friends') refreshPop(friendsBody()); };
+        void applyPres;
         await this.afterLogin();
       });
       this.logout = async () => { try { await jm.signOut(); } catch (e) {} location.reload(); };
@@ -3833,7 +3890,7 @@ input { -webkit-user-select: text; user-select: text; }
     mailget: el => { mailGet(el.dataset.id); refreshPop(mailBody()); },
     mailall: () => { for (const m of mailItems()) mailGet(m.id); refreshPop(mailBody()); },
     friends: () => { NET.sync(); openPop('랭킹', friendsBody(), 'friends'); },
-    frsync: () => { NET.lastRank = ''; NET.busy = false; NET.sync().then(() => { if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
+    frsync: () => { NET.lastRank = ''; NET.busy = false; NET.sync(true).then(async () => { if (NET.api && NET.api.refresh) await NET.api.refresh(); if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
     tab: el => setTab(el.dataset.t),
     enh: el => enhance(el.dataset.k),
     slot: el => { selSlot = +el.dataset.i; const k = save.slots[selSlot]; if (k) openHero(k); else render(); },
@@ -3866,7 +3923,13 @@ input { -webkit-user-select: text; user-select: text; }
       save.gold += g; rmSel.clear(); rmAsk = false; rmMode = false;
       Snd.coin(); toast(n + '명 제거 · +' + fmt(g) + '골드'); persist(); render();
     },
-    gearbag: el => { gearSlot = el.dataset.s; openPop('장비 · ' + SLOTN[gearSlot], gearBody(), 'gear'); },
+    invOpen: () => { gearFocus = ringFocus = petFocus = null; popBack = false; openPop('장비창', invBody(), 'inv'); },
+    invTab: el => { invTab = el.dataset.t; Snd.click(); refreshPop(invBody()); },
+    invSort: () => { invSort = invSort === 'grade' ? 'kind' : 'grade'; refreshPop(invBody()); },
+    invGear: el => { const id = el.dataset.id; if (!save.items[id]) return; gearFocus = id; gearSlot = iK(id).slot; popBack = true; openPop(itemName(id), gearBody(), 'gear'); },
+    invRing: el => { const id = el.dataset.id; if (!save.rings[id]) return; ringFocus = id; const j = save.rslot.indexOf(id), e = save.rslot.indexOf(null); ringSlot = j >= 0 ? j : e >= 0 ? e : 0; popBack = true; openPop(ringName(id), ringBody(), 'ring'); },
+    invPet: el => { const id = +el.dataset.id, x = getPet(id); if (!x) return; petFocus = id; const j = save.pslot.indexOf(id), e = save.pslot.indexOf(null); petSlot = j >= 0 ? j : e >= 0 ? e : 0; petJunkAsk = false; popBack = true; openPop(PETN[x.p] + ' ★' + x.s, petBody(), 'pet'); },
+    gearbag: el => { popBack = popKind === 'inv'; gearFocus = null; gearSlot = el.dataset.s; openPop('장비 · ' + SLOTN[gearSlot], gearBody(), 'gear'); },
     gearEq: el => { const id = el.dataset.id; if (!save.items[id]) return; save.gear[iK(id).slot] = id; Snd.click(); persist(); refreshPop(gearBody()); },
     gearOff: () => { save.gear[gearSlot] = null; persist(); refreshPop(gearBody()); },
     awEl: el => { const id = el.dataset.id, d = save.items[id], e = +el.dataset.e; if (!d || iG(id) !== 4 || d.lv < 99 || d.ae === e) return; if ((d.aw || 0) > 0) { if (save.gem < AW_CHG) { toast('젬이 부족해요'); return; } save.gem -= AW_CHG; } d.ae = e; persist(); topbar(); refreshPop(gearBody()); },
@@ -3881,7 +3944,7 @@ input { -webkit-user-select: text; user-select: text; }
       persist(); topbar(); refreshPop(gearBody()); },
     gearUp: el => { const id = el.dataset.id, d = save.items[id]; if (!d || d.lv >= GMAX[iG(id)]) return; const c = upCost(id, d.lv); if (save.gold < c) return; save.gold -= c; const rt = gearRate(id, d.lv); if (Math.random() >= rt) { Snd.bad(); toast('강화 실패 (성공 ' + Math.round(rt * 100) + '%) · Lv ' + d.lv + ' 유지'); persist(); topbar(); refreshPop(gearBody()); return; } d.lv++; Snd.lvup(); toast(itemName(id) + ' Lv ' + d.lv + '!'); persist(); topbar(); refreshPop(gearBody()); },
     gearCb1: el => { const nx = combine(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + itemName(nx)); persist(); refreshPop(gearBody()); },
-    gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else render(); },
+    gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else if (popKind === 'inv') refreshPop(invBody()); else render(); },
     legendSkip: () => lgSkip(),
     pickOpen: () => { pickSel.clear(); pickN = -1; openPop('✨ 신화 3명 지정 조합', pickBody(), 'mix'); },
     pickPick: el => { const k = el.dataset.k; if (pickSel.has(k)) pickSel.delete(k); else if (pickSel.size < 3) pickSel.add(k); Snd.click(); refreshPop(pickBody()); },
@@ -3893,12 +3956,12 @@ input { -webkit-user-select: text; user-select: text; }
     mythOpen: () => { mythSel.clear(); openPop('✨ 신화 강화', mythBody(), 'myth'); },
     mythPick: el => { const k = el.dataset.k; if (mythSel.has(k)) mythSel.delete(k); else if (mythSel.size < MYTH_NEED) mythSel.add(k); Snd.click(); refreshPop(mythBody()); },
     mythGo: () => { const nu = mythMake(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 총잡이!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
-    ringbag: el => { ringSlot = +el.dataset.i; openPop('반지 · ' + (ringSlot + 1) + '번 칸', ringBody(), 'ring'); },
+    ringbag: el => { popBack = popKind === 'inv'; ringFocus = null; ringSlot = +el.dataset.i; openPop('반지 · ' + (ringSlot + 1) + '번 칸', ringBody(), 'ring'); },
     ringEq: el => { const id = el.dataset.id; if (!save.rings[id]) return; save.rslot = save.rslot.map((x, j) => j !== ringSlot && x && rK(x) === rK(id) ? null : x); save.rslot[ringSlot] = id; Snd.click(); persist(); refreshPop(ringBody()); },
     ringOff: () => { save.rslot[ringSlot] = null; persist(); refreshPop(ringBody()); },
     ringUp: el => { const id = el.dataset.id, d = save.rings[id]; if (!d || d.lv >= RMAX[rG(id)]) return; const c = ringCost(id, d.lv); if (save.gold < c) return; save.gold -= c; const rt = ringRate(id, d.lv); if (Math.random() >= rt) { Snd.bad(); toast('강화 실패 (성공 ' + Math.round(rt * 100) + '%) · Lv ' + d.lv + ' 유지'); persist(); topbar(); refreshPop(ringBody()); return; } d.lv++; Snd.lvup(); toast(ringName(id) + ' Lv ' + d.lv + '!'); persist(); topbar(); refreshPop(ringBody()); },
     ringCb1: el => { const nx = combineRing(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + ringName(nx)); persist(); refreshPop(ringBody()); if (rG(nx) === 4) legendFlash(ringIcon(nx), '전설 반지!', rK(nx).nm); },
-    ringComb: () => { const m = combineRingsAll(); if (!m.length) return; Snd.lvup(); toast('반지 조합 ' + m.length + '번 · 최고 ' + ringName(m.reduce((a, b) => rG(b) > rG(a) ? b : a))); persist(); render(); },
+    ringComb: () => { const m = combineRingsAll(); if (!m.length) return; Snd.lvup(); toast('반지 조합 ' + m.length + '번 · 최고 ' + ringName(m.reduce((a, b) => rG(b) > rG(a) ? b : a))); persist(); if (popKind === 'inv') refreshPop(invBody()); else render(); },
     ebox1: () => { const b = EBOX[0]; if (save.gem < b.p) return; save.gem -= b.p; const d = dropItems(1, b.odds)[0]; Snd.coin(); toast((d.isNew ? 'NEW ' : '+1 ') + itemName(d.id)); persist(); render(); if (iG(d.id) === 4) legendFlash(itemIcon(d.id), '전설 장비!', itemName(d.id)); },
     ebox2: () => { const b = EBOX[1]; if (save.gem < b.p) return; save.gem -= b.p; save.pity++; const d = dropItems(1, b.odds, save.pity >= PITY ? 4 : null)[0]; if (iG(d.id) === 4) save.pity = 0; Snd.coin(); toast((d.isNew ? 'NEW ' : '+1 ') + itemName(d.id)); persist(); render(); if (iG(d.id) === 4) legendFlash(itemIcon(d.id), '전설 장비!', itemName(d.id)); },
     unequip: () => { const at = save.slots.indexOf(selKey); if (at >= 0) save.slots[at] = null; persist(); refreshPop(heroBody()); },
@@ -3908,12 +3971,12 @@ input { -webkit-user-select: text; user-select: text; }
     free: () => { qDay(); if (save.shop.free) return; save.shop.free = 1; const t = giveR({ gold: 200, cards: 5 }); Snd.coin(); toast(t + ' 받았어요'); persist(); render(); },
     pull1: () => pull(1),
     ppull1: () => petPull(1),
-    petbox: () => { petSlot = 0; petJunkAsk = false; openPop('펫 보관함 · 1번 칸', petBody(), 'pet'); },
+    petbox: () => { popBack = popKind === 'inv'; petFocus = null; petSlot = 0; petJunkAsk = false; openPop('펫 보관함 · 1번 칸', petBody(), 'pet'); },
     pullclr: () => { pulls = null; render(); },
     ppullclr: () => { petPulls = null; render(); if (popKind === 'pet') refreshPop(petBody()); },
     ppull10: () => petPull(10),
     ppullfill: () => petPull(10, true),
-    petslot: el => { petSlot = +el.dataset.i; petJunkAsk = false; openPop('펫 · ' + (petSlot + 1) + '번 칸', petBody(), 'pet'); },
+    petslot: el => { popBack = popKind === 'inv'; petFocus = null; petSlot = +el.dataset.i; petJunkAsk = false; openPop('펫 · ' + (petSlot + 1) + '번 칸', petBody(), 'pet'); },
     petEq: el => { const id = +el.dataset.id, x = getPet(id); if (!x) return; if (save.pslot.some((o, j) => j !== petSlot && o !== id && getPet(o) && getPet(o).p === x.p)) return; const j = save.pslot.indexOf(id); if (j >= 0) save.pslot[j] = null; save.pslot[petSlot] = id; Snd.click(); persist(); refreshPop(petBody()); },
     petOff: () => { save.pslot[petSlot] = null; persist(); refreshPop(petBody()); },
     petUp: el => {
@@ -3941,7 +4004,7 @@ input { -webkit-user-select: text; user-select: text; }
     pullfill: () => pull(10, true),
     cardbox: () => { qDay(); if (save.gem < 40 || save.shop.card >= 5) return; save.gem -= 40; save.shop.card++; giveCards(20); Snd.coin(); toast('스킬 카드 20장 받았어요'); persist(); render(); },
     buyen: () => { qDay(); if (save.gem < EN_GEM || save.shop.en >= 3) return; save.gem -= EN_GEM; save.shop.en++; save.en += 30; Snd.coin(); toast('에너지 30 충전!'); persist(); render(); },
-    pickSave: el => { const N = NET; if (!N.choosing) return; N.choosing = false; if (el.dataset.w === 'cloud') N.adopt(N.cloudRaw); else { try { localStorage.setItem(KEY + '-bak', JSON.stringify({ t: Date.now(), save: N.cloudRaw })); } catch (e) {} N.cloudPlays = 0; toast('이 기기 진행 상황으로 계속해요'); } N.cloudRaw = null; closePop(); persist(true); },
+    pickSave: el => { const N = NET; if (!N.choosing) return; N.choosing = false; if (el.dataset.w === 'cloud') N.adopt(N.cloudRaw); else { try { localStorage.setItem(KEY + '-bak', JSON.stringify({ t: Date.now(), save: N.cloudRaw })); } catch (e) {} N.cloudPlays = 0; toast('이 기기 진행 상황으로 계속해요'); } N.cloudRaw = null; closePop(); persist(true); N.sync(true); },
     goldbag: () => { if (save.gem < BAG_GEM) return; save.gem -= BAG_GEM; save.gold += goldBag(); Snd.coin(); toast(fmt(goldBag()) + ' 골드 받았어요'); persist(); render(); },
     bpick: el => { bossSel = el.dataset.k; bossMsg = null; render(); },
     bsend: () => bossSend(),
@@ -4064,7 +4127,8 @@ try {
     },
     signOut: () => A.signOut(auth),
     /* a listener that errors (network drop, token refresh) is re-attached after 5 s instead of going silent */
-    sub: (name, cb) => { const go = () => { let un = null; un = F.onSnapshot(F.collection(db, name), s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => { try { un && un(); } catch (e) {} setTimeout(go, 5000); }); }; go(); },
+    sub: (name, cb) => { const go = () => { let un = null; un = F.onSnapshot(F.collection(db, name), s => cb(s.docs.map(d => ({ id: d.id, d: d.data() || {} }))), () => { try { un && un(); } catch (e) {} wait = Math.min(300000, wait * 2); setTimeout(go, wait); }); }; let wait = 5000; go(); },
+    list: async name => (await F.getDocs(F.collection(db, name))).docs.map(d => ({ id: d.id, d: d.data() || {} })),
     put: (name, id, data) => F.setDoc(F.doc(db, name, id), data),
     getSave: async id => { const s = await F.getDoc(F.doc(db, "saves", id)); return s.exists() ? s.data() : null; },
     setSave: (id, d) => F.setDoc(F.doc(db, "saves", id), d)
