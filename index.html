@@ -523,15 +523,16 @@ input { -webkit-user-select: text; user-select: text; }
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = n => {
     n = Math.floor(n || 0);
-    const u = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'k']];
-    for (const [d, t] of u) if (n >= d) { const v = n / d; return (v >= 100 ? Math.floor(v) : Math.floor(v * 10) / 10) + t; }
+    /* Korean units: 만(1e4) · 억(1e8) · 조(1e12) */
+    const u = [[1e12, '조'], [1e8, '억'], [1e4, '만']];
+    for (const [d, t] of u) if (n >= d) { const v = n / d; return (v >= 1000 ? Math.floor(v).toLocaleString() : v >= 100 ? Math.floor(v) : Math.floor(v * 10) / 10) + t; }
     return String(n);
   };
   const pct = x => { const v = x * 100; return (v > 0 && v < 10 ? v.toFixed(1) : Math.round(v)) + '%'; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-1048';
+  const APP_VER = 'v.261115-1100';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1433,6 +1434,7 @@ input { -webkit-user-select: text; user-select: text; }
       const id = save.gear[k], d = id && save.items[id];
       h += '<div class="htile' + (d ? ' gr' + iG(id) : ' emp') + '" data-act="gearbag" data-s="' + k + '" role="button">' + (d ? '<span style="width:48px;height:48px;display:block">' + itemIcon(id) + '</span><span class="hn ol-s" style="font-size:12px;text-align:center">' + iK(id).nm + '</span><span class="st ol-s" style="color:' + RAR[iG(id)].c + '">' + RAR[iG(id)].nm + ' · Lv ' + d.lv + '</span>' : '<span class="ol-s">' + SLOTN[k] + '<br>비어 있음</span>') + '</div>';
     }
+    { const eq = ['w', 'h', 'n'].filter(k => { const id = save.gear[k], d = id && save.items[id]; return d && d.lv < GMAX[iG(id)]; }); h += '</div>' + (eq.length ? '<button class="btn p wide ol-s" data-act="gearUp50" style="margin-top:8px">⬆ 무기→모자→목걸이 순서로 강화 (최대 50회)</button>' : ''); h += '<div>'; }
     h += '</div>' + (canCombine() ? '<button class="btn y wide ol-s" data-act="gearComb" data-s="" style="margin-top:8px">조합 가능한 장비 모두 조합</button>' : '') + '</div>';
     h += '<div class="card"><div class="row"><h3 class="ol grow">💍 반지</h3><span class="desc" style="color:#fff">' + Object.keys(save.rings).length + '/75 종</span></div><p class="desc">반지는 3개까지 껴요(같은 종류는 1개만). <b>정예 30단계 이상 보스</b>를 잡으면 나와요. 일반·고급은 강화할 수 없고, 희귀 Lv20 · 영웅 Lv30 · 전설 Lv50까지 올라가요. 같은 반지 3개를 조합하면 다음 등급이 돼요.</p><div class="slots4">';
     for (let i = 0; i < 3; i++) {
@@ -1971,8 +1973,6 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
-    { id: 'g261115rhi2', to: '류한일', t: '🎁 운영자 선물', s: '골드 72억 · 장착한 장비 3개 Lv99 · 장착한 펫 ★10', r: { gold: 7200000000, maxGear: 1, maxPet: 1 }, until: Date.UTC(2026, 11, 31, 15, 0) },
-    { id: 'g261115rhi', to: '류한일', t: '🎁 정예 40 3000판 보상', s: '정예 40단계(보스 3마리) 3,000판 클리어 보상 · 골드 72.6억 · 젬 355.5만 · 스킬 카드 39,000장 · 장비 21,090개 · 반지 5,400개 · 경험치 108,000', r: { gold: 7260000000, gem: 3555000, cards: 39000, runs: 3000 }, until: Date.UTC(2026, 11, 31, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
@@ -3873,6 +3873,15 @@ input { -webkit-user-select: text; user-select: text; }
     awTry: el => { const id = el.dataset.id, d = save.items[id]; if (!d || iG(id) !== 4 || d.lv < 99 || (d.aw || 0) >= 10 || d.ae == null || d.ae < 0) return; if (save.gold < AW_GOLD || save.gem < AW_GEM) return; save.gold -= AW_GOLD; save.gem -= AW_GEM; const k = d.aw || 0;
       if (Math.random() < AW_P[k]) { d.aw = k + 1; Snd.lvup(); toast('✨ 속성 각성 성공! ' + ENM[d.ae] + ' ' + d.aw + '단계 · 피해 +' + Math.round(AW_V[k] * 100) + '%'); } else { Snd.bad(); toast('각성 실패 (성공 ' + Math.round(AW_P[k] * 100) + '%) · ' + k + '단계 유지'); }
       persist(); topbar(); refreshPop(gearBody()); },
+    /* up to 50 single enhance tries, cycling weapon -> hat -> necklace; an item it can't afford or that is maxed is skipped, so the gold gets used up */
+    gearUp50: () => { const ks = ['w', 'h', 'n'], NM = { w: '무기', h: '모자', n: '목걸이' }, st = {}; let tries = 0, ok = 0, spent = 0, i = 0, idle = 0;
+      for (const k of ks) { const id = save.gear[k]; if (id && save.items[id]) st[k] = { a: save.items[id].lv, ok: 0, t: 0 }; }
+      while (tries < 50 && idle < 3) { const k = ks[i++ % 3], id = save.gear[k], d = id && save.items[id];
+        if (!d || d.lv >= GMAX[iG(id)] || save.gold < upCost(id, d.lv)) { idle++; continue; } idle = 0;
+        const c = upCost(id, d.lv); save.gold -= c; spent += c; tries++; st[k].t++; if (Math.random() < gearRate(id, d.lv)) { d.lv++; ok++; st[k].ok++; } }
+      if (!tries) { toast('골드가 부족하거나 모두 최대 레벨이에요'); return; }
+      Snd.lvup(); toast('강화 ' + tries + '회 · 성공 ' + ok + ' · ' + fmt(spent) + ' 골드 · ' + Object.keys(st).filter(k => st[k].t).map(k => NM[k] + ' Lv' + st[k].a + '→' + save.items[save.gear[k]].lv).join(' · '));
+      persist(); topbar(); render(); },
     gearUp: el => { const id = el.dataset.id, d = save.items[id]; if (!d || d.lv >= GMAX[iG(id)]) return; const c = upCost(id, d.lv); if (save.gold < c) return; save.gold -= c; const rt = gearRate(id, d.lv); if (Math.random() >= rt) { Snd.bad(); toast('강화 실패 (성공 ' + Math.round(rt * 100) + '%) · Lv ' + d.lv + ' 유지'); persist(); topbar(); refreshPop(gearBody()); return; } d.lv++; Snd.lvup(); toast(itemName(id) + ' Lv ' + d.lv + '!'); persist(); topbar(); refreshPop(gearBody()); },
     gearCb1: el => { const nx = combine(el.dataset.id); if (!nx) return; Snd.lvup(); toast('조합 성공! ' + itemName(nx)); persist(); refreshPop(gearBody()); },
     gearComb: el => { const sl = el.dataset.s || null, m = combineAll(sl); if (!m.length) return; Snd.lvup(); toast('조합 ' + m.length + '번 · 최고 ' + itemName(m.reduce((a, b) => iG(b) > iG(a) ? b : a))); persist(); if (popKind === 'gear') refreshPop(gearBody()); else render(); },
