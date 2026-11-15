@@ -532,7 +532,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-1402';
+  const APP_VER = 'v.261115-1438';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -989,7 +989,7 @@ input { -webkit-user-select: text; user-select: text; }
       v: 1, name: '', lv: 1, xp: 0, gold: 600, gem: 100, en: 30, enT: Date.now(),
       unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], rings: {}, rslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
-      boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0, ab: { fl: 1, best: 0, next: 0, got: {}, pend: 0 }
+      boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0, ab: { fl: 1, best: 0, next: 0, got: {}, pend: 0 }, tq: { st: 0, runs: 0, kills: 0, rare: 0, eq: -1, er: 0, ar: 0 }
     };
   }
   const ukey = u => u.n + '|' + u.e.join('') + (u.m ? '|m' + u.se : '');
@@ -1066,6 +1066,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.mail && typeof r.mail === 'object') for (const k in r.mail) if (/^n\d{6}[a-z]?$/.test(k) && r.mail[k]) s.mail[k] = 1;
     if (r.set) s.set = { sfx: r.set.sfx ? 1 : 0, bgm: r.set.bgm ? 1 : 0, vfx: r.set.vfx === 0 ? 0 : 1 };
     s.tut = r.tut ? 1 : 0; s.saved = num(r.saved, 0, 1e15, 0); s.kills = num(r.kills, 0, 1e12, 0); s.wins = num(r.wins, 0, 1e9, 0); s.bclr = num(r.bclr, 0, 1e9, 0);
+    { const q = r.tq && typeof r.tq === 'object' ? r.tq : {}; s.tq = { st: num(q.st, 0, 5, 0), runs: num(q.runs, 0, 1e9, 0), kills: num(q.kills, 0, 1e12, 0), rare: num(q.rare, 0, 1e6, 0), eq: num(q.eq, -1, 4, -1), er: num(q.er != null ? q.er : q.runs, 0, 1e9, 0), ar: num(q.ar, 0, 1e9, 0) }; }
     { const a = r.ab && typeof r.ab === 'object' ? r.ab : {}; s.ab = { fl: num(a.fl, 1, 9999, 1), best: num(a.best, 0, 9999, 0), next: num(a.next, 0, 1e15, 0), got: {}, pend: num(a.pend, 0, 9999, 0) }; if (a.got && typeof a.got === 'object') for (const k in a.got) if (/^\d+$/.test(k)) s.ab.got[k] = 1; }
     return s;
   }
@@ -1180,6 +1181,7 @@ input { -webkit-user-select: text; user-select: text; }
     /* fort slow field: slower monsters = more time to shoot and less damage taken */
     p /= 1 - slowPct(save.sll || 0);
     p *= 1 + lvBonus();
+    { const tb = titleBonus(); p *= (1 + tb.dmg) * (1 + tb.spd) * (1 + tb.crit * 1.5 + tb.cdm * .6) * (1 + tb.se * .5); }
     return Math.round(p);
   }
   /* profile level up to 300; from Lv98 on every level needs the same xp as 98 -> 99 */
@@ -1264,6 +1266,32 @@ input { -webkit-user-select: text; user-select: text; }
     if (o.k === 'myth') { const u = { n: Math.floor(Math.random() * 8), e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se: Math.floor(Math.random() * 5) }; save.coll.push(u); return '신화 ' + NMS[u.n] + ' (강' + EGL[u.se] + ')'; }
     return '';
   }
+  /* ================= 칭호 퀘스트 =================
+     5 titles in a row. 판 = elite or abyss runs (not given up), counted from when the quest started; kills / rare bosses likewise.
+     The last title gives a permanent bonus: crit +10%p, crit damage +10%p, attack speed +5%, damage +5%, strong element +3%. */
+  const TITLES = [
+    { nm: '떠돌이 총잡이', c: '#c8d6e8', gem: 3000, b: { dmg: .01 }, req: [['er', 100], ['ar', 10], ['kills', 30000], ['elite', 36]] },
+    { nm: '현상금 사냥꾼', c: '#5bd16a', gem: 5000, b: { crit: .02, dmg: .01 }, req: [['er', 200], ['ar', 20], ['rare', 2], ['abyss', 5]] },
+    { nm: '보안관', c: '#3fa9f5', gem: 8000, b: { crit: .03, spd: .02, dmg: .02 }, req: [['er', 300], ['ar', 30], ['pet10', 1], ['gear99', 1], ['abyss', 10]] },
+    { nm: '무법자 왕', c: '#c27bff', gem: 12000, b: { crit: .05, cdm: .05, spd: .03, dmg: .03 }, req: [['er', 400], ['ar', 40], ['myth20', 1], ['elite', 46], ['abyss', 15]] },
+    { nm: '황야의 전설', c: '#ffb72e', gem: 0, b: { crit: .1, cdm: .1, spd: .05, dmg: .05, se: .03 }, req: [['er', 500], ['ar', 50], ['kills', 200000], ['elite', 51], ['abyss', 20], ['myths', 3]] }
+  ];
+  const TQ_NM = { er: v => '정예 ' + v + '판', ar: v => '심연의 탑 ' + v + '판', runs: v => '정예·심연 ' + v + '판', kills: v => '몬스터 ' + v.toLocaleString() + '마리 처치', elite: v => '정예 ' + (v - 1) + '단계 클리어', rare: v => '희귀 보스 ' + v + '마리 처치', abyss: v => '심연의 탑 ' + v + '층 정복', pet10: () => '★10 펫 1마리', gear99: () => '전설 장비 Lv99 1개', myth20: () => '신화 ★20 이상 1명', myths: v => '신화 ' + v + '명 보유' };
+  function tqVal(k) {
+    const q = save.tq;
+    if (k === 'runs') return q.runs; if (k === 'er') return q.er; if (k === 'ar') return q.ar; if (k === 'kills') return q.kills; if (k === 'rare') return q.rare;
+    if (k === 'elite') return save.elOn ? save.el.unlocked : 0; if (k === 'abyss') return save.ab.best;
+    if (k === 'pet10') return save.pcoll.some(x => x.s >= 10) ? 1 : 0;
+    if (k === 'gear99') return Object.keys(save.items).some(id => iG(id) === 4 && save.items[id].lv >= 99) ? 1 : 0;
+    if (k === 'myth20') return save.coll.some(u => u.m && u.s >= 20) ? 1 : 0;
+    if (k === 'myths') return save.coll.filter(u => u.m).length;
+    return 0;
+  }
+  const tqReady = () => save.tq.st < TITLES.length && TITLES[save.tq.st].req.every(([k, v]) => tqVal(k) >= v);
+  /* titles are items: every cleared title is owned, one goes in the TITLE slot of the equipment window and only that one's bonus counts */
+  const titleNm = () => save.tq.eq >= 0 && save.tq.eq < save.tq.st ? TITLES[save.tq.eq].nm : '';
+  const titleBonus = () => Object.assign({ crit: 0, cdm: 0, spd: 0, dmg: 0, se: 0 }, save.tq.eq >= 0 && save.tq.eq < save.tq.st ? TITLES[save.tq.eq].b : {});
+  const tbTxt = b => [b.crit && '치명타 +' + Math.round(b.crit * 100) + '%', b.cdm && '치명타 피해 +' + Math.round(b.cdm * 100) + '%', b.spd && '공격 속도 +' + Math.round(b.spd * 100) + '%', b.dmg && '피해 +' + Math.round(b.dmg * 100) + '%', b.se && '강속성 +' + Math.round(b.se * 100) + '%'].filter(Boolean).join(' · ');
   function giveR(r) {
     const out = [];
     if (r.gold) { save.gold += r.gold; out.push(fmt(r.gold) + ' 골드'); }
@@ -1410,11 +1438,11 @@ input { -webkit-user-select: text; user-select: text; }
     const tk = trk(), n = tk.cur, i = n - 1;
     const chestReady = chestAny();
     qDay();
-    const qr = QS.some(qReady);
+    const qr = tqReady();
     $('screen').innerHTML = '<div class="home">' +
       '<div class="home-row"><div class="sides">' +
         '<button class="side sm" data-act="friends"><span class="ic">' + I.friends + '</span><span class="ol-s">랭킹</span></button>' +
-        '<button class="side sm" data-act="missions"><span class="ic">' + I.scroll + '</span><span class="ol-s">시간 미션</span>' + (qr ? '<span class="bang" style="right:4px;top:-4px">!</span>' : '') + '</button>' +
+        '<button class="side sm" data-act="titles"><span class="ic">' + I.scroll + '</span><span class="ol-s">칭호</span>' + (qr ? '<span class="bang" style="right:4px;top:-4px">!</span>' : '') + '</button>' +
         '</div>' +
           '<div class="modes"><button class="ol-s' + (isElite() ? ' off' : '') + '" data-act="mode" data-m="n">일반</button>' + (save.elOn ? '<button class="ol-s' + (isElite() ? ' elite' : ' off') + '" data-act="mode" data-m="e">정예</button>' : '<button class="off ol-s" data-act="elite">🔒 정예</button>') + '</div>' +
       '</div>' +
@@ -1499,6 +1527,30 @@ input { -webkit-user-select: text; user-select: text; }
         (() => { const mc = save.coll.filter(u => u.m).length; return '<p class="desc" style="margin-top:8px"><b>신화 2명 조합</b> · 신화 2명을 합치면 8명 중 하나가 <b>똑같은 확률(12.5%)</b>로 나와요(강속성 무작위, ★0부터).</p><button class="btn y wide ol-s" data-act="mixOpen"' + (mc >= 2 ? '' : ' disabled') + '>' + (mc >= 2 ? '신화 2명 고르기' : '신화가 2명 필요해요 (' + mc + '/2)') + '</button>' + '<p class="desc" style="margin-top:8px"><b>신화 3명 지정 조합</b> · 신화 3명을 합치면 <b>원하는 총잡이</b>로 바꿔요(강속성 무작위, ★0부터).</p><button class="btn p wide ol-s" data-act="pickOpen"' + (mc >= 3 ? '' : ' disabled') + '>' + (mc >= 3 ? '신화 3명 고르기' : '신화가 3명 필요해요 (' + mc + '/3)') + '</button>'; })() + '</div>'; }
     return h;
   }
+  function titlesBody() {
+    const st = save.tq.st;
+    let h = '<p class="desc" style="color:#fff">칭호 퀘스트는 <b>5단계</b>예요. 단계의 조건을 모두 채우면 <b>칭호 아이템</b>과 보상을 받아요. 칭호는 장비창 <b>TITLE</b> 칸에 껴야 효과가 나요. <b>정예 판</b>과 <b>심연 판</b>(포기 제외)은 따로 세고 단계마다 정예 100판·심연 10판씩 늘어나요. 처치·희귀 보스도 퀘스트를 시작한 뒤부터 세요. 마지막 <b style="color:#ffb72e">「황야의 전설」</b>은 <b>치명타 +10% · 치명타 피해 +10% · 공격 속도 +5% · 피해 +5% · 강속성 +3%</b>예요.</p>';
+    TITLES.forEach((T, i) => {
+      const done = i < st, cur = i === st, ok = cur && tqReady();
+      h += '<div class="card ' + (cur ? '' : 'dark') + '" style="margin:6px 0;border-color:' + T.c + ';opacity:' + (i > st ? .55 : 1) + '"><div class="row"><h3 class="ol grow" style="color:' + T.c + '">' + (done ? '✅ ' : cur ? '▶ ' : '🔒 ') + (i + 1) + '단계 「' + T.nm + '」</h3><span class="desc" style="color:#fff">' + (T.gem ? '젬 ' + fmt(T.gem) : '최종 칭호') + '</span></div><p class="desc" style="margin:0 0 4px;color:' + T.c + '">칭호 효과: ' + tbTxt(T.b) + '</p>';
+      if (!done) h += T.req.map(([k, v]) => { const cv = tqVal(k), p = Math.min(1, cv / v); return '<div style="margin:4px 0"><div class="row"><span class="desc grow" style="color:#fff">' + TQ_NM[k](v) + '</span><b class="ol-s" style="font-size:13px;color:' + (p >= 1 ? 'var(--ok)' : '#fff') + '">' + (['elite'].includes(k) ? Math.max(0, cv - 1) + '/' + (v - 1) : fmt(Math.min(cv, v)) + '/' + fmt(v)) + '</b></div><div class="bar" style="height:8px;background:#1a2638;border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.round(p * 100) + '%;background:' + (p >= 1 ? '#5bd16a' : T.c) + '"></i></div></div>'; }).join('');
+      if (ok) h += '<button class="btn y wide ol-s" data-act="tqClaim" style="margin-top:6px">🏅 「' + T.nm + '」 칭호 받기</button>';
+      h += '</div>';
+    });
+    if (st >= TITLES.length) h += '<div class="msg ok">「황야의 전설」 달성! 장비창 TITLE 칸에 끼면 최종 효과가 적용돼요.</div>';
+    return h;
+  }
+  const SE_HELP = '<div class="card dark" style="margin-top:8px;border-color:#ff9ad8"><h3 class="ol" style="font-size:17px">★ 강속성이란? <span class="desc" style="color:#ff9ad8">(신화 전용)</span></h3>' +
+    '<p class="desc" style="color:#fff;margin:4px 0">신화는 <b>5속성을 모두</b> 쓰고, 그중 <b>1개가 강속성</b>이에요. 카드에서 <b>★가 붙은 속성 칩</b>(예: <b>불★</b>)이 강속성이에요.</p>' +
+    '<ul class="desc" style="color:#fff;margin:4px 0 0;padding-left:18px;line-height:1.6">' +
+    '<li><b>강속성으로 때리면 피해 ×1.3</b>이 한 번 더 붙어요. 신화 기본 피해 ×1.3과는 따로 곱해져요.</li>' +
+    '<li>총잡이는 쏠 때마다 그 몬스터에게 <b>가장 아픈 속성을 자동으로</b> 골라요. 상성(×1.6)과 몬스터 속성 방어를 같이 따지는데, 강속성은 ×1.3을 붙인 값으로 비교해서 <b>비슷하면 강속성이 먼저</b> 골라져요.</li>' +
+    '<li><b>강속성이 상성까지 이기면</b> ×1.6 × 1.3 ≈ <b>×2.1</b>이에요. 예: 강속성 <b>불★</b> 신화가 <b>바람</b> 몬스터를 때릴 때.</li>' +
+    '<li>몬스터가 강속성을 막고 있으면(속성 방어) 다른 속성이 더 아플 수 있어요. 그때는 알아서 다른 속성으로 쏴요.</li>' +
+    '<li>강속성은 <b>무작위</b>로 정해져요. 신화 공방의 <b>2명 조합</b>으로 다시 뽑거나, <b>3명 지정 조합</b>으로 <b>아직 없는 강속성</b> 중에서 받을 수 있어요.</li>' +
+    '<li>짝 펫의 <b>속성 피해 +100%</b>, 장비 <b>속성 각성</b>과도 겹쳐요. 강속성과 같은 속성으로 각성하면 그 속성이 특히 강해져요.</li>' +
+    '<li>칭호 <b style="color:#ffb72e">「황야의 전설」</b>을 끼면 강속성 배율이 ×1.3 → <b>약 ×1.34</b>가 돼요.</li>' +
+    '<li>전설 이하 총잡이에게는 강속성이 없어요.</li></ul></div>';
   function renderHero() {
     const tier = Math.min(5, Math.floor((save.hl + save.dl) / 10));
     let h = '<div class="scroll">';
@@ -1531,7 +1583,7 @@ input { -webkit-user-select: text; user-select: text; }
       }
       h += '</div>';
     }
-    h += '<p class="desc">속성: <b>불</b> 화상 · <b>물</b> 둔화 · <b>번개</b> 연쇄 · <b>땅</b> 폭발 · <b>바람</b> 2연발. 속성이 많을수록 강해요. 상성은 불›바람›땅›번개›물›불 순서로 앞이 뒤를 이겨요(×1.6).</p></div>';
+    h += '<p class="desc">속성: <b>불</b> 화상 · <b>물</b> 둔화 · <b>번개</b> 연쇄 · <b>땅</b> 폭발 · <b>바람</b> 2연발. 속성이 많을수록 강해요. 상성은 불›바람›땅›번개›물›불 순서로 앞이 뒤를 이겨요(×1.6).</p>' + SE_HELP + '</div>';
     h += '</div>';
     $('screen').innerHTML = h;
   }
@@ -1729,6 +1781,13 @@ input { -webkit-user-select: text; user-select: text; }
   function ivGear(id, act) { const d = save.items[id], g = iG(id); return '<div class="ivs it" style="--g:' + RAR[g].c + '" ' + act + ' role="button">' + ivIco(itemIcon(id)) + '<b class="lv">Lv' + d.lv + '</b>' + (d.n > 1 ? '<i class="n">×' + fmt(d.n) + '</i>' : '') + (Object.values(save.gear).includes(id) ? '<em class="on">E</em>' : '') + '</div>'; }
   function ivRing(id, act) { const d = save.rings[id], g = rG(id); return '<div class="ivs it" style="--g:' + RAR[g].c + '" ' + act + ' role="button">' + ivIco(ringIcon(id)) + '<b class="lv">' + (RMAX[g] > 1 ? 'Lv' + d.lv : '') + '</b>' + (d.n > 1 ? '<i class="n">×' + fmt(d.n) + '</i>' : '') + (save.rslot.includes(id) ? '<em class="on">E</em>' : '') + '</div>'; }
   function ivPet(x, act) { return '<div class="ivs it" style="--g:' + PGR[x.g].c + '" ' + act + ' role="button">' + ivIco(petSvg(x.p)) + '<b class="lv">★' + x.s + '</b>' + (save.pslot.includes(x.id) ? '<em class="on">E</em>' : '') + '</div>'; }
+  function ivTitle() { const i = save.tq.eq; if (i >= 0 && i < save.tq.st) { const T = TITLES[i]; return '<div class="ivs it" style="--g:' + T.c + '" data-act="tbag" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">🏅</span><b class="lv" style="font-size:8px">' + T.nm + '</b><em class="on">E</em></div>'; } return '<div class="ivs e" data-act="tbag" role="button" style="cursor:pointer"><u>TITLE</u></div>'; }
+  function tbagBody() {
+    let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">받은 칭호 중 하나를 장비창 <b>TITLE</b> 칸에 껴요. 낀 칭호의 효과만 적용돼요. 칭호는 <b>칭호 퀘스트</b>에서 받아요.</p>';
+    if (!save.tq.st) h += '<p class="empty">아직 받은 칭호가 없어요.<br>홈의 칭호 버튼에서 퀘스트를 진행해 보세요.</p>';
+    for (let i = 0; i < save.tq.st; i++) { const T = TITLES[i], on = save.tq.eq === i; h += '<div class="shopi"><span class="ico" style="background:none;border:3px solid ' + T.c + ';font-size:26px;display:grid;place-items:center">🏅</span><div style="min-width:0"><b class="ol-s" style="color:' + T.c + '">「' + T.nm + '」</b><p style="color:#fff">' + tbTxt(T.b) + '</p></div><div class="buy">' + (on ? '<button class="btn r sm ol-s" data-act="titleEq" data-i="-1">해제</button>' : '<button class="btn g sm ol-s" data-act="titleEq" data-i="' + i + '">장착</button>') + '</div></div>'; }
+    return h + '<button class="btn c wide ol-s" data-act="titles">🏅 칭호 퀘스트 보기</button>';
+  }
   const ivBlank = lab => '<div class="ivs e">' + (lab ? '<u>' + lab + '</u>' : '') + '</div>';
   const ivFill = (cells, min) => { const n = Math.max(min, Math.ceil(cells.length / 6) * 6 + 6); while (cells.length < n) cells.push(ivBlank('')); return cells.join(''); };
   function invBody() {
@@ -1740,7 +1799,7 @@ input { -webkit-user-select: text; user-select: text; }
       const cells = [rs(0), X, gs('h'), X, ivBlank('EMBLEM'),
         rs(1), gs('n'), ivBlank('FACE'), X, ivBlank('BADGE'),
         rs(2), ivBlank('POCKET'), ivBlank('EYE'), gs('w'), ivBlank('MEDAL'),
-        '<div class="ivs it" style="--g:' + (save.hl + save.dl + save.sll >= 90 ? '#ffb72e' : '#5bd16a') + '" data-act="fortOpen" role="button"><span class="ic" style="font-size:26px;display:grid;place-items:center">🏰</span><b class="lv">거점</b><i class="n">' + save.hl + '·' + save.dl + '·' + save.sll + '</i></div>', ivBlank('BELT'), ivBlank('CLOTHES'), ivBlank('SHOULDER'), ivBlank('TITLE'),
+        '<div class="ivs it" style="--g:' + (save.hl + save.dl + save.sll >= 90 ? '#ffb72e' : '#5bd16a') + '" data-act="fortOpen" role="button"><span class="ic" style="font-size:26px;display:grid;place-items:center">🏰</span><b class="lv">거점</b><i class="n">' + save.hl + '·' + save.dl + '·' + save.sll + '</i></div>', ivBlank('BELT'), ivBlank('CLOTHES'), ivBlank('SHOULDER'), ivTitle(),
         X, ivBlank('GLOVES'), ivBlank('PANTS'), ivBlank('CAPE'), X,
         X, X, ivBlank('SHOES'), X, X];
       h += '<div class="ivg" style="grid-template-columns:repeat(5,1fr)"><div class="ivsil"></div>' + cells.join('') + '</div>';
@@ -1761,7 +1820,8 @@ input { -webkit-user-select: text; user-select: text; }
       const cr = Object.keys(save.rings).some(id => save.rings[id].n >= 3 && rG(id) < 4);
       h += '<div class="ivft"><span>' + ivSm(I.coin) + ' ' + fmt(save.gold) + ' · 💎 ' + fmt(save.gem) + '</span><span style="display:flex;gap:4px"><button class="btn c sm ol-s" data-act="invSort">' + (invSort === 'grade' ? '등급순' : '종류순') + '</button>' + (canCombine() ? '<button class="btn y sm ol-s" data-act="gearComb" data-s="">장비 조합</button>' : '') + (cr ? '<button class="btn y sm ol-s" data-act="ringComb">반지 조합</button>' : '') + '</span></div>';
     } else {
-      h += '<div class="ivg" style="grid-template-columns:repeat(6,1fr)">' + ivFill([], 24) + '</div><div class="ivft"><span class="desc" style="color:#506070">심연석·각성권 같은 아이템이 생기면 여기에 들어와요</span></div>';
+      const tl = []; for (let i = 0; i < save.tq.st; i++) { const T = TITLES[i]; tl.push('<div class="ivs it" style="--g:' + T.c + '" data-act="tbag" role="button"><span class="ic" style="font-size:22px;display:grid;place-items:center">🏅</span><b class="lv" style="font-size:8px">' + T.nm + '</b>' + (save.tq.eq === i ? '<em class="on">E</em>' : '') + '</div>'); }
+      h += '<div class="ivg" style="grid-template-columns:repeat(6,1fr)">' + ivFill(tl, 24) + '</div><div class="ivft"><span class="desc" style="color:#506070">칭호는 여기 모여요 · 누르면 장착해요</span></div>';
     }
     return h + '</div>';
   }
@@ -2076,7 +2136,6 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
-    { id: 'n261115ab', t: '🕳 공동 보스 퇴장 · 심연의 탑 개방', s: '보안관들에게 알립니다. 4시간마다 황야를 뒤흔들던 공동 보스는 오늘부로 전설 속으로 사라집니다. 함께 쏟아부은 수많은 총알에 대한 보답으로 젬 5만 개와 골드 5천만을 보냅니다. 그리고 보스가 떠난 자리, 땅 밑 깊은 곳에서 오래 잠겨 있던 문이 열렸습니다. 정예 40을 넘어선 자만 내려갈 수 있는 끝없는 지하 요새, 심연의 탑. 층마다 다른 저주가 몬스터를 뒤틀고, 한 층을 정복하면 다음 문은 25분 뒤에 열립니다. 10층마다 원하는 보상을 직접 고르고, 가장 깊이 내려간 기록은 랭킹에 새겨집니다. 아래 탭의 심연 버튼에서 첫발을 내디디세요. 깊이 내려갈수록, 돌아오는 총성은 더 커집니다.', r: { gem: 50000, gold: 50000000 }, until: Date.UTC(2026, 11, 31, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
@@ -2230,7 +2289,7 @@ input { -webkit-user-select: text; user-select: text; }
     const r = resOf(e);
     let m = 0;
     const pen = S && S.r ? S.r.pen : 0, se = els.se, xb = els.xb;
-    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)) * (a === se || a === xb ? 1.3 : 1) * (1 + (S && S.aw ? S.aw[a] : 0)); if (v > m) m = v; }
+    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)) * (a === se || a === xb ? 1.3 * (1 + (S && S.tb ? S.tb.se : 0)) : 1) * (1 + (S && S.aw ? S.aw[a] : 0)); if (v > m) m = v; }
     return m;
   }
   let S = null, raf = 0, last = 0, speed = 1, tmode = 0;
@@ -2284,6 +2343,7 @@ input { -webkit-user-select: text; user-select: text; }
       lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
+    S.tb = titleBonus(); S.r.cdm += S.tb.cdm; S.r.spd += S.tb.spd;
     $('battle').hidden = false; $('bpop').hidden = true;
     fitBattle();
     nextWave();
@@ -2343,8 +2403,8 @@ input { -webkit-user-select: text; user-select: text; }
     S.en.push(mkE(pickKind(), spawnX(rnd(0, 30)), rnd(FIELD0 + 10, FIELD1 - 10), el));
   }
   function xpNeed(l) { return 5 + l * 3; }
-  function critChance() { return .05 + S.pass.crit * .06 + S.g.crit; }
-  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk) * (1 + S.lvb);
+  function critChance() { return .05 + S.pass.crit * .06 + S.g.crit + (S.tb ? S.tb.crit : 0); }
+  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk) * (1 + S.lvb) * (1 + (S.tb ? S.tb.dmg : 0));
   function skPow(id) { return S.avg * atkMul() * (1 + .15 * (skOf(id).lv - 1)); }
 
   /* damage numbers in Korean units: 1234조 5678억 9012만 3456 (empty groups are left out) */
@@ -2748,6 +2808,7 @@ input { -webkit-user-select: text; user-select: text; }
     let bclrBonus = 0; const bclrOn = win && !S.elite && n >= BCLR_MIN && isBossStage(n);
     if (bclrOn) { save.bclr++; if (save.bclr % BCLR_N === 0) { bclrBonus = BCLR_G; save.gold += BCLR_G; rep.gold += BCLR_G; } }
     save.gold += gold; rep.gold += gold; rep.done++; if (!S.ab) tk.plays[i]++; save.kills += S.kills;
+    if ((S.elite || S.ab) && !gaveUp) { save.tq.runs++; if (S.ab) save.tq.ar++; else save.tq.er++; save.tq.kills += S.kills; if (S.rareK) save.tq.rare++; }
     if (win && S.ab) save.wins++;
     else if (win) { save.wins++; if (hpPct > tk.best[i]) tk.best[i] = hpPct; tk.reach[i] |= 1 | (hpPct >= 50 ? 2 : 0) | (S.took <= 0 ? 4 : 0); }
     qAdd('play'); qAdd('kill', S.kills); if (win) qAdd('win'); if (win && S.took <= 0) qAdd('perfect');
@@ -3696,7 +3757,7 @@ input { -webkit-user-select: text; user-select: text; }
       const d = r.d, isMe = r.id === me || r.id === '__me', on = isMe || !!peers[r.id];
       const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s, x.m ? 1 : 0, x.se] : null).filter(Boolean);
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
-      h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b>' + (NET.mode === 'firebase' ? '' : '<span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span>') + '</div>' +
+      h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + (+d.ti > 0 && TITLES[+d.ti - 1] ? '<span style="color:' + TITLES[+d.ti - 1].c + ';font-size:12px">「' + TITLES[+d.ti - 1].nm + '」</span> ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b>' + (NET.mode === 'firebase' ? '' : '<span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span>') + '</div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
         '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>' + (+d.es > 0 ? '정예 단계' : '스테이지') + '</span><b class="ol-s"' + (+d.es > 0 ? ' style="color:#d9b8ff"' : '') + '>' + (+d.es > 0 ? '정예 ' + clamp(+d.es, 1, 50) : clamp(+d.st || 1, 1, 50)) + '</b></div><div><span>심연</span><b class="ol-s" style="color:#b98cff">' + (+d.ab > 0 ? clamp(+d.ab, 0, 9999) + '층' : '-') + '</b></div></div>' +
         (isMe ? '' : (() => { const pv = on && peers[r.id] && peers[r.id].v ? String(peers[r.id].v) : '', dv = String(d.v || ''), cv = pv || dv;
@@ -3718,7 +3779,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<button class="btn p wide ol-s" data-act="eliteBuy"' + (ok ? '' : ' disabled') + '>' + (ok ? '정예 모드 해금 · ' + (ELITE.cost / 1e4) + '만 골드' : '조건을 모두 채우면 해금할 수 있어요') + '</button>';
   }
   function rankPayload() {
-    return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, ab: save.ab.best, pl: save.plays.reduce((a, b) => a + b, 0), pw: power(), hl: save.hl, dl: save.dl,
+    return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, ab: save.ab.best, ti: save.tq.eq >= 0 && save.tq.eq < save.tq.st ? save.tq.eq + 1 : 0, pl: save.plays.reduce((a, b) => a + b, 0), pw: power(), hl: save.hl, dl: save.dl,
       v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? { n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se } : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
   }
 
@@ -3950,7 +4011,11 @@ input { -webkit-user-select: text; user-select: text; }
       Snd.coin(); toast(t + ' 받았어요'); persist(); refreshPop(chestBody()); topbar();
     },
     goto: el => { save.mode = 'n'; save.cur = clamp(+el.dataset.n, 1, save.unlocked); persist(); closePop(); setTab('home'); },
-    missions: () => openPop('시간 미션', missionsBody(), 'missions'),
+    missions: () => openPop('칭호 퀘스트', titlesBody(), 'titles'),
+    tbag: () => { popBack = popKind === 'inv'; openPop('🏅 칭호', tbagBody(), 'tbag'); },
+    titleEq: el => { const i = +el.dataset.i; if (i >= save.tq.st) return; save.tq.eq = i; Snd.click(); persist(); refreshPop(tbagBody()); },
+    titles: () => openPop('🏅 칭호 퀘스트', titlesBody(), 'titles'),
+    tqClaim: () => { if (!tqReady()) return; const T = TITLES[save.tq.st]; save.tq.eq = save.tq.st; save.tq.st++; if (T.gem) save.gem += T.gem; Snd.lvup(); toast('🏅 칭호 「' + T.nm + '」 획득!' + (T.gem ? ' · 젬 ' + fmt(T.gem) : ' · 칭호 효과 적용')); persist(true); topbar(); refreshPop(titlesBody()); },
     qclaim: el => { const q = QS.find(x => x.id === el.dataset.id); if (!q || !qReady(q)) return; const rw = qRew(q); qSlot(q.id).c = 1; const t = giveR(rw); Snd.coin(); toast(t + ' 받았어요'); persist(); refreshPop(missionsBody()); topbar(); },
     qgo: el => { closePop(); setTab(el.dataset.t); },
     mail: () => openPop('우편', mailBody(), 'mail'),
