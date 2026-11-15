@@ -531,7 +531,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261115-0616';
+  const APP_VER = 'v.261115-1048';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2609,7 +2609,7 @@ input { -webkit-user-select: text; user-select: text; }
     let rdrops = [];
     if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
     if (S.rareK) { save.gem += 100 * GEMK; save.rareK = (save.rareK || 0) + 1; }
-    const xp = (2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1); /* elite 30+: profile xp x2 */
+    const xp = (2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1) * (S.elite && n >= 47 && n <= 49 ? 2 : 1); /* elite 30+: profile xp x2 · elite 47~49: another x2 */
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = S.elite ? save.el : save;
@@ -3458,7 +3458,9 @@ input { -webkit-user-select: text; user-select: text; }
     { nm: '심해 크라켄', el: 1, c: '#2a5ab8' }, { nm: '번개 골렘', el: 2, c: '#c8a82a' }, { nm: '무법자 대두목', el: -1, c: '#7a3a2a' }
   ];
   const wbOf = s => WB[((s % WB.length) + WB.length) % WB.length];
-  let rankDocs = [], hitDocs = [], peers = {}, lastSeen = {}, bossMsg = null;
+  let rankDocs = [], hitDocs = [], peers = {}, lastSeen = {}, bossMsg = null, presDocs = [];
+  /* ranking rows: the rank collection merged with the rank card every connected player now carries in its presence ping (newest wins) */
+  function rankRows() { const m = {}; for (const r of rankDocs) if (r.d && typeof r.d === 'object') m[r.id] = r.d; for (const r of presDocs) { const x = r.d && r.d.r; if (x && typeof x === 'object' && (!m[r.id] || (+r.d.t || 0) > (+m[r.id].t || 0))) m[r.id] = Object.assign({}, x, { t: +r.d.t || 0 }); } return Object.keys(m).map(id => ({ id, d: m[id] })); }
   /* boss HP starts at 1.5M (boss of 14 Nov 03:33 KST) and grows 50k with every new boss; up to 3 gunslingers per player per boss */
   const WB_S0 = Math.floor((Date.UTC(2026, 10, 13, 18, 33) + KST) / SLOT);
   const wbHp = s => WB_HP + WB_HP_UP * Math.max(0, (s == null ? slotNow() : s) - WB_S0);
@@ -3571,7 +3573,7 @@ input { -webkit-user-select: text; user-select: text; }
   /* ================= friends ================= */
   function friendsBody() {
     const me = NET.uid;
-    const rows = rankDocs.map(r => ({ id: r.id, d: r.d })).filter(r => r.d && typeof r.d === 'object');
+    const rows = rankRows();
     if (!rows.some(r => r.id === me)) rows.push({ id: me || '__me', d: rankPayload() });
     else rows.forEach(r => { if (r.id === me) r.d = rankPayload(); });
     rows.sort((a, b) => (+b.d.pw || 0) - (+a.d.pw || 0) || (+b.d.st || 0) - (+a.d.st || 0));
@@ -3637,14 +3639,38 @@ input { -webkit-user-select: text; user-select: text; }
     },
     async afterLogin() {
       const self = this;
-      await this.loadCloud();
       this.api.sub('rank', docs => { rankDocs = docs; self.resolveNames(); if (tab === 'boss') render(); if (popKind === 'friends') refreshPop(friendsBody()); });
       this.api.sub('bosshits', docs => { hitDocs = docs; if (tab === 'boss') render(); else badges(); });
-      this.presence(); this.sync();
+      await this.bootLoad('start');
       setInterval(() => this.presence(true), 30000);
       setInterval(() => this.sync(), 60000);
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persist(true); else { this.presence(true); this.sync(); } });
+      /* leaving (tab hidden / app closed): save locally and push to the account right away.
+         coming back after 3+ minutes away: run the loading screen again (version, account save, ranking). */
+      const leave = () => { persist(true); this.hiddenAt = Date.now(); this.lastPres = ''; this.sync(); };
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); else if (!S && Date.now() - (this.hiddenAt || Date.now()) > 180000) this.bootLoad('back'); else { this.presence(true); this.sync(); } });
+      window.addEventListener('pagehide', leave);
       render();
+    },
+    /* ---- loading screen: every start (and every return after a break) is guaranteed to be fresh ---- */
+    booting: false, hiddenAt: 0,
+    async bootLoad(why) {
+      if (this.booting) return; this.booting = true;
+      const wait = ms => new Promise(r => setTimeout(r, ms)), lim = (pr, ms) => Promise.race([pr, wait(ms).then(() => 'timeout')]);
+      const steps = ['최신 버전 확인', '계정 진행 상황 불러오기', '랭킹에 내 정보 올리기', '친구 랭킹 받기'], st = steps.map(() => 'wait');
+      let box = $('bootL'); if (!box) { box = document.createElement('div'); box.id = 'bootL'; box.style.cssText = 'position:fixed;inset:0;z-index:900;display:grid;place-items:center;background:rgba(14,22,34,.96);padding:24px'; document.body.appendChild(box); }
+      const draw = msg => { box.hidden = false; box.innerHTML = '<div style="width:min(340px,100%);display:grid;gap:14px;color:#fff;text-align:center"><b class="ol" style="font-family:var(--display);font-size:28px">찍먹메타</b><p style="margin:0;font-size:15px;opacity:.9">' + (msg || (why === 'back' ? '다시 오셨네요! 최신 정보로 맞추는 중이에요…' : '로딩 중입니다…')) + '</p><div style="display:grid;gap:8px;text-align:left;background:rgba(255,255,255,.07);border-radius:14px;padding:12px 14px">' + steps.map((t, i) => '<div style="display:flex;gap:10px;align-items:center;font-size:15px;opacity:' + (st[i] === 'wait' ? '.45' : '1') + '"><span style="width:22px;text-align:center">' + ({ wait: '·', run: '⏳', ok: '✅', warn: '⚠️' })[st[i]] + '</span>' + t + '</div>').join('') + '</div><p style="margin:0;font-size:12px;opacity:.6">' + APP_VER + '</p></div>'; };
+      const set = (i, v, msg) => { st[i] = v; draw(msg); };
+      try {
+        set(0, 'run');
+        if (window.__jmVerGate) { const r = await lim(window.__jmVerGate(), 9000).catch(() => null); if (r === 'reload') { draw('새 버전으로 바꾸는 중이에요…'); return; } }
+        set(0, 'ok'); await wait(250);
+        set(1, 'run'); let ok = false; for (let k = 0; k < 3 && !ok; k++) { ok = await this.loadCloud(); if (!ok) await wait(1500); }
+        if (this.choosing) { box.hidden = true; while (this.choosing) await wait(300); }
+        set(1, ok ? 'ok' : 'warn', ok ? '' : '계정 저장을 못 불러왔어요. 연결되면 자동으로 다시 맞춰요.'); await wait(250);
+        set(2, 'run'); this.lastRank = ''; this.lastPres = ''; this.presence(true); await lim(this.sync(), 20000); set(2, this.syncErr ? 'warn' : 'ok'); await wait(250);
+        set(3, 'run'); for (let k = 0; k < 20 && !rankDocs.length; k++) await wait(200); set(3, rankDocs.length ? 'ok' : 'warn'); await wait(450);
+      } catch (e) {}
+      box.hidden = true; this.booting = false; render();
     },
     /* ---- cloud save safety ----
        The cloud copy is never overwritten until it has been read successfully this session, and never by a save with
@@ -3713,7 +3739,7 @@ input { -webkit-user-select: text; user-select: text; }
       const p = { n: save.name, s: save.unlocked, p: S && !S.over ? 1 : 0, v: APP_VER };
       const k = JSON.stringify(p);
       if (k === this.lastPres && !force) return;
-      this.lastPres = k; this.api.presence(p);
+      this.lastPres = k; const rp = rankPayload(); delete rp.t; p.r = rp; this.api.presence(p);
     },
     async initFirebase() {
       const jm = await window.jmReady;
@@ -3746,7 +3772,7 @@ input { -webkit-user-select: text; user-select: text; }
           names: null
         };
         const applyPres = () => { const now = Date.now(); peers = {}; for (const r of presRaw) { lastSeen[r.id] = { t: +r.d.t || 0, v: String(r.d.v || '') }; if (now - (+r.d.t || 0) < 75000) peers[r.id] = r.d; } if (popKind === 'friends') refreshPop(friendsBody()); };
-        jm.sub('presence', docs => { presRaw = docs; applyPres(); });
+        jm.sub('presence', docs => { presRaw = docs; presDocs = docs; applyPres(); });
         setInterval(applyPres, 20000);
         await this.afterLogin();
       });
@@ -3992,6 +4018,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (popKind === 'settings') refreshPop(settingsBody());
     };
     window.__jmCheck = check;
+    window.__jmVerGate = async () => { const r = await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }); const m = (await r.text()).match(/APP_VER = '(v\.\d{6}-\d{4})'/); if (m && m[1] > APP_VER && !blocked(m[1])) { pendingVer = m[1]; go(m[1]); return 'reload'; } return m ? m[1] : null; };
     setTimeout(check, 8000);
     setInterval(check, 60000);
     window.addEventListener('focus', check); window.addEventListener('online', check);
@@ -4019,7 +4046,7 @@ const firebaseConfig = {
 const B = "https://www.gstatic.com/firebasejs/10.14.1/";
 try {
   const [{ initializeApp }, A, F] = await Promise.all([import(B + "firebase-app.js"), import(B + "firebase-auth.js"), import(B + "firebase-firestore.js")]);
-  const app = initializeApp(firebaseConfig), auth = A.getAuth(app), db = F.getFirestore(app);
+  const app = initializeApp(firebaseConfig), auth = A.getAuth(app), db = F.initializeFirestore(app, { experimentalForceLongPolling: true }); /* long polling: works in in-app browsers and strict networks where the streaming channel stalls */
   try { await A.getRedirectResult(auth); } catch (e) {}
   window.__jmResolve({
     configured: true,
