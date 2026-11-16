@@ -542,7 +542,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1933';
+  const APP_VER = 'v.261116-2029';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1544,6 +1544,14 @@ input { -webkit-user-select: text; user-select: text; }
         if (ex) ex.s = 24; else save.coll.push({ n: c.n, e: c.e, s: 24, dc: 0 }); got.push(NMS[c.n] + '(' + c.e.map(x => EGL[x]).join('') + ')'); }
       const over = save.coll.length - capOf(); if (over > 0) save.capBuy = Math.min(190, save.capBuy + over);
       out.push('★24 4속성 총잡이 ' + got.length + '명: ' + got.join(' · ')); }
+    /* gift: k random mythics with 2 strong elements (★0, a strong element this player doesn't own yet for that gunslinger) */
+    if (r.myxb) { const got = []; for (let i = 0; i < r.myxb; i++) { const own = new Set(save.coll.filter(u => u.m).map(ukey)), opts = [];
+        for (let n = 0; n < NMS.length; n++) for (let se = 0; se < 5; se++) if (!own.has(ukey({ n, e: [0, 1, 2, 3, 4], m: 1, se }))) opts.push([n, se]);
+        if (!opts.length) break; const [n, se] = opts[Math.floor(Math.random() * opts.length)], xo = [0, 1, 2, 3, 4].filter(x => x !== se), nu = { n, e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se, xb: xo[Math.floor(Math.random() * xo.length)] };
+        save.coll.push(nu); got.push(NMS[n] + ' (강속성 ' + ENM[se] + '·' + ENM[nu.xb] + ')');
+        setTimeout(() => legendFlash(face(HATS[n], uCol(nu), { n }), '🎁 2강속 신화 선물!', NMS[n] + ' · 강속성 ' + ENM[se] + '·' + ENM[nu.xb]), 600); }
+      const over = save.coll.length - capOf(); if (over > 0) save.capBuy = Math.min(190, save.capBuy + over);
+      out.push('2강속 신화 ' + got.join(' · ')); }
     if (r.maxGear) { let k = 0; for (const sl of ['w', 'h', 'n']) { const id = save.gear[sl], d = id && save.items[id]; if (d) { d.lv = GMAX[iG(id)]; k++; } } out.push('장착 장비 ' + k + '개 최대 레벨'); }
     if (r.maxPet) { let k = 0; for (const pid of save.pslot) { const x = pid && save.pcoll.find(q => q.id === pid); if (x) { x.s = PET_MAX; k++; } } out.push('장착 펫 ' + k + '마리 ★' + PET_MAX); }
     if (r.runs) { const k = r.runs; let it = dropItems(k, ODDS.eliteWin).length + dropItems(6 * k, ODDS.eliteBoss).length + dropItems(Math.round(k * .03), ODDS.rare).length;
@@ -2505,6 +2513,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'g261116xb', to: ['박현호', '서정욱'], t: '🎁 운영자 선물', s: '강속성 2개 신화 총잡이 1명 (랜덤)', r: { myxb: 1 }, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261116p', t: '🔥 새 모드 「계약의 지옥」', s: '악몽 30을 깨면 열려요. 악몽 40급 판에 계약을 직접 쌓아 난이도를 올리고, 열기 1마다 보상 +8%. 30분마다 바뀌는 역풍 계약은 열기 2배. 열기 20부터 최종 보스 「계약자」 등장. 인장으로 강속성 재설정권·전설 탄띠·무법자의 손 조각을 사요. 최고 열기 30이면 「계약자의 망토」(최고 열기만큼 성장)!', r: {}, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
@@ -2512,7 +2521,7 @@ input { -webkit-user-select: text; user-select: text; }
   const leftTxt = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간' : h ? h + '시간 ' + m + '분' : m + '분'; };
   function mailItems() {
     const out = [];
-    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until && (!n.to || save.name === n.to)) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
+    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until && (!n.to || [].concat(n.to).some(x => String(save.name || '').replace(/\s/g, '') === x))) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
     return out;
   }
