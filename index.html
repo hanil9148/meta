@@ -429,7 +429,11 @@ input { -webkit-user-select: text; user-select: text; }
 .hpb svg { position: absolute; left: 0; top: -4px; width: 38px; height: 38px; z-index: 1; }
 .hpb .bar { height: 24px; border-radius: 12px; }
 .hpb .bar b { font-size: 14px; line-height: 18px; }
-.bslots { display: flex; gap: 4px; }
+.bslots { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.bsr { display: flex; gap: 4px; }
+.bslot.sm { width: 26px; height: 26px; border-width: 2px; border-radius: 6px; }
+.bslot.sm em { font-size: 10px; }
+.bsl-empty { font-size: 10px; color: var(--dim); font-family: var(--display); line-height: 26px; }
 .bslot { position: relative; width: 40px; height: 40px; border: 3px solid var(--ink); border-radius: 8px; background: rgba(20,32,47,.8); overflow: hidden; }
 .bslot svg { width: 100%; height: 100%; display: block; }
 .bslot em { position: absolute; right: 1px; bottom: 0; font-style: normal; font-family: var(--display); font-size: 11px; }
@@ -534,7 +538,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1803';
+  const APP_VER = 'v.261116-1833';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -710,6 +714,9 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'last', nm: '최후의 저항', un: 80, c1: '#c8d8ff', c2: '#2a3a6a', d: '거점 체력이 30% 아래로 떨어지면 5초 동안 무적 + 주변 대폭발. 한 판에 1번.' },
     { id: 'mark', nm: '현상금 표적', un: 99, c1: '#ff5a5a', c2: '#5a0a0a', d: '8초마다 체력이 가장 많은 적에게 표적을 찍어요. 4초 동안 받는 피해 +30% (레벨마다 +5%).' },
     { id: 'rain', nm: '탄막 폭격', un: 113, c1: '#ffd23f', c2: '#5a3a0a', d: '10초마다 하늘에서 총알 20발이 쏟아져요. 한 발에 공격력 200% (레벨마다 +20%).' },
+    { id: 'turret', nm: '회전 포탑', un: 138, c1: '#8fd0ff', c2: '#1a3a5a', d: '거점 앞에 포탑 2기가 생겨 0.3초마다 몹이 가장 몰린 곳에 폭발탄(공격력 80%, 범위)을 쏴요. (레벨마다 +10%)' },
+    { id: 'exec', nm: '처형 명령', un: 148, c1: '#ff4a6a', c2: '#4a0a1a', d: '6초마다 체력 25% 이하인 적을 모두 처형해요. 보스는 대신 현재 체력의 10%를 깎아요(절대 보스 제외). (레벨마다 +1%p)' },
+    { id: 'warp', nm: '시간 왜곡장', un: 158, c1: '#c8a0ff', c2: '#2a1a5a', d: '웨이브마다 1번, 거점 앞에 몹이 몰리면 넓은 구역을 3초 멈추고 그동안 받는 피해 +30%. 절대 보스는 안 멈춰요. (레벨마다 +0.2초 · +5%)' },
     { id: 'rally', nm: '결전의 함성', un: 128, c1: '#ff9a3a', c2: '#5a1a0a', d: '웨이브가 시작되면 6초 동안 모든 피해 +40% · 치명타 +15% (레벨마다 +5% · +2%).' }
   ];
   const SKM = {}; SK.forEach(s => SKM[s.id] = s);
@@ -737,6 +744,9 @@ input { -webkit-user-select: text; user-select: text; }
       ice: '<path d="M10 40l26-26 6 6-26 26Z" fill="#e8fbff" stroke="#2a6aa8" stroke-width="2.6"/><path d="M38 12l8 8M42 10l-2 4M48 16l-4 2" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
       mark: '<circle cx="28" cy="28" r="15" fill="none" stroke="#fff" stroke-width="3.5"/><circle cx="28" cy="28" r="6" fill="#ff3a3a" stroke="#5a0a0a" stroke-width="2.4"/><path d="M28 6v10M28 40v10M6 28h10M40 28h10" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>',
       rain: '<path d="M12 10l4 14M24 6l4 14M36 10l4 14M18 28l4 14M30 26l4 14M42 28l4 14" stroke="#fff6c8" stroke-width="5" stroke-linecap="round"/><path d="M12 10l4 14M24 6l4 14M36 10l4 14M18 28l4 14M30 26l4 14M42 28l4 14" stroke="#ffb020" stroke-width="2.4" stroke-linecap="round"/>',
+      turret: '<rect x="14" y="30" width="28" height="14" rx="3" fill="#c8d8e8" stroke="#1a3a5a" stroke-width="2.6"/><circle cx="28" cy="28" r="9" fill="#8fd0ff" stroke="#1a3a5a" stroke-width="2.6"/><path d="M30 26l16-10" stroke="#1a3a5a" stroke-width="6" stroke-linecap="round"/><path d="M30 26l16-10" stroke="#e8f4ff" stroke-width="2.4" stroke-linecap="round"/>',
+      exec: '<path d="M14 44 40 14M18 14l24 30" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="28" cy="28" r="7" fill="#ff4a6a" stroke="#4a0a1a" stroke-width="2.4"/>',
+      warp: '<circle cx="28" cy="28" r="16" fill="none" stroke="#e8d8ff" stroke-width="3" stroke-dasharray="5 4"/><path d="M28 16v12l8 6" stroke="#fff" stroke-width="3.4" stroke-linecap="round" fill="none"/><circle cx="28" cy="28" r="3" fill="#c8a0ff"/>',
       rally: '<path d="M10 22h8l16-10v32L18 34h-8Z" fill="#ffe0b0" stroke="#5a1a0a" stroke-width="2.6" stroke-linejoin="round"/><path d="M40 20c4 4 4 12 0 16M44 15c7 7 7 19 0 26" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
       grav: '<path d="M28 28m-16 0a16 16 0 1 0 32 0 12 12 0 1 0-24 0 8 8 0 1 0 16 0 4 4 0 1 0-8 0" fill="none" stroke="#e8c8ff" stroke-width="3.2"/>',
       atk: '<path d="M14 42l20-20M30 14h12v12" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -1119,9 +1129,9 @@ input { -webkit-user-select: text; user-select: text; }
      Made from five ★22+ gunslingers (random name + strong element), starting again from ★0. */
   const MYTH_NEED = 5, MYTH_STAR = 22;
   /* mythic tuning (boss specialists 성민·금유, 해천 damage + no-regen, 진명 burn slow) */
-  const MYB = { sb: 1.8, sd: 1.3, gb: 3.3, gd: 1.4, gg: 1, js: .3, hf: 1.2, hs: 1, hd: 1.15, wd: 1.62, wg: .64, wm: 1.38, he: .6, bx: .5, ds: .95, dq: 1.7, kc: 1, hx: 2 };
+  const MYB = { sb: 1.8, sd: 1.3, gb: 3.3, gd: 1.4, gg: 1, js: .3, hf: 1.2, hs: 1, hd: 1.15, wd: 1.62, wg: .64, wm: 1.38, he: .6, bx: .5, ds: .95, dq: 1.7, kc: 1, hx: 2, fo: 1.25, rbm: .4 };
   const MYTHT = [
-    { nm: '백발백중', d: '1인 몹 담당 · 치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통 · 체력 20% 이하 적에게 피해 +60% · 킬 체인: 치명타로 처치하면 남은 피해가 다음 적에게 튕겨요(최대 3번) · 약점 표식: 맞은 적은 3초 동안 모든 아군에게 받는 피해 +5%' }, { nm: '속사포', d: '보스 담당 · 보스부터 노려요 · 체력 20% 이하 보스에게 피해 +50% · 공격 속도 +60% · 피해 +30% · 보스 피해 +180% · 같은 적을 계속 쏘면 1발마다 피해 +2% (최대 +90%)' }, { nm: '거인 사냥꾼', d: '보스 담당 · 보스부터 노려요 · 체력 20% 이하 보스에게 피해 +50% · 보스 피해 +330% · 모든 피해 +40% · 체력이 많은 적일수록 피해 최대 +100%' }, { nm: '대지 분쇄', d: '잡몹 담당 · 범위 피해 반경 1.8배 · 범위 피해 95% · 5번째 공격마다 지진(넓은 범위 170%) · 범위 피해도 치명타 적용' },
+    { nm: '백발백중', d: '1인 몹 담당 · 치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통 · 체력 20% 이하 적에게 피해 +60% · 킬 체인: 치명타로 처치하면 남은 피해가 다음 적에게 튕겨요(최대 3번) · 약점 표식: 맞은 적은 3초 동안 모든 아군에게 받는 피해 +5%' }, { nm: '속사포', d: '보스 담당(메인·절대·스테이지 보스 우선 · 악몽 일반·중간 보스에게는 보스 피해 40%만) · 집중 사격(폭발·연쇄 없음, 단일 피해 +25%) · 보스부터 노려요 · 체력 20% 이하 보스에게 피해 +50% · 공격 속도 +60% · 피해 +30% · 보스 피해 +180% · 같은 보스를 계속 쏘면 1발마다 피해 +2% (최대 +90%, 보스에게만 쌓여요)' }, { nm: '거인 사냥꾼', d: '보스 담당 · 집중 사격(폭발·연쇄 없음, 단일 피해 +25%) · 보스부터 노려요 · 체력 20% 이하 보스에게 피해 +50% · 보스 피해 +330% · 모든 피해 +40% · 체력이 많은 적일수록 피해 최대 +100%' }, { nm: '대지 분쇄', d: '잡몹 담당 · 범위 피해 반경 1.8배 · 범위 피해 95% · 5번째 공격마다 지진(넓은 범위 170%) · 범위 피해도 치명타 적용' },
     { nm: '지옥불', d: '제어 담당 · 아직 안 불탄 적부터 노려 전체에 화상을 걸어요 · 화상 피해 7배 · 주변 적에게 화상이 번짐 · 불타는 적에게 피해 +60% · 불붙은 적 이동 속도 -30% · 화상도 치명타 적용' }, { nm: '절대 영도', d: '제어 담당 · 아직 안 언 적부터 노려 전체를 얼려요 · 25% 확률로 1초 빙결 · 모든 피해 +15% · 얼어 있는 적에게 피해 +120% · 언 적을 때리면 주변에 얼음 파편(100%) · 맞은 적은 3초 동안 재생 불가' }, { nm: '폭풍 연사', d: '잡몹 담당 · 항상 3연사 · 총알 피해 +62% · 총알마다 64% 확률로 회오리(주변 138% 피해) · 회오리가 주변 몹을 한곳으로 끌어모아요(다른 범위 공격과 시너지)' }, { nm: '천둥 사슬', d: '연쇄 5회 · 연쇄 피해 125% · 멀리 튕김 · 연쇄도 치명타 적용' }
   ];
   const uCol = u => EC[u.m ? u.se : u.e[0]];
@@ -1245,7 +1255,7 @@ input { -webkit-user-select: text; user-select: text; }
     const el = u.e.slice(), o = { dmg, iv, el, burn, slow, chain, splash, twin };
     if (u.m) {
       o.dmg *= 1.3; el.se = u.se; o.se = u.se; if (u.xb != null) el.xb = u.xb;
-      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; el.exe1 = MYB.he; el.kc = 1; el.mk5 = 1; o.dmg *= MYB.hx; } else if (u.n === 1) { o.iv /= 1.6; o.ramp = 1; o.rampMax = 45; el.boss = MYB.sb; o.dmg *= MYB.sd; el.bexe = MYB.bx; o.bf = 1; } else if (u.n === 2) { el.boss = MYB.gb; o.dmg *= MYB.gd; el.giant = MYB.gg; el.bexe = MYB.bx; o.bf = 1; } else if (u.n === 3) { o.splash = 61; o.spm = MYB.ds; el.sc = 1; o.quake = 1; o.qm = MYB.dq; }
+      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; el.exe1 = MYB.he; el.kc = 1; el.mk5 = 1; o.dmg *= MYB.hx; } else if (u.n === 1) { o.iv /= 1.6; o.ramp = 1; o.rampMax = 45; el.boss = MYB.sb; o.dmg *= MYB.sd * MYB.fo; el.bexe = MYB.bx; o.bf = 2; el.rb = 1; o.splash = 0; o.chain = 0; } else if (u.n === 2) { el.boss = MYB.gb; o.dmg *= MYB.gd * MYB.fo; el.giant = MYB.gg; el.bexe = MYB.bx; o.bf = 1; o.splash = 0; o.chain = 0; } else if (u.n === 3) { o.splash = 61; o.spm = MYB.ds; el.sc = 1; o.quake = 1; o.qm = MYB.dq; }
       else if (u.n === 4) { o.burn = 2.8; o.bsp = 80; el.sc = 1; el.ign = .6; el.bsl = MYB.js; o.ccai = 'burn'; } else if (u.n === 5) { o.frz = .25; el.fzb = MYB.hf; el.shat = 1; el.shm = MYB.hs; el.nr = 1; o.dmg *= MYB.hd; o.ccai = 'frz'; } else if (u.n === 6) { o.twin = 2; el.gale = MYB.wg; el.galm = MYB.wm; o.dmg *= MYB.wd; el.pull = .25; } else if (u.n === 7) { o.chain = 5; o.chm = 1.25; o.chr = 140; el.sc = 1; }
     }
     { const B = beltOn(); if (B && B.h === u.n) { const f = B.f; if (!u.m) o.dmg *= 1 + .1 * f;
@@ -2762,16 +2772,18 @@ input { -webkit-user-select: text; user-select: text; }
     const m = emul(els, e);
     let a = base * m;
     if (els && els.length) a *= 1 + S.g.el + (els.sye || 0);
-    if (e.k === 'boss') a *= 1 + S.g.boss + S.r.boss + (els && els.boss || 0);
+    const realB = e.k === 'boss' && !(e.nb != null && e.nb < 2);
+    if (e.k === 'boss') a *= 1 + S.g.boss + S.r.boss + (els && els.boss ? (!els.rb || realB ? els.boss : els.boss * MYB.rbm) : 0);
     if (e.half) a *= .5;
     if (els && els.exe1 && e.hp < e.mh * .2) a *= 1 + els.exe1;
-    if (els && els.bexe && e.k === 'boss' && e.hp < e.mh * .2) a *= 1 + els.bexe;
+    if (els && els.bexe && e.k === 'boss' && (!els.rb || realB) && e.hp < e.mh * .2) a *= 1 + els.bexe;
     if (S.gle && els && els.length) { let gm = 0; for (const x of els) if (S.gle[x] > gm) gm = S.gle[x]; a *= 1 + gm; }
     if (m > 1 && S.r.weak) a *= 1 + S.r.weak;
     if (S.r.exe && e.hp < e.mh * .3) a *= 1 + S.r.exe;
     if (e.cor > 0) a *= 1 + e.cv;
     if (e.mk > 0) a *= 1 + e.mkv;
     if (e.hk > 0) a *= 1.05;
+    if (e.wv > 0) a *= 1 + (S.warpV || .3);
     if (els && els.mk5) e.hk = 3;
     if (e.frz > 0 && els && els.fzb) a *= 1 + els.fzb;
     /* elite: monsters take 5% less damage, 30% less from elite stage 40 */
@@ -2847,12 +2859,12 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function updShooters(dt) {
     /* targeting AI: boss specialists hit bosses first (the one closest to the fort); 해천 / 진명 spread CC to enemies not yet frozen / burning */
-    const tg0 = front(); let bossT = null, frzT = null, brnT = null, bv = -1e9, fv = -1e9, rv = -1e9;
-    for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; const v = e.x - edgeX(e.y); if (e.k === 'boss' && v > bv) { bv = v; bossT = e; } if (!(e.frz > 0) && !e.cci && v > fv) { fv = v; frzT = e; } if (!(e.burn > 0) && v > rv) { rv = v; brnT = e; } }
+    const tg0 = front(); let bossT = null, rbT = null, frzT = null, brnT = null, bv = -1e9, qv = -1e9, fv = -1e9, rv = -1e9;
+    for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; const v = e.x - edgeX(e.y); if (e.k === 'boss' && v > bv) { bv = v; bossT = e; } if (e.k === 'boss' && !(e.nb != null && e.nb < 2) && v > qv) { qv = v; rbT = e; } if (!(e.frz > 0) && !e.cci && v > fv) { fv = v; frzT = e; } if (!(e.burn > 0) && v > rv) { rv = v; brnT = e; } }
     const spdm = (1 + S.pass.spd * .12 + S.g.spd) * (1 + S.r.spd) * (S.rapid > 0 ? 2 : 1);
     if (S.rapid > 0) S.rapid -= dt;
     for (const s of S.sh) {
-      const tg = s.st && s.st.bf && bossT ? bossT : s.st && s.st.ccai === 'frz' && frzT ? frzT : s.st && s.st.ccai === 'burn' && brnT ? brnT : tg0;
+      const tg = s.st && s.st.bf === 2 && (rbT || bossT) ? (rbT || bossT) : s.st && s.st.bf === 1 && bossT ? bossT : s.st && s.st.ccai === 'frz' && frzT ? frzT : s.st && s.st.ccai === 'burn' && brnT ? brnT : tg0;
       if (s.robot) { s.x = S.robo.x - 14; s.y = S.robo.y + 6; }
       s.cd -= dt; s.fl -= dt;
       if (tg) s.ang = Math.atan2(tg.y - s.y, tg.x - s.x);
@@ -2860,7 +2872,7 @@ input { -webkit-user-select: text; user-select: text; }
       /* fast shooters may fire several times in one frame (attack speed is no longer capped by the frame rate) */
       for (let shot = 0; tg && s.cd <= 0 && shot < 8; shot++) {
         fireAt(s, tg); if (s.u && s.u.m) myShot(s);
-        if (s.st.ramp) { s.rk = s.rt === tg ? Math.min(s.st.rampMax || 30, (s.rk || 0) + (s.st.rampInc || 1)) : 0; s.rt = tg; S.bul[S.bul.length - 1].dmg *= 1 + .02 * s.rk; }
+        if (s.st.ramp) { /* 성민: the streak bonus only builds while shooting a boss */ s.rk = tg.k === 'boss' && s.rt === tg ? Math.min(s.st.rampMax || 30, (s.rk || 0) + (s.st.rampInc || 1)) : 0; s.rt = tg; S.bul[S.bul.length - 1].dmg *= 1 + .02 * s.rk; }
         if (s.st.quake && (s.qc = (s.qc || 0) + 1) % (s.st.quake > 1 ? s.st.quake : 5) === 0) { S.bul[S.bul.length - 1].quake = 1; S.bul[S.bul.length - 1].qm = s.st.qm || 1.5; }
         if (S.r.smash && (s.cnt = (s.cnt || 0) + 1) % 5 === 0) { const b = S.bul[S.bul.length - 1]; b.dmg *= 1 + S.r.smash; b.big = 1; }
         if (S.g.dbl && Math.random() < S.g.dbl) fireAt(s, tg);
@@ -2906,8 +2918,8 @@ input { -webkit-user-select: text; user-select: text; }
     S.bul = S.bul.filter(b => !b.dead);
   }
   /* active skills */
-  const SKCD = { mark: 8, rain: 10, venom: 2.4, solar: 4.5, web: 6, cannon: 3.2, frost: 5, plasma: 2.8, cloud: 6.5, shuri: 1.9, grav: 7.5, rapid: 12, tnt: 5.5, prush: 7 };
-  const PASSIVE_SK = { ice: 1, reson: 1, bounty: 1, last: 1, rally: 1 };
+  const SKCD = { exec: 6, mark: 8, rain: 10, venom: 2.4, solar: 4.5, web: 6, cannon: 3.2, frost: 5, plasma: 2.8, cloud: 6.5, shuri: 1.9, grav: 7.5, rapid: 12, tnt: 5.5, prush: 7 };
+  const PASSIVE_SK = { ice: 1, reson: 1, bounty: 1, last: 1, rally: 1, warp: 1 };
   function lastStand() {
     S.lastUsed = true; const l = S.sk.last.l; S.inv = 5 + .5 * (l - 1);
     const P = skPow('last') * 6 * (1 + .25 * (l - 1));
@@ -2918,6 +2930,8 @@ input { -webkit-user-select: text; user-select: text; }
     if (S.inv > 0) { S.inv -= dt; S.domeHit = Math.max(S.domeHit, .05); }
     if (S.sk.last && !S.lastUsed && S.hp > 0 && S.hp < S.mh * .3) lastStand();
     if (S.rallyT > 0) S.rallyT -= dt;
+    if (S.sk.warp && S.warpW !== S.wave) { const near = S.en.filter(e => e.hp > 0 && e.x > edgeX(e.y) - 220); if (near.length >= 5) { S.warpW = S.wave; const l = S.sk.warp.l, tm = 3 + .2 * (l - 1); S.warpV = .3 + .05 * (l - 1);
+      for (const e of near) { if (e.cci) continue; e.frz = Math.max(e.frz, tm); e.wv = tm; } S.fx.push({ k: 'ring', x: DCX - 80, y: DCY, r: 240, l: .6, c: '#c8a0ff' }); S.banner = { t: 1.4, s: '시간 왜곡장!' }; Snd.zap(); } }
     if (S.kbIv) { S.kbT -= dt; if (S.kbT <= 0) { S.kbT = S.kbIv; const d = kbDist(save.kbl); let any = false;
       for (const e of S.en) { if (e.hp <= 0 || e.cci || e.x < edgeX(e.y) - 160) continue; e.x -= d * (e.k === 'boss' ? .3 : 1); e.at = false; e.fl = .06; any = true; }
       if (any) { S.fx.push({ k: 'ring', x: DCX - 20, y: DCY, r: 200, l: .35, c: '#9fe8ff' }); S.shake = Math.max(S.shake || 0, .2); } } }
@@ -2925,6 +2939,13 @@ input { -webkit-user-select: text; user-select: text; }
     for (const id in S.sk) {
       const k = S.sk[id], l = k.l;
       if (PASSIVE_SK[id]) continue;
+      if (id === 'turret') {
+        if (!S.tur) S.tur = [{ x: DCX - DRX * .55, y: DCY - 150, cd: .2 }, { x: DCX - DRX * .55, y: DCY + 150, cd: .35 }];
+        for (const T of S.tur) { T.cd -= dt; if (T.cd > 0) continue; T.cd = .3; const t = densest(55); if (!t) continue; T.a = Math.atan2(t.y - T.y, t.x - T.x);
+          const dmg = skPow('turret') * .8 * (1 + .1 * (l - 1)); for (const e of S.en) if (e.hp > 0 && Math.hypot(e.x - t.x, e.y - t.y) < 50) hit(e, dmg, [3], false, true);
+          if (vfx() || Math.random() < .3) { S.fx.push({ k: 'zap', x1: T.x, y1: T.y, x2: t.x, y2: t.y, l: .08 }); S.fx.push({ k: 'ring', x: t.x, y: t.y, r: 50, l: .2, c: '#8fd0ff' }); } }
+        continue;
+      }
       if (id === 'drone') {
         while (S.drones.length < l) S.drones.push({ a: Math.random() * 6, cd: Math.random() * .4 });
         for (const d of S.drones) {
@@ -2972,6 +2993,10 @@ input { -webkit-user-select: text; user-select: text; }
         let any = false;
         for (const s of S.sh) if (s.pet != null) { const st = s.ps || 0; any = true; S.fx.push({ k: 'shuri', pet: s.pet, x: s.x - 10, y: s.y, vx: -360, vy: 0, dmg: P * 2.2 * lm * (1 + .15 * st), l: 1.6, hits: [], rot: 0 }); }
         if (!any) k.t = 2;
+      } else if (id === 'exec') {
+        let any = false; const bp = .1 + .01 * (l - 1);
+        for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; if (e.k === 'boss') { if (e.cci) continue; const d = e.hp * bp; dmgAdd(S.curSrc, d); e.hp -= d; e.fl = .1; any = true; } else if (e.hp < e.mh * .25) { dmgAdd(S.curSrc, e.hp); e.hp = 0; any = true; S.fx.push({ k: 'ring', x: e.x, y: e.y, r: e.r + 10, l: .25, c: '#ff4a6a' }); } }
+        if (any) { S.banner = { t: .9, s: '처형 명령!' }; Snd.zap(); }
       } else if (id === 'mark') {
         let t = null; for (const e of S.en) if (e.hp > 0 && e.x > -60 && (!t || e.hp > t.hp)) t = e; if (!t) { k.t = .5; continue; }
         t.mk = 4; t.mkv = .3 + .05 * (l - 1); S.fx.push({ k: 'ring', x: t.x, y: t.y, r: t.r + 18, l: .45, c: '#ff4a4a' });
@@ -3029,6 +3054,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (e.mk > 0) e.mk -= dt;
       if (e.nr > 0) e.nr -= dt;
       if (e.hk > 0) e.hk -= dt;
+      if (e.wv > 0) e.wv -= dt;
       if (S.tstop > 0 && e.ts !== S.wave) { e.ts = S.wave; e.frz = Math.max(e.frz, S.tstop); }
       let sp = e.sp * S.fs;
       if (S.r.swamp && e.x > edgeX(e.y) - 110) sp *= 1 - S.r.swamp;
@@ -3079,7 +3105,7 @@ input { -webkit-user-select: text; user-select: text; }
   /* level up: 1 or 2 random picks (50/50); profile Lv80+ always 2 */
   function openLevelUp() {
     S.picks--;
-    const n = save.lv >= 80 || Math.random() < .5 ? 2 : 1, got = [];
+    const n = save.lv >= 148 ? 3 : save.lv >= 80 || Math.random() < .5 ? 2 : 1, got = []; /* 지존 50 (Lv148)+: 3 skills every level-up */
     for (let r = 0; r < n; r++) {
       const pool = [], act = Object.keys(S.sk).length;
       for (const s of SK) { if (!skUnlocked(s)) continue; const o = S.sk[s.id]; if (o ? o.l < 5 : act < 5) pool.push({ t: 'sk', id: s.id }); }
@@ -3087,7 +3113,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (!pool.length) break;
       const c = pool[Math.floor(Math.random() * pool.length)];
       if (c.t === 'sk') { if (S.sk[c.id]) S.sk[c.id].l++; else S.sk[c.id] = { l: 1, t: .5 }; got.push(SKM[c.id].nm + ' Lv ' + S.sk[c.id].l); }
-      else if (c.id === 'heal') { S.hp = Math.min(S.mh, S.hp + S.mh * .3); got.push('거점 수리 +30%'); }
+      else if (c.id === 'heal') { S.hp = Math.min(S.mh, S.hp + S.mh * .3); S.heals = (S.heals || 0) + 1; got.push('거점 수리 +30%'); }
       else { S.pass[c.id]++; got.push(PSM[c.id].nm + ' ' + S.pass[c.id]); }
     }
     if (!got.length) return;
@@ -3301,7 +3327,11 @@ input { -webkit-user-select: text; user-select: text; }
     $('bHpT').textContent = fmt(Math.ceil(S.hp));
     const ks = Object.keys(S.sk);
     let h = '';
-    for (let i = 0; i < 5; i++) h += ks[i] ? '<span class="bslot">' + skillIcon(ks[i]) + '<em class="ol-s">' + S.sk[ks[i]].l + '</em></span>' : '<span class="bslot"></span>';
+    /* skill bar split in two rows: active skills (5 slots) on top, every passive picked so far below (화력·빠른 손·급소 · 거점 수리 횟수) */
+    h += '<div class="bsr">'; for (let i = 0; i < 5; i++) h += ks[i] ? '<span class="bslot" title="' + SKM[ks[i]].nm + '">' + skillIcon(ks[i]) + '<em class="ol-s">' + S.sk[ks[i]].l + '</em></span>' : '<span class="bslot"></span>'; h += '</div>';
+    const pv = PASS.filter(p => p.id !== 'heal' && S.pass[p.id] > 0).map(p => '<span class="bslot sm" title="' + p.nm + '">' + skillIcon(p.id) + '<em class="ol-s">' + S.pass[p.id] + '</em></span>');
+    if (S.heals) pv.push('<span class="bslot sm" title="거점 수리">' + skillIcon('heal') + '<em class="ol-s">' + S.heals + '</em></span>');
+    h += '<div class="bsr">' + (pv.length ? pv.join('') : '<span class="bsl-empty ol-s">패시브 없음</span>') + '</div>';
     $('bSlots').innerHTML = h;
     $('bSpeed').innerHTML = '▶<br>X' + speed;
   }
@@ -4157,6 +4187,7 @@ input { -webkit-user-select: text; user-select: text; }
       else if (f.k === 'my') drawMyFx(c, f);
       else if (f.k === 'ring') { c.save(); c.globalAlpha = Math.max(0, f.l * 3); c.strokeStyle = f.c; c.lineWidth = 5; c.beginPath(); c.arc(f.x, f.y, f.r * (1.2 - f.l * 2), 0, 6.283); c.stroke(); c.restore(); }
     }
+    if (S.tur) for (const T of S.tur) { c.save(); c.translate(T.x, T.y); c.fillStyle = '#c8d8e8'; c.strokeStyle = INK; c.lineWidth = 2.4; c.beginPath(); c.roundRect(-12, 2, 24, 10, 3); c.fill(); c.stroke(); c.rotate(T.a || Math.PI); c.fillStyle = '#8fd0ff'; c.beginPath(); c.arc(0, 0, 8, 0, 6.283); c.fill(); c.stroke(); c.fillStyle = '#5a6a7a'; c.fillRect(4, -2.5, 14, 5); c.restore(); }
     for (const d of S.drones) { c.fillStyle = '#e8e8ff'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(d.x - 9, d.y - 6, 18, 12, 4); c.fill(); c.stroke(); c.fillStyle = '#ff4a4a'; c.fillRect(d.x - 2, d.y - 2, 4, 4); }
     for (const p of S.parts) { c.globalAlpha = Math.min(1, p.l * 2.5); c.fillStyle = p.c; c.fillRect(p.x - 2, p.y - 2, 4, 4); }
     c.globalAlpha = 1;
