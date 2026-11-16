@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1222';
+  const APP_VER = 'v.261116-1321';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -882,18 +882,18 @@ input { -webkit-user-select: text; user-select: text; }
   const sum = a => a.reduce((x, y) => x + y, 0);
   const totalPlays = () => sum(save.plays) + sum(save.el.plays) + sum(save.nm.plays) + save.tq.ar;
   const ACH = [
-    { id: 'kill', nm: '처치왕', ic: '💀', u: '마리 처치', g: [1e4, 3e4, 1e5, 3e5, 6e5, 1e6, 2e6, 4e6, 7e6, 1e7], v: () => save.kills, b: 'dmg', bv: .01 },
-    { id: 'play', nm: '백전노장', ic: '⚔', u: '판', g: [100, 300, 600, 1000, 2000, 3500, 5000, 7500, 10000, 15000], v: totalPlays, b: 'xp', bv: .05 },
-    { id: 'boss', nm: '보스 사냥꾼', ic: '👹', u: '마리 보스 처치', g: [50, 150, 400, 800, 1500, 3000, 5000, 8000, 12000, 20000], v: () => save.ach.bk, b: 'boss', bv: .02 },
-    { id: 'rare', nm: '행운의 사냥꾼', ic: '🍀', u: '마리 희귀 보스', g: [1, 3, 5, 10, 20, 35, 50, 75, 100, 150], v: () => save.rareK || 0, b: 'rare', bv: .001 },
-    { id: 'elite', nm: '정예 정복자', ic: '🟣', u: '단계 정예 클리어', g: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50], v: () => save.elOn ? save.el.unlocked - 1 + (save.el.reach[ESTAGES - 1] & 1) : 0, b: 'spd', bv: .01 },
-    { id: 'nm', nm: '악몽 돌파자', ic: '😈', u: '단계 악몽 클리어', g: [1, 3, 5, 8, 11, 14, 17, 20, 25, 30], v: () => save.nm.unlocked - 1 + (save.nm.reach[NSTAGES - 1] & 1), b: 'dr', bv: .015 },
-    { id: 'abyss', nm: '심연 탐험가', ic: '🕳', u: '층 심연 정복', g: [5, 10, 15, 20, 30, 40, 50, 70, 100, 150], v: () => save.ab.best, b: 'se', bv: .005 },
-    { id: 'myth', nm: '신화 수집가', ic: '✨', u: '명 신화 보유', g: [1, 2, 3, 4, 5, 6, 7, 8], v: () => save.coll.filter(u => u.m).length, b: 'cdm', bv: .025 },
-    { id: 'cube', nm: '큐브 장인', ic: '🎲', u: '번 큐브', g: [10, 50, 100, 250, 500, 1000, 2000, 3500, 5000, 8000], v: () => save.ach.cube, b: 'crit', bv: .005 },
-    { id: 'gold', nm: '황야의 부자', ic: '💰', u: ' 골드 벌기', g: [1e8, 5e8, 1e9, 5e9, 1e10, 3e10, 1e11, 3e11, 1e12, 3e12], v: () => save.ach.ge, b: 'cd', bv: .01 },
-    { id: 'perfect', nm: '완벽주의자', ic: '💎', u: '번 무피해 클리어', g: [10, 50, 100, 300, 600, 1000, 2000, 3500, 5000, 8000], v: () => save.ach.pf, b: 'hp', bv: .03 },
-    { id: 'lv', nm: '전설의 명인', ic: '👑', u: ' 프로필 레벨', g: [99, 110, 125, 140, 160, 180, 200, 230, 260, 296], v: () => save.lv, b: 'ag', bv: .05 }
+    { id: 'kill', nm: '처치왕', ic: '💀', u: '마리 처치', g: [4e4, 1.2e5, 4e5, 1.2e6, 2.4e6, 4e6, 8e6, 1.6e7, 2.8e7, 4e7], v: () => save.kills, b: 'dmg', bv: .01 },
+    { id: 'play', nm: '백전노장', ic: '⚔', u: '판', g: [400, 1200, 2400, 4000, 8000, 14000, 20000, 30000, 40000, 60000], v: totalPlays, b: 'xp', bv: .05 },
+    { id: 'boss', nm: '보스 사냥꾼', ic: '👹', u: '마리 보스 처치', g: [200, 600, 1600, 3200, 6000, 12000, 20000, 32000, 48000, 80000], v: () => save.ach.bk, b: 'boss', bv: .02 },
+    { id: 'rare', nm: '행운의 사냥꾼', ic: '🍀', u: '마리 희귀 보스', g: [4, 12, 20, 40, 80, 140, 200, 300, 400, 600], v: () => save.rareK || 0, b: 'rare', bv: .001 },
+    { id: 'elite', nm: '정예 정복자', ic: '🟣', u: '판 정예', g: [400, 1200, 2400, 4000, 6000, 9000, 13000, 18000, 24000, 32000], v: () => sum(save.el.plays), b: 'spd', bv: .01 },
+    { id: 'nm', nm: '악몽 돌파자', ic: '😈', u: '판 악몽', g: [100, 300, 600, 1000, 1600, 2400, 3500, 5000, 7000, 10000], v: () => sum(save.nm.plays), b: 'dr', bv: .015 },
+    { id: 'abyss', nm: '심연 탐험가', ic: '🕳', u: '층 심연 정복', g: [20, 40, 60, 80, 120, 160, 200, 280, 400, 600], v: () => save.ab.best, b: 'se', bv: .005 },
+    { id: 'myth', nm: '신화 수집가', ic: '✨', u: '개 신화 별 합계', g: [20, 40, 60, 80, 100, 120, 150, 180], v: () => save.coll.filter(u => u.m).reduce((a, u) => a + u.s, 0), b: 'cdm', bv: .025 },
+    { id: 'cube', nm: '큐브 장인', ic: '🎲', u: '번 큐브', g: [40, 200, 400, 1000, 2000, 4000, 8000, 14000, 20000, 32000], v: () => save.ach.cube, b: 'crit', bv: .005 },
+    { id: 'gold', nm: '황야의 부자', ic: '💰', u: ' 골드 벌기', g: [4e8, 2e9, 4e9, 2e10, 4e10, 1.2e11, 4e11, 1.2e12, 4e12, 1.2e13], v: () => save.ach.ge, b: 'cd', bv: .01 },
+    { id: 'perfect', nm: '완벽주의자', ic: '💎', u: '번 무피해 클리어', g: [40, 200, 400, 1200, 2400, 4000, 8000, 14000, 20000, 32000], v: () => save.ach.pf, b: 'hp', bv: .03 },
+    { id: 'lv', nm: '전설의 명인', ic: '👑', u: ' 프로필 레벨', g: [150, 175, 200, 215, 230, 245, 260, 275, 288, 296], v: () => save.lv, b: 'ag', bv: .05 }
   ];
   const ACH_B = { dmg: '모든 피해', xp: '프로필 경험치', boss: '보스 피해', rare: '희귀 보스 출현 확률', spd: '공격 속도', dr: '받는 피해 감소', se: '강속성', cdm: '치명타 피해', crit: '치명타', cd: '스킬 쿨타임 감소', hp: '거점 체력', ag: '심연 젬' };
   const ACH_C = ['#8a96a8', '#b4bfcc', '#5bd16a', '#3fa9f5', '#3fa9f5', '#c27bff', '#c27bff', '#ffb72e', '#ffb72e', '#ff6a3d', '#ff3a6a'];
@@ -1111,7 +1111,7 @@ input { -webkit-user-select: text; user-select: text; }
       unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], rings: {}, rslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, kbl: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0, ab: { fl: 1, best: 0, next: 0, got: {}, pend: 0 }, tq: { st: 0, runs: 0, kills: 0, rare: 0, eq: -1, er: 0, ar: 0 },
-      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, ach: { c: {}, eq: '', bk: 0, cube: 0, ge: 0, pf: 0, abs: 0 }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
+      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, ach: { c: {}, eq: 'lv', bk: 0, cube: 0, ge: 0, pf: 0, abs: 0, v2: 1 }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
     };
   }
   const ukey = u => u.n + '|' + u.e.join('') + (u.m ? '|m' + u.se : '');
@@ -1198,7 +1198,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.bl && typeof r.bl === 'object') for (const id in r.bl) if (validBid(id) && r.bl[id] >= 1) s.bl[id] = num(r.bl[id], 1, 1e6, 1);
     s.bslot = validBid(r.bslot) && s.bl[r.bslot] ? r.bslot : '';
     if (r.pot && typeof r.pot === 'object') for (const sl of ['w', 'h', 'n']) { const P = r.pot[sl]; if (P && Array.isArray(P.l) && P.l.length === 3) { const t = num(P.t, 0, 3, 0); s.pot[sl] = { t, f: num(P.f, 0, 999, 0), l: P.l.map(ln => [num(ln && ln[0], 0, POT.length - 1, 0), num(ln && ln[1], 0, t, t)]) }; } }
-    { const a = r.ach && typeof r.ach === 'object' ? r.ach : {}; s.ach = { c: {}, eq: ACH.some(A => A.id === a.eq) ? a.eq : '', bk: num(a.bk, 0, 1e12, 0), cube: num(a.cube, 0, 1e9, 0), ge: num(a.ge, 0, 1e16, 0), pf: num(a.pf, 0, 1e9, 0), abs: num(a.abs, 0, 1e9, 0) };
+    { const a = r.ach && typeof r.ach === 'object' ? r.ach : {}; s.ach = { c: {}, eq: ACH.some(A => A.id === a.eq) ? a.eq : '', bk: num(a.bk, 0, 1e12, 0), cube: num(a.cube, 0, 1e9, 0), ge: num(a.ge, 0, 1e16, 0), pf: num(a.pf, 0, 1e9, 0), abs: num(a.abs, 0, 1e9, 0), v2: a.v2 ? 1 : 0 };
       if (a.c && typeof a.c === 'object') for (const A of ACH) s.ach.c[A.id] = num(a.c[A.id], 0, A.g.length, 0); }
     s.dust = num(r.dust, 0, 1e12, 0); s.adis = r.adis ? 1 : 0; s.dis1 = r.dis1 ? 1 : 0; s.g3k = r.g3k ? 1 : 0; s.g2k = r.g2k ? 1 : 0;
     return s;
@@ -1206,8 +1206,11 @@ input { -webkit-user-select: text; user-select: text; }
   let save = fresh();
   try { save = loadFrom(JSON.parse(localStorage.getItem(KEY) || 'null')); } catch (e) {}
   /* one-time: the piles of old gear/rings are combined and the rest turned into dust (가루) */
-  let disNote = null;
+  let disNote = null, achNote = 0;
   function postLoad() {
+    /* medal goals were raised x4: tiers claimed under the old goals are rolled back (their gems taken back, never below 0) and can be cleared again */
+    /* marker kept by older builds too: eq = 'lv' (older loaders keep a valid medal id) */
+    if (!save.ach.v2 && save.ach.eq !== 'lv') { save.ach.v2 = 1; save.ach.eq = 'lv'; let g = 0; for (const A of ACH) { const c = save.ach.c[A.id] || 0; for (let i = 0; i < c; i++) g += achGem(i); save.ach.c[A.id] = 0; } if (g) { save.gem = Math.max(0, save.gem - g); achNote = g; } }
     /* the 3,000 elite-40 runs paid out as a gift to 류한일 count as played runs too */
     if (!save.g3k && save.name === '류한일') { save.g3k = 1; save.el.plays[39] += 3000; }
     /* asked later: take 2,000 of those back off the count */
@@ -3121,7 +3124,7 @@ input { -webkit-user-select: text; user-select: text; }
     let rdrops = [];
     if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
     if (S.rareK) { save.gem += 100 * GEMK; save.rareK = (save.rareK || 0) + 1; }
-    const xp = Math.round((2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1) * (S.elite && n >= 47 && n <= 49 ? 2 : 1) * (1 + (S.md ? S.md.xp : 0))); /* elite 30+: profile xp x2 · elite 47~49: another x2 */
+    const xp = Math.round((2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1) * (S.elite && n >= 47 && n <= 49 ? 2 : 1) * (nmS ? 2 + .1 * (nmS - 1) : 1) * (1 + (S.md ? S.md.xp : 0))); /* nightmare: x2 at stage 1 (= elite 47~49), +0.1 per stage */ /* elite 30+: profile xp x2 · elite 47~49: another x2 */
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
     const tk = nmS ? save.nm : S.elite ? save.el : save;
@@ -4213,7 +4216,8 @@ input { -webkit-user-select: text; user-select: text; }
     closePop(); rep.tot = d.tot; rep.done = d.done; rep.gold = +d.gold || 0; rep.gem = +d.gem || 0; rep.bonus = null; rep.left = rem - 1;
     toast('🔁 업데이트 완료 · 연속 전투 ' + (d.done + 1) + '/' + d.tot + '판째부터 이어서 진행해요'); startRun(); if (!S) { repStop(); render(); }
   }
-  function showDisNote() { if (!disNote) return; const r = disNote; disNote = null; setTimeout(() => openPop('🔨 가방 정리', '<p class="desc" style="color:#fff;text-align:center">악몽 모드 업데이트로 쌓여 있던 장비·반지를 정리했어요.<br>조합할 수 있는 건 먼저 <b>모두 조합</b>했고, 남은 <b>' + fmt(r.cnt) + '개</b>는 <b>가루 ' + fmt(r.d) + '</b>로 바꿨어요.</p><p class="desc" style="text-align:center">끼고 있는 것 · 전설 장비 · 영웅 이상 반지(종류별 1개) · 강화한 것은 그대로 남겼어요.<br>가루는 새 장비 <b>장갑</b>의 Lv30 이후 강화에 써요.</p><button class="btn y wide ol-s" data-act="close">확인</button>', 'disnote'), 800); }
+  function showDisNote() { if (achNote) { const g = achNote; achNote = 0; setTimeout(() => toast('🎖 훈장 목표가 4배로 올라서, 먼저 받은 훈장 단계와 젬 ' + fmt(g) + '개를 되돌렸어요. 새 목표로 다시 클리어해 주세요'), 1200); }
+    if (!disNote) return; const r = disNote; disNote = null; setTimeout(() => openPop('🔨 가방 정리', '<p class="desc" style="color:#fff;text-align:center">악몽 모드 업데이트로 쌓여 있던 장비·반지를 정리했어요.<br>조합할 수 있는 건 먼저 <b>모두 조합</b>했고, 남은 <b>' + fmt(r.cnt) + '개</b>는 <b>가루 ' + fmt(r.d) + '</b>로 바꿨어요.</p><p class="desc" style="text-align:center">끼고 있는 것 · 전설 장비 · 영웅 이상 반지(종류별 1개) · 강화한 것은 그대로 남겼어요.<br>가루는 새 장비 <b>장갑</b>의 Lv30 이후 강화에 써요.</p><button class="btn y wide ol-s" data-act="close">확인</button>', 'disnote'), 800); }
   const NET = {
     mode: 'none', uid: null, names: {}, api: null, lastRank: '', lastHits: '', lastCloud: '', busy: false,
     nameOf(id) { return (id && this.names[id]) || ''; },
