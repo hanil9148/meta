@@ -538,7 +538,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1833';
+  const APP_VER = 'v.261116-1906';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -651,7 +651,7 @@ input { -webkit-user-select: text; user-select: text; }
   /* Elite mode: its own 1..30 track (same fields as the normal one), unlocked once with gold after meeting the requirements. */
   const ELITE = { cost: 5000000, lv: 25, star: 21, nStar: 3, fort: 21, hp: 50000, def: .05, cnt: 1.15, spd: 1.15, atk: 1.8, gold: 2, gem: 5 };
   /* nightmare (악몽): opens after clearing elite 50. Runs as elite (S.elite) with S.nm = nightmare stage; its own track save.nm */
-  const NSTAGES = 30;
+  const NSTAGES = 50;
   const nmOpen = () => !!save.elOn && !!(save.el.reach[ESTAGES - 1] & 1);
   const isNm = () => save.mode === 'm' && nmOpen();
   const isElite = () => (save.mode === 'e' || isNm()) && !!save.elOn;
@@ -831,7 +831,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (o.atk) t.push('공격력 ' + pc(o.atk)); if (o.spd) t.push('공격 속도 ' + pc(o.spd)); if (o.crit) t.push('치명타 ' + pc(o.crit)); if (o.cdm) t.push('치명타 피해 ' + pc(o.cdm)); if (o.boss) t.push('보스 피해 ' + pc(o.boss));
     if (o.ele) t.push(ELN[G.e] + ' 속성 피해 ' + pc(o.ele)); if (o.el) t.push('모든 속성 피해 ' + pc(o.el)); if (o.dmg) t.push('피해 ' + pc(o.dmg)); if (o.se) t.push('강속성 ' + pc(o.se)); if (o.xs) t.push('치명타 때 ' + Math.round(o.xs * 100) + '% 확률로 한 발 더');
     return t.join(' · '); }
-  function gloveAll() { const o = { atk: 0, spd: 0, crit: 0, cdm: 0, boss: 0, el: 0, dmg: 0, se: 0, xs: 0, ele: [0, 0, 0, 0, 0] }; const k = save.gslot;
+  function gloveAll() { const o = { atk: 0, spd: 0, crit: 0, cdm: 0, boss: 0, el: 0, dmg: 0, se: 0, xs: 0, ele: [0, 0, 0, 0, 0] }; const k = PACT_NG ? -1 : save.gslot;
     if (k >= 0 && save.gl[k]) { const x = glStats(k); for (const st in x) { if (st === 'ele') o.ele[GLV[k].e] += x.ele; else o[st] += x[st]; } } return o; }
   function addGlove(k) { const ex = save.gl[k]; if (ex) ex.n++; else save.gl[k] = { n: 1, lv: 1 }; if (save.gslot < 0 || !save.gl[save.gslot]) save.gslot = k; return !ex; }
   function rollGlove() { let r = Math.random(), t = 0; if (r < GL_ODDS[2]) t = 2; else if (r < GL_ODDS[2] + GL_ODDS[1]) t = 1; const ks = GLV.map((g, i) => g.t === t ? i : -1).filter(i => i >= 0); return ks[Math.floor(Math.random() * ks.length)]; }
@@ -852,7 +852,7 @@ input { -webkit-user-select: text; user-select: text; }
   const bkey = (h, g) => 'b' + h + g, bH = id => +id[1], bGr = id => +id[2], validBid = id => typeof id === 'string' && /^b[0-7][0-2]$/.test(id);
   const beltName = id => BG3[bGr(id)].nm + ' ' + BELT[bH(id)].nm;
   const beltTxt = id => BELT[bH(id)].d(BG3[bGr(id)].f);
-  function beltOn() { const id = save.bslot; return id && save.bl[id] ? { h: bH(id), f: BG3[bGr(id)].f } : null; }
+  function beltOn() { if (PACT_NG) return null; const id = save.bslot; return id && save.bl[id] ? { h: bH(id), f: BG3[bGr(id)].f } : null; }
   function addBelt(id) { save.bl[id] = (save.bl[id] || 0) + 1; if (!save.bslot || !save.bl[save.bslot] || (bH(save.bslot) === bH(id) && bGr(save.bslot) < bGr(id))) save.bslot = id; }
   function rollBelt() { const r = Math.random(), g = r < BL_ODDS[2] ? 2 : r < BL_ODDS[2] + BL_ODDS[1] ? 1 : 0; return bkey(Math.floor(Math.random() * 8), g); }
   function combineBelts() { const made = []; for (let g = 0; g < 2; g++) for (let h = 0; h < 8; h++) { const id = bkey(h, g); while ((save.bl[id] || 0) >= 3 + (save.bslot === id ? 1 : 0)) { save.bl[id] -= 3; if (!save.bl[id]) delete save.bl[id]; const nx = bkey(h, g + 1); save.bl[nx] = (save.bl[nx] || 0) + 1; made.push(nx); if (save.bslot === id && !save.bl[id]) save.bslot = nx; } } return made; }
@@ -882,15 +882,47 @@ input { -webkit-user-select: text; user-select: text; }
   const PTIER = [{ nm: '레어', c: '#3fa9f5' }, { nm: '에픽', c: '#c27bff' }, { nm: '유니크', c: '#ffb72e' }, { nm: '레전드리', c: '#5bd16a' }];
   const POT_OPEN = 10000000, POT_COST = [5000000, 25000000, 120000000, 500000000], POT_UP = [.08, .03, .01], POT_CEIL = [50, 150, 400];
   function potLine(t, i) { const W = POT.reduce((a, o) => a + o.w, 0); let r = Math.random() * W, k = 0; for (; k < POT.length - 1; k++) { r -= POT[k].w; if (r < 0) break; } const lt = i > 0 && t > 0 && Math.random() < .25 ? t - 1 : t; return [k, lt]; }
-  function potRoll(sl) { const P = save.pot[sl]; if (!P || P.t < 0) return false; let up = false; if (P.t < 3) { P.f = (P.f || 0) + 1; if (P.f >= POT_CEIL[P.t] || Math.random() < POT_UP[P.t]) { P.t++; P.f = 0; up = true; } } P.l = [0, 1, 2].map(i => potLine(P.t, i)); return up; }
+  function potRoll(sl) { const P = save.pot[sl]; if (!P || P.t < 0) return false; let up = false; if (P.t < 3) { P.f = (P.f || 0) + 1; if (P.f >= POT_CEIL[P.t] || Math.random() < POT_UP[P.t]) { P.t++; P.f = 0; up = true; } } const pr = save.pc && save.pc.prot > 0; if (pr) save.pc.prot--; P.l = [0, 1, 2].map(i => pr ? potLine(P.t, 0) : potLine(P.t, i)); return up; }
   function potOpen(sl) { save.pot[sl] = { t: 0, f: 0, l: [0, 1, 2].map(i => potLine(0, i)) }; }
   const potVal = ln => POT[ln[0]].v[ln[1]];
   const potLineTxt = ln => { const o = POT[ln[0]], v = potVal(ln); return o.nm + ' ' + (o.neg ? '-' : '+') + (Math.round(v * 1000) / 10) + '%'; };
   function potAll() { const o = { atk: 0, crit: 0, cdm: 0, spd: 0, boss: 0, el: 0, se: 0, hp: 0, cd: 0 }; for (const sl of ['w', 'h', 'n']) { const P = save.pot[sl]; if (P && P.t >= 0) for (const ln of P.l) o[POT[ln[0]].k] += potVal(ln); } o.cd = Math.min(.5, o.cd); return o; }
+
+  /* ================= 계약의 지옥 (pact mode) =================
+     opens after clearing nightmare 30. Base fight = nightmare 40 (bosses x2). The player stacks contracts; their 열기 (heat) raises the
+     reward multiplier (1 + 8% per heat). Heat cap starts at 10, +3 each time a run at the cap is cleared (max 60).
+     One contract is 역풍 (headwind) each 30 minutes: its heat counts double. Heat 20+: the last wave's boss is 「계약자」. */
+  const PACTS = [
+    { id: 'hp', g: '🩸 적 강화', nm: '강철 피부', h: 1, r: [.25, .5, 1], d: v => '몬스터 체력 +' + Math.round(v * 100) + '%' },
+    { id: 'atk', g: '🩸 적 강화', nm: '피의 갈증', h: 1, r: [.3, .6, 1], d: v => '몬스터 공격력 +' + Math.round(v * 100) + '%' },
+    { id: 'spd', g: '🩸 적 강화', nm: '질주', h: 2, r: [.15, .3], d: v => '몬스터 이동 속도 +' + Math.round(v * 100) + '%' },
+    { id: 'cnt', g: '🩸 적 강화', nm: '무리', h: 2, r: [.3, .6], d: v => '몬스터 수 +' + Math.round(v * 100) + '%' },
+    { id: 'mid', g: '👹 보스', nm: '군단장', h: 2, r: [3, 6], d: v => '중간 보스 +' + v + '마리' },
+    { id: 'abs', g: '👹 보스', nm: '절대자의 눈', h: 4, r: [.15, .3], d: v => '절대 보스 확률 +' + Math.round(v * 100) + '%' },
+    { id: 'bcc', g: '👹 보스', nm: '불굴', h: 3, r: [1], d: () => '메인 보스 CC 면역' },
+    { id: 'breg', g: '👹 보스', nm: '재생의 피', h: 2, r: [.005, .01], d: v => '보스가 초당 체력 ' + (v * 100) + '% 회복 (재생 불가·화상이면 막혀요)' },
+    { id: 'noheal', g: '⛓ 규칙', nm: '수리 금지', h: 2, r: [1], d: () => '레벨업에 거점 수리가 안 나와요' },
+    { id: 'time', g: '⛓ 규칙', nm: '모래시계', h: 3, r: [150, 110], d: v => v + '초 안에 못 깨면 패배' },
+    { id: 'wave', g: '⛓ 규칙', nm: '연장전', h: 2, r: [1, 2], d: v => '웨이브 +' + v },
+    { id: 'curse', g: '⛓ 규칙', nm: '저주 계약', h: 2, r: [1, 2, 3], d: v => '심연 저주 +' + v + '개' },
+    { id: 'seal', g: '🔒 봉인', nm: '속성 봉인', h: 3, r: [1, 2], d: v => '무작위 속성 ' + v + '개로는 피해 0' },
+    { id: 'nose', g: '🔒 봉인', nm: '강속성 무효', h: 3, r: [1], d: () => '강속성 보너스(×1.3)가 사라져요' },
+    { id: 'mseal', g: '🔒 봉인', nm: '신화 봉인', h: 4, r: [1], d: () => '출전 중 가장 센 신화 1명이 빠져요' },
+    { id: 'gear', g: '🎲 배신', nm: '장비 배신', h: 3, r: [1], d: () => '장갑·탄띠 효과가 꺼져요' },
+    { id: 'pet', g: '🎲 배신', nm: '펫 이탈', h: 2, r: [1], d: () => '펫이 출전하지 않아요' },
+    { id: 'refl', g: '🎲 배신', nm: '반사', h: 4, r: [1], d: () => '총알이 적을 맞힐 때마다 거점이 최대 체력의 0.02% 피해' }
+  ];
+  const PACT_OPEN = () => !!(save.nm.reach[29] & 1), PACT_WIND_MS = 30 * 60 * 1000, PACT_MS = [10, 20, 30, 40, 50, 60];
+  const pactWind = (t) => { const k = Math.floor((t || Date.now()) / PACT_WIND_MS); let x = (k * 2654435761 + 12345) >>> 0; x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return PACTS[x % PACTS.length].id; };
+  const pactWindLeft = () => PACT_WIND_MS - Date.now() % PACT_WIND_MS;
+  function pactHeat(on) { on = on || save.pc.on; const w = pactWind(); let h = 0; for (const P of PACTS) { const r = on[P.id] || 0; if (r) h += P.h * r * (P.id === w ? 2 : 1); } if (on.time && on.wave) h += 2; return h; }
+  const pactMul = h => 1 + .08 * h;
+  const capeOn = () => save.pc.best >= 30, capeV = () => capeOn() ? .003 * save.pc.best : 0;
+  let PACT_NG = false; /* 장비 배신: gloves and belts count as empty while a pact run is being set up */
   /* ---------- 업적 + 훈장: 12 achievements with 10 tiers each (수집가 8). The medal of an achievement levels up by itself as tiers are reached.
      One medal goes in the MEDAL slot (its bonus x level); every tier reached anywhere also adds +0.15% damage. Each tier pays gems once (claim). */
   const sum = a => a.reduce((x, y) => x + y, 0);
-  const totalPlays = () => sum(save.plays) + sum(save.el.plays) + sum(save.nm.plays) + save.tq.ar;
+  const totalPlays = () => sum(save.plays) + sum(save.el.plays) + sum(save.nm.plays) + save.tq.ar + (save.pc ? save.pc.plays : 0);
   const ACH = [
     { id: 'kill', nm: '처치왕', ic: '💀', u: '마리 처치', g: [4e4, 1.2e5, 4e5, 1.2e6, 2.4e6, 4e6, 8e6, 1.6e7, 2.8e7, 4e7], v: () => save.kills, b: 'dmg', bv: .01 },
     { id: 'play', nm: '백전노장', ic: '⚔', u: '판', g: [400, 1200, 2400, 4000, 8000, 14000, 20000, 30000, 40000, 60000], v: totalPlays, b: 'xp', bv: .05 },
@@ -1121,7 +1153,7 @@ input { -webkit-user-select: text; user-select: text; }
       unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], rings: {}, rslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, kbl: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0, ab: { fl: 1, best: 0, next: 0, got: {}, pend: 0 }, tq: { st: 0, runs: 0, kills: 0, rare: 0, eq: -1, er: 0, ar: 0 },
-      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, ach: { c: {}, eq: 'lv', bk: 0, cube: 0, ge: 0, pf: 0, abs: 0, v2: 1 }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
+      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, pc: { on: {}, cap: 10, best: 0, seal: 0, ms: {}, prot: 0, frag: 0, plays: 0, wins: 0 }, ach: { c: {}, eq: 'lv', bk: 0, cube: 0, ge: 0, pf: 0, abs: 0, v2: 1 }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
     };
   }
   const ukey = u => u.n + '|' + u.e.join('') + (u.m ? '|m' + u.se : '');
@@ -1212,6 +1244,9 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.pot && typeof r.pot === 'object') for (const sl of ['w', 'h', 'n']) { const P = r.pot[sl]; if (P && Array.isArray(P.l) && P.l.length === 3) { const t = num(P.t, 0, 3, 0); s.pot[sl] = { t, f: num(P.f, 0, 999, 0), l: P.l.map(ln => [num(ln && ln[0], 0, POT.length - 1, 0), num(ln && ln[1], 0, t, t)]) }; } }
     { const a = r.ach && typeof r.ach === 'object' ? r.ach : {}; s.ach = { c: {}, eq: ACH.some(A => A.id === a.eq) ? a.eq : '', bk: num(a.bk, 0, 1e12, 0), cube: num(a.cube, 0, 1e9, 0), ge: num(a.ge, 0, 1e16, 0), pf: num(a.pf, 0, 1e9, 0), abs: num(a.abs, 0, 1e9, 0), v2: a.v2 ? 1 : 0 };
       if (a.c && typeof a.c === 'object') for (const A of ACH) s.ach.c[A.id] = num(a.c[A.id], 0, A.g.length, 0); }
+    { const a = r.pc && typeof r.pc === 'object' ? r.pc : {}; s.pc = { on: {}, cap: num(a.cap, 10, 60, 10), best: num(a.best, 0, 200, 0), seal: num(a.seal, 0, 1e9, 0), ms: {}, prot: num(a.prot, 0, 1e6, 0), frag: num(a.frag, 0, 1e6, 0), plays: num(a.plays, 0, 1e9, 0), wins: num(a.wins, 0, 1e9, 0) };
+      if (a.on && typeof a.on === 'object') for (const P of PACTS) { const v = num(a.on[P.id], 0, P.r.length, 0); if (v) s.pc.on[P.id] = v; }
+      if (a.ms && typeof a.ms === 'object') for (const m of PACT_MS) if (a.ms[m]) s.pc.ms[m] = 1; }
     s.dust = num(r.dust, 0, 1e12, 0); s.adis = r.adis ? 1 : 0; s.dis1 = r.dis1 ? 1 : 0; s.g3k = r.g3k ? 1 : 0; s.g2k = r.g2k ? 1 : 0;
     return s;
   }
@@ -1364,6 +1399,7 @@ input { -webkit-user-select: text; user-select: text; }
     { const tb = titleBonus(); p *= (1 + tb.dmg) * (1 + tb.spd) * (1 + tb.crit * 1.5 + tb.cdm * .33) * (1 + tb.se * .5); }
     { const G = gloveAll(); p *= (1 + G.dmg) * (1 + G.cdm * .33) * (1 + G.se * .5) * (1 + Math.max(...G.ele) * .3) * (1 + G.xs * .3); }
     { const Q = potAll(); p *= (1 + Q.cdm * .33) * (1 + Q.se * .5) * (1 + Q.cd * .3); }
+    p *= 1 + capeV();
     { const M = achAll(); p *= (1 + M.dmg) * (1 + M.boss * .15) * (1 + M.spd) * (1 + M.cdm * .33) * (1 + M.crit * 1.5) * (1 + M.se * .5) * (1 + M.cd * .3) / (1 - Math.min(.5, M.dr) * .5); }
     return Math.round(p);
   }
@@ -1417,7 +1453,8 @@ input { -webkit-user-select: text; user-select: text; }
      opens after clearing elite 40. Each floor = 2 waves at elite-40 strength x0.8, HP x1.12 / ATK x1.08 per floor.
      After a clear the next floor opens 25 minutes later; a failed floor can be retried at once. No energy.
      Floors carry 1~3 random curses (나락 특성), fixed per floor so the preview never changes. Every 10th floor: pick 1 of 3 rewards. */
-  const AB_WAIT = 2 * 60 * 1000, AB_UNLOCK = 40;
+  /* from 2026-11-16 21:00 KST the next floor opens right away */
+  const AB_FREE = Date.UTC(2026, 10, 16, 12, 0), abWait = () => Date.now() >= AB_FREE ? 0 : 2 * 60 * 1000, AB_UNLOCK = 40;
   const AFF = [
     { id: 'regen', nm: '재생', ic: '💚', d: '몬스터가 초당 체력 2% 회복 (화상 중엔 회복 못 함)', fit: '진명 · 한일' },
     { id: 'split', nm: '분열', ic: '🧬', d: '몬스터가 죽으면 작은 몬스터 2마리로 갈라져요', fit: '도영 · 재원' },
@@ -1643,7 +1680,7 @@ input { -webkit-user-select: text; user-select: text; }
     const hb = (act, ic, nm, sub, bang) => '<button data-act="' + act + '" style="position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:6px 10px;border:3px solid var(--ink);border-radius:12px;background:linear-gradient(180deg,#2c3c58,#1e2a3f);color:#fff;text-align:left;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3)"><span style="font-size:22px;flex:none">' + ic + '</span><span style="min-width:0;display:grid;line-height:1.15"><b class="ol-s" style="font-family:var(--display);font-size:15px">' + nm + '</b><small style="font-size:11px;color:#cfe0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sub + '</small></span>' + (bang ? '<span class="bang" style="right:-6px;top:-8px">!</span>' : '') + '</button>';
     const tn = titleNm(), MT = achAll();
     $('screen').innerHTML = '<div class="home">' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' + hb('titles', '🏅', '칭호', tn ? '「' + tn + '」' : '퀘스트 ' + save.tq.st + '/5단계', qr) + hb('achOpen', '🎖', '훈장', MT.tiers + '/' + ACH.reduce((a, A) => a + A.g.length, 0) + '단계', achClaimable()) + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">' + hb('titles', '🏅', '칭호', tn ? '「' + tn + '」' : '퀘스트 ' + save.tq.st + '/5단계', qr) + hb('achOpen', '🎖', '훈장', MT.tiers + '/' + ACH.reduce((a, A) => a + A.g.length, 0) + '단계', achClaimable()) + hb('pcOpen', '🔥', '계약', PACT_OPEN() ? '최고 열기 ' + save.pc.best : '🔒 악몽 30', false) + '</div>' +
       '<div class="home-row"><div class="sides">' +
         '<button class="side sm" data-act="friends"><span class="ic">' + I.friends + '</span><span class="ol-s">랭킹</span></button>' +
         '</div>' +
@@ -1702,7 +1739,7 @@ input { -webkit-user-select: text; user-select: text; }
     const f = save.ab.fl, th = AB_TH[abTheme(f)], af = abAff(f), left = abLeft();
     let h = '<div class="scroll">';
     h += '<div class="card" style="background:linear-gradient(160deg,#1a1230,#2c1f4d 60%,#3a2a66);border-color:#b98cff"><div class="row"><h3 class="ol grow">🕳 심연의 탑</h3><span class="pwtag ol-s" style="font-size:15px;background:#5a3ca0">최고 ' + save.ab.best + '층</span></div>' +
-      '<p class="desc" style="color:#d9ccff">땅 밑 끝없는 요새. 층마다 <b>저주(나락 특성)</b>가 몬스터를 뒤틀어요. 한 층을 깨면 <b>다음 층은 2분 뒤</b>에 열리고, 실패한 층은 바로 다시 도전할 수 있어요. 에너지는 들지 않아요.</p></div>';
+      '<p class="desc" style="color:#d9ccff">땅 밑 끝없는 요새. 층마다 <b>저주(나락 특성)</b>가 몬스터를 뒤틀어요. 한 층을 깨면 ' + (abWait() ? '<b>다음 층은 2분 뒤</b>에 열리고' : '<b>다음 층이 바로</b> 열리고') + ', 실패한 층은 바로 다시 도전할 수 있어요. 에너지는 들지 않아요.</p></div>';
     if (!abOpen()) {
       h += '<div class="card"><h3 class="ol">🔒 아직 문이 닫혀 있어요</h3><p class="desc"><b>정예 40단계</b>를 클리어하면 심연의 탑이 열려요. 지금 정예 ' + (save.elOn ? Math.max(0, save.el.unlocked - 1) + '단계까지 클리어' : '모드가 아직 안 열렸어요') + '.</p></div>';
       $('screen').innerHTML = h + '</div>'; return;
@@ -2060,6 +2097,41 @@ input { -webkit-user-select: text; user-select: text; }
         '<div class="buy">' + (can ? '<button class="btn y sm ol-s" data-act="achClaim" data-id="' + A.id + '">클리어<br><small style="font-size:11px">젬 ' + fmt(achGem(c)) + '</small></button>' : c >= A.g.length ? '<span class="ol-s" style="color:var(--yel);font-family:var(--display)">MAX</span>' : '<button class="btn sm ol-s" disabled>진행 중</button>') + '</div></div>'; }
     return h;
   }
+  function ivCape() { return capeOn() ? '<div class="ivs it" style="--g:#d080ff" data-act="pcOpen" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">🧥</span><b class="lv" style="font-size:9px">열기 ' + save.pc.best + '</b><em class="on">E</em></div>' : '<div class="ivs e" data-act="pcOpen" role="button" style="cursor:pointer"><u>CAPE</u></div>'; }
+  let pcTab = 'pact';
+  function pactBody() {
+    const P = save.pc, w = pactWind(), h = pactHeat(), over = h > P.cap, W = PACTS.find(x => x.id === w);
+    let x = INV_CSS + '<div class="ivtabs" style="margin-bottom:6px">' + [['pact', '계약'], ['shop', '인장 상점'], ['ms', '이정표'], ['help', '설명']].map(([k, nm]) => '<button class="' + (pcTab === k ? 'on' : '') + '" data-act="pcTab" data-t="' + k + '">' + nm + '</button>').join('') + '</div>';
+    x += '<div class="card dark" style="gap:4px;padding:8px 10px"><div class="row"><b class="ol grow" style="font-size:17px">🔥 열기 <span style="color:' + (over ? 'var(--bad)' : 'var(--yel)') + '">' + h + '</span> / ' + P.cap + '</b><span class="pwtag ol-s" style="background:#8a2a1a">보상 ×' + pactMul(Math.min(h, P.cap)).toFixed(2).replace(/0$/, '') + '</span></div>' +
+      '<p class="desc" style="margin:0;font-size:12px;color:#fff">🌪 지금 역풍: <b style="color:#ffb070">' + W.nm + '</b> (열기 2배) · ' + mmss(pactWindLeft()) + ' 뒤 바뀜 · 최고 열기 <b>' + P.best + '</b> · 인장 <b>' + fmt(P.seal) + '</b></p></div>';
+    if (pcTab === 'help') return x + '<div class="card dark" style="gap:6px"><p class="desc" style="color:#fff;margin:0">' +
+      '<b>계약의 지옥</b>은 악몽 30을 깨면 열려요. 기본 판은 <b>악몽 40급</b>(보스 2배·몹 1.5배·방어 1.5배)이에요.<br><br>' +
+      '<b>계약</b>을 골라 붙이면 난이도가 오르고, 계약마다 <b>열기</b>가 붙어요. 랭크를 올릴수록 열기가 커져요. 모래시계+연장전을 같이 걸면 열기 +2.<br><br>' +
+      '<b>보상</b>: 골드·젬·경험치 <b>×(1 + 열기 × 8%)</b>. 이기면 열기만큼 <b>계약 인장</b>을 받아요.<br><br>' +
+      '<b>열기 상한</b>: 처음 10. 상한만큼 걸고 깨면 상한 +3 (최대 60). 상한을 넘겨 걸면 시작할 수 없어요.<br><br>' +
+      '<b>역풍</b>: <b>30분마다</b> 계약 하나가 역풍이 돼요. 역풍 계약은 열기가 2배로 쳐져요.<br><br>' +
+      '<b>계약자</b>: 열기 20 이상이면 마지막 웨이브 보스가 「계약자」로 바뀌어요. 12초마다 중간 보스 3마리를 부르고, <b>반사</b>를 걸었으면 8초마다 반사 장막(2초), <b>재생의 피</b>를 걸었으면 체력 50%에 분신 2마리를 만들어요.<br><br>' +
+      '<b>이정표</b>: 열기 10·20·30·40·50·60을 처음 깨면 젬(열기×1,000)과 인장(열기×10). 최고 열기 30부터 장비창 CAPE 칸에 <b>계약자의 망토</b>가 생기고, <b>최고 열기 1마다 모든 피해 +0.3%</b>씩 저절로 성장해요.<br><br>' +
+      '<b>인장 상점</b>: 강속성 재설정권 · 큐브 보호권 · 전설 탄띠 선택권 · 무법자의 손 조각.</p></div>';
+    if (pcTab === 'ms') return x + PACT_MS.map(m => '<div class="prow" style="padding:6px 10px"><span><b>열기 ' + m + '</b> 첫 클리어<br><span class="desc">젬 ' + fmt(m * 1000) + ' · 인장 ' + m * 10 + (m === 30 ? ' · 🧥 계약자의 망토' : '') + '</span></span><span class="ol-s" style="color:' + (P.ms[m] ? 'var(--ok)' : '#fff') + '">' + (P.ms[m] ? '달성 ✓' : '미달성') + '</span></div>').join('') + '<p class="desc">계약자의 망토: ' + (capeOn() ? '착용 중 · 모든 피해 +' + (Math.round(capeV() * 1000) / 10) + '%' : '최고 열기 30이 되면 생겨요') + '</p>';
+    if (pcTab === 'shop') { const it = (nm, d, cost, act, extra) => { const [ic, ...rest] = Array.from(nm); return '<div class="shopi"><span class="ico" style="font-size:26px;display:grid;place-items:center;background:none;border:0">' + ic + '</span><div style="min-width:0"><b class="ol-s">' + rest.join('') + '</b><p>' + d + '</p>' + (extra || '') + '</div><div class="buy"><span class="price ol-s">🔥' + cost + '</span>' + (act ? '<button class="btn y sm ol-s" data-act="pcBuy" data-k="' + act + '"' + (P.seal < cost ? ' disabled' : '') + '>구매</button>' : '') + '</div></div>'; };
+      const xbs = save.coll.filter(u => u.m && u.xb != null);
+      x += it('🎯강속성 재설정권', '강속성 2개 신화의 두 번째 강속성을 다시 뽑아요.', 300, '', xbs.length ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' + xbs.map(u => '<button class="btn c sm ol-s" data-act="pcBuy" data-k="xb" data-u="' + esc(ukey(u)) + '"' + (P.seal < 300 ? ' disabled' : '') + '>' + NMS[u.n] + ' ' + EGL[u.se] + EGL[u.xb] + '</button>').join('') + '</div>' : '<p class="desc">강속성 2개 신화가 없어요.</p>');
+      x += it('🛡큐브 보호권', '다음 큐브 1번은 2·3번째 줄도 등급이 안 떨어져요. 보유 ' + P.prot + '장', 50, 'prot');
+      x += it('🎗전설 탄띠 선택권', '원하는 총잡이의 전설 탄띠 1개', 400, '', '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' + NMS.map((n, h0) => '<button class="btn c sm ol-s" data-act="pcBuy" data-k="belt" data-h="' + h0 + '"' + (P.seal < 400 ? ' disabled' : '') + '>' + n + '</button>').join('') + '</div>');
+      x += it('🧤무법자의 손 조각', '20개 모으면 「무법자의 손」 1개. 보유 ' + P.frag + '/20', 60, 'frag');
+      return x; }
+    const groups = []; for (const Pc of PACTS) { if (!groups.includes(Pc.g)) groups.push(Pc.g); }
+    for (const g of groups) { x += '<div class="card dark" style="gap:4px;padding:8px 10px"><b class="ol-s" style="font-family:var(--display);font-size:15px">' + g + '</b>';
+      for (const Pc of PACTS.filter(q => q.g === g)) { const r = P.on[Pc.id] || 0, mx = Pc.r.length, hw = Pc.id === w;
+        x += '<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:4px 0;border-top:1px solid rgba(255,255,255,.08)"><span style="min-width:0"><b style="color:' + (r ? '#ffb070' : '#fff') + '">' + Pc.nm + (hw ? ' <span style="color:#ff6a3d;font-size:11px">🌪역풍</span>' : '') + '</b> <span class="desc" style="font-size:11px">열기 ' + (Pc.h * (hw ? 2 : 1)) + '/랭크</span><br><span class="desc" style="font-size:12px">' + (r ? Pc.d(Pc.r[r - 1]) : '꺼짐 · 1랭크: ' + Pc.d(Pc.r[0])) + '</span></span>' +
+          '<span style="display:flex;gap:3px;align-items:center"><button class="btn sm ol-s" data-act="pcAdj" data-id="' + Pc.id + '" data-d="-1"' + (r ? '' : ' disabled') + '>−</button><b class="ol-s" style="min-width:28px;text-align:center">' + r + '/' + mx + '</b><button class="btn y sm ol-s" data-act="pcAdj" data-id="' + Pc.id + '" data-d="1"' + (r < mx ? '' : ' disabled') + '>+</button></span></div>'; }
+      x += '</div>'; }
+    x += '<button class="btn sm ol-s" data-act="pcClear" style="margin:4px 0">계약 모두 해제</button>';
+    x += over ? '<p class="desc" style="color:var(--bad);text-align:center"><b>열기가 상한(' + P.cap + ')을 넘었어요.</b> 계약을 줄여 주세요.</p>' : '';
+    x += '<div class="row" style="gap:6px">' + [1, 30, 50, 100].map(c => '<button class="btn ' + (c === 1 ? 'r' : 'y') + ' grow ol-s" data-act="pcGo" data-c="' + c + '"' + (over || save.en < RUN_COST ? ' disabled' : '') + '>' + (c === 1 ? '🔥 도전' : c + '회') + '</button>').join('') + '</div><p class="desc" style="text-align:center;font-size:11px">한 판에 에너지 ' + RUN_COST + ' · 연속 전투 완주 보너스도 받아요</p>';
+    return x;
+  }
   function ivTitle() { const i = save.tq.eq; if (i >= 0 && i < save.tq.st) { const T = TITLES[i]; return '<div class="ivs it" style="--g:' + T.c + '" data-act="tbag" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">🏅</span><b class="lv" style="font-size:8px">' + T.nm + '</b><em class="on">E</em></div>'; } return '<div class="ivs e" data-act="tbag" role="button" style="cursor:pointer"><u>TITLE</u></div>'; }
   function tbagBody() {
     let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">받은 칭호 중 하나를 장비창 <b>TITLE</b> 칸에 껴요. 낀 칭호의 효과만 적용돼요. 칭호는 <b>칭호 퀘스트</b>에서 받아요.</p>';
@@ -2079,7 +2151,7 @@ input { -webkit-user-select: text; user-select: text; }
         rs(1), gs('n'), ivBlank('FACE'), X, ivBlank('BADGE'),
         rs(2), ivBlank('POCKET'), ivBlank('EYE'), gs('w'), ivMedal(),
         '<div class="ivs it" style="--g:' + (save.hl + save.dl + save.sll >= 90 ? '#ffb72e' : '#5bd16a') + '" data-act="fortOpen" role="button"><span class="ic" style="font-size:26px;display:grid;place-items:center">🏰</span><b class="lv">거점</b><i class="n">' + save.hl + '·' + save.dl + '·' + save.sll + '·' + (save.kbl || 0) + '</i></div>', ivBelt(), ivBlank('CLOTHES'), ivBlank('SHOULDER'), ivTitle(),
-        X, ivGlove(), ivBlank('PANTS'), ivBlank('CAPE'), X,
+        X, ivGlove(), ivBlank('PANTS'), ivCape(), X,
         X, X, ivBlank('SHOES'), X, X];
       h += '<div class="ivg" style="grid-template-columns:repeat(5,1fr)"><div class="ivsil"></div>' + cells.join('') + '</div>';
       h += '<div class="ivft"><span>' + ivSm(I.sword) + ' 전투력 ' + fmt(power()) + '</span><span class="desc" style="color:#506070;font-size:11px">빈칸은 앞으로 생길 장비 자리예요</span></div>';
@@ -2427,6 +2499,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'n261116p', t: '🔥 새 모드 「계약의 지옥」', s: '악몽 30을 깨면 열려요. 악몽 40급 판에 계약을 직접 쌓아 난이도를 올리고, 열기 1마다 보상 +8%. 30분마다 바뀌는 역풍 계약은 열기 2배. 열기 20부터 최종 보스 「계약자」 등장. 인장으로 강속성 재설정권·전설 탄띠·무법자의 손 조각을 사요. 최고 열기 30이면 「계약자의 망토」(최고 열기만큼 성장)!', r: {}, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
@@ -2477,7 +2550,7 @@ input { -webkit-user-select: text; user-select: text; }
     return '<p class="desc" style="color:#fff"><b>악몽 스테이지 ' + n + '</b> · 악몽의 지옥 · 플레이 ' + save.nm.plays[n - 1] + '번</p>' +
       '<p class="desc">정예 50단계 강함에서 시작해 단계마다 <b>적 체력 ×1.1 · 공격력 ×1.06</b>씩 세져요. 단계마다 <b>저주</b>가 고정으로 붙어요(20단계부터 2개). 보상은 정예 50의 <b>×' + nmMul(n).toFixed(2).replace(/0$/, '') + '</b>이고, <b>장갑</b>(클리어 50%)과 <b>탄띠</b>(보스 처치)는 악몽에서만 나와요. 10단계마다 첫 클리어 젬 보상.</p>' +
       '<div style="display:grid;gap:6px">' + af.map(a => '<p class="desc" style="margin:0">' + affChip(a) + ' ' + AFF.find(x => x.id === a).d + '</p>').join('') + '</div>' +
-      '<p class="desc" style="color:#ffb0c0"><b>보스 등급</b><br>· <b>일반 보스</b> 2~4마리 (약함)<br>· <b>중간 보스</b> 3~10마리 · 70%는 7~9마리 — 몇 마리가 나오느냐가 승부를 갈라요<br>· <b>메인 보스</b> 마지막 웨이브 1마리 · 빙결·기절 시간 절반<br>· <b>절대 보스</b> 5% 확률 · 빙결·기절·정지·감속이 안 통해요. 나오면 그 판은 거의 못 깨요</p>' +
+      '<p class="desc" style="color:#ffb0c0"><b>보스 등급</b><br>· <b>일반 보스</b> 2~4마리 (약함)<br>· <b>중간 보스</b> 3~10마리 · 70%는 7~9마리 — 몇 마리가 나오느냐가 승부를 갈라요<br>· <b>메인 보스</b> 마지막 웨이브 1마리 · 빙결·기절 시간 절반<br>· <b>악몽 35~50단계</b>는 일반·중간·메인 보스가 모두 <b>2배</b>로 나와요<br>· <b>절대 보스</b> 5% 확률 · 빙결·기절·정지·감속이 안 통해요. 나오면 그 판은 거의 못 깨요</p>' +
       monsterGuide(50, 1);
   }
   function monsterGuide(n, nm) {
@@ -2595,7 +2668,8 @@ input { -webkit-user-select: text; user-select: text; }
     const r = resOf(e);
     let m = 0;
     const pen = S && S.r ? S.r.pen : 0, se = els.se, xb = els.xb;
-    for (const a of els) { const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)) * (a === se || a === xb ? 1.3 * (1 + (S && S.tb ? S.tb.se : 0)) : 1) * (1 + (S && S.aw ? S.aw[a] : 0)); if (v > m) m = v; }
+    const sealed = S && S.pcm && S.pcm.seal.length ? S.pcm.seal : null, nose = S && S.pcm && S.pcm.nose;
+    for (const a of els) { if (sealed && sealed.includes(a)) continue; const v = elMul([a], e.el) * (1 - r[a] * (1 - pen)) * (!nose && (a === se || a === xb) ? 1.3 * (1 + (S && S.tb ? S.tb.se : 0)) : 1) * (1 + (S && S.aw ? S.aw[a] : 0)); if (v > m) m = v; }
     return m;
   }
   let S = null, raf = 0, last = 0, speed = 1, tmode = 0;
@@ -2633,20 +2707,22 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function abParams(f) { const P = eParams(AB_UNLOCK, true), af = abAff(f); P.hpm *= .8 * Math.pow(1.12, f - 1); P.dm *= .8 * Math.pow(1.08, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
   /* nightmare stage f: elite 50 strength, HP x1.1 and attack x1.06 per stage, curses like the abyss */
-  function nmParams(f) { const P = eParams(ESTAGES, true), af = nmAff(f); P.hpm *= Math.pow(1.08, f - 1); P.dm *= Math.pow(1.04, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
+  function nmParams(f) { const P = eParams(ESTAGES, true), af = nmAff(f); if (f >= 30) P.cnt *= 1.5; /* nightmare 30~50: monsters x1.5 (and defence x1.5, see hit) */ P.hpm *= Math.pow(1.08, f - 1); P.dm *= Math.pow(1.04, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
   /* nightmare boss tiers (HP vs the elite-50 boss): 일반 x0.15 (2~4) · 중간 x0.4 (3~10, 70% 7~9) · 메인 x2 (1, last wave, CC time halved)
      · 절대 (5%, last wave): x60 HP, takes half damage, attack x10, immune to freeze/stun/stop/slow — that run is meant to be lost */
   const NB = [{ nm: '일반 보스', hp: .15, r: 24, atk: .4, c: '#8a2a3a', bl: .01 }, { nm: '중간 보스', hp: 1, r: 30, atk: 1, c: '#6a1a8a', bl: .03 }, { nm: '메인 보스', hp: 2, r: 44, atk: 1.2, c: '#3a0a14', bl: .2 }, { nm: '절대 보스', hp: 60, r: 58, atk: 10, c: '#0a0004', bl: 1 }];
   const NB_NM = ['문지기', '뿔 군주', '불꽃 마왕', '피의 사제', '심연 마수', '해골 대공'];
+  NB.push({ nm: '계약자', hp: 8, r: 54, atk: 3, c: '#3a0a4a', bl: .6 });
   const ABS_P = .05;
-  function nmRollBosses() { const r = Math.random(), mid = r < .7 ? 7 + Math.floor(Math.random() * 3) : [3, 4, 5, 6, 10][Math.floor(Math.random() * 5)]; return { nor: 2 + Math.floor(Math.random() * 3), mid, abs: Math.random() < ABS_P }; }
+  let pactMode = false;
+  function nmRollBosses() { const r = Math.random(), mid = r < .7 ? 7 + Math.floor(Math.random() * 3) : [3, 4, 5, 6, 10][Math.floor(Math.random() * 5)]; const x2 = S && S.nm >= 35 ? 2 : 1; /* nightmare 35~50: every boss tier comes in double */ return { nor: (2 + Math.floor(Math.random() * 3)) * x2, mid: mid * x2, main: x2, abs: Math.random() < ABS_P }; }
   function spawnNB(t, cnt) {
     const B = NB[t], hb = ET.boss.hp * S.P.hpm * 2.35;
     for (let k = 0; k < cnt; k++) {
       const e = mkE('boss', spawnX(30 + Math.random() * 60), clamp(DCY + rnd(-150, 150), FIELD0, FIELD1), Math.floor(Math.random() * 5));
       e.nb = t; e.bi = Math.floor(Math.random() * 6); e.r = B.r; e.hp = e.mh = hb * B.hp; e.atk *= B.atk; e.sumT = t >= 2 ? 3.5 : 7 + Math.random() * 3; e.dnm = NB_NM[e.bi];
-      if (t === 2) e.cch = 1; if (t === 3) { e.cci = 1; e.half = 1; e.sp *= 1.15; }
-      if (t >= 2) { S.bosses.push(e); if (!S.boss || !S.en.includes(S.boss) || t === 3) S.boss = e; } else S.minis.push(e);
+      if (t === 2) { e.cch = 1; if (S.pcm && S.pcm.bcc) e.cci = 1; } if (t === 3) { e.cci = 1; e.half = 1; e.sp *= 1.15; } if (t === 4) { e.cch = 1; e.pt = 10; e.rfT = 6; e.dnm = '계약자'; }
+      if (t === 2 || t >= 3) { S.bosses.push(e); if (!S.boss || !S.en.includes(S.boss) || t === 3) S.boss = e; } else S.minis.push(e);
       S.en.push(e);
     }
   }
@@ -2657,17 +2733,21 @@ input { -webkit-user-select: text; user-select: text; }
     if (!abF && save.en < RUN_COST) { openPop('에너지 부족', '<p class="desc" style="text-align:center;color:#fff">에너지가 부족해요. 1분마다 1씩 차요.<br>상점이나 상단 + 버튼에서 젬으로 충전할 수 있어요.</p><button class="btn y wide ol-s" data-act="energy">젬 ' + EN_GEM + '개로 30 충전</button>', 'en'); return; }
     if (!abF) { save.en -= RUN_COST; if (save.en < EN_MAX && save.en + RUN_COST >= EN_MAX) save.enT = Date.now(); }
     persist();
-    const nmF = !abF && isNm() ? trk().cur : 0;
+    const pcF = !abF && pactMode && PACT_OPEN(), pon = pcF ? Object.assign({}, save.pc.on) : {};
+    const nmF = pcF ? 40 : !abF && isNm() ? trk().cur : 0;
+    PACT_NG = !!(pcF && pon.gear);
     const elite = abF ? true : isElite(), n = abF ? AB_UNLOCK : nmF ? ESTAGES : trk().cur, P = abF ? abParams(abF) : nmF ? nmParams(nmF) : eParams(n, elite);
     const units = save.slots.map(getUnit);
+    if (pcF && pon.mseal) { let bi = -1; units.forEach((u, i) => { if (u && u.m && (bi < 0 || u.s > units[bi].s)) bi = i; }); if (bi >= 0) units[bi] = null; }
+    if (pcF) { const V = (id) => pon[id] ? PACTS.find(x => x.id === id).r[pon[id] - 1] : 0; P.hpm *= 1 + V('hp'); P.dm *= 1 + V('atk'); P.spm *= 1 + V('spd'); P.cnt *= 1 + V('cnt'); }
     const sh = [{ x: 364, y: 150, st: hstat(null), u: null, cd: .3, ang: Math.PI, fl: 0, robot: true }];
     const aw = awAll();
     units.forEach((u, i) => { if (u) { const st = hstat(u); st.dmg *= 1 + synVal(u); st.el.sye = synFor(u) ? 1 : 0; aw.forEach((v, a) => { if (v > 0 && !st.el.includes(a)) st.el.push(a); }); sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st, u, cd: .2 + i * .1, ang: Math.PI, fl: 0, syn: synFor(u) }); } });
     const avg = sh.reduce((a, b) => a + b.st.dmg, 0) / sh.length;
-    [0, 1, 2].forEach(i => { const x = slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, ps: x.s, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
+    [0, 1, 2].forEach(i => { const x = !(pcF && pon.pet) && slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, ps: x.s, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
-      elite, n, P, sh, avg, g: G, aw, ab: abF, nm: nmF, minis: [], miniK: 0, nbK: [0, 0, 0, 0], belts: [], aff: new Set(abF ? abAff(abF) : nmF ? nmAff(nmF) : []), maxW: abF ? 2 : 3, teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), lvb: lvBonus(), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
+      elite, n, P, sh, avg, g: G, aw, ab: abF, nm: nmF, minis: [], miniK: 0, nbK: [0, 0, 0, 0, 0], belts: [], aff: new Set(abF ? abAff(abF) : nmF ? nmAff(nmF) : []), maxW: abF ? 2 : 3 + (pcF && pon.wave ? pon.wave : 0), teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), lvb: lvBonus(), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
       lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
@@ -2677,6 +2757,13 @@ input { -webkit-user-select: text; user-select: text; }
     { const M = achAll(); S.md = M; S.tb.dmg += M.dmg; S.r.boss += M.boss; S.r.spd += M.spd; S.tb.se += M.se; S.r.cdm += M.cdm; S.tb.crit += M.crit; S.pcd = Math.min(.5, S.pcd + M.cd); S.dr *= 1 - Math.min(.5, M.dr); }
     { const GL = gloveAll(); S.r.cdm += GL.cdm; S.tb.se += GL.se; S.tb.dmg += GL.dmg; S.gle = GL.ele; S.gxs = GL.xs; }
     if (nmF) S.nmB = nmRollBosses();
+    if (pcF) { const V = (id) => pon[id] ? PACTS.find(x => x.id === id).r[pon[id] - 1] : 0, heat = pactHeat(pon);
+      S.pcm = { heat, mul: pactMul(heat), on: pon, seal: [], nose: !!pon.nose, refl: !!pon.refl, breg: V('breg'), bcc: !!pon.bcc, time: V('time'), noheal: !!pon.noheal };
+      if (pon.seal) { const el = [0, 1, 2, 3, 4].sort(() => Math.random() - .5); S.pcm.seal = el.slice(0, V('seal')); }
+      if (pon.curse) { const pool = AFF.map(a => a.id).filter(a => !S.aff.has(a)).sort(() => Math.random() - .5); let k = V('curse'); for (const a of pool) { if (k <= 0) break; if ((a === 'swarm' && S.aff.has('giant')) || (a === 'giant' && S.aff.has('swarm'))) continue; S.aff.add(a); if (a === 'swarm') { S.P.cnt *= 2; S.P.hpm *= .5; } if (a === 'giant') { S.P.cnt *= .5; S.P.hpm *= 2.5; } k--; } }
+      S.nmB.mid += V('mid'); S.nmB.abs = Math.random() < ABS_P + V('abs'); }
+    S.tb.dmg += capeV();
+    PACT_NG = false;
     $('battle').hidden = false; $('bpop').hidden = true;
     fitBattle();
     nextWave();
@@ -2699,9 +2786,9 @@ input { -webkit-user-select: text; user-select: text; }
       Snd.boss();
     }
     /* elite: two independent 30% rolls for extra bosses (max 2 bosses; boss stages keep their fixed boss) */
-    if (S.nm) { const B = S.nmB, w = S.wave, mid = w === 1 ? Math.floor(B.mid * .3) : w === 2 ? Math.floor(B.mid * .3) : B.mid - 2 * Math.floor(B.mid * .3), nor = w === 3 ? B.nor - 2 * Math.floor(B.nor / 3) : Math.floor(B.nor / 3);
+    if (S.nm) { const B = S.nmB, w = S.wave, last = w === S.maxW, mid = last ? B.mid - 2 * Math.floor(B.mid * .3) : w <= 2 ? Math.floor(B.mid * .3) : 0, nor = last ? B.nor - 2 * Math.floor(B.nor / 3) : w <= 2 ? Math.floor(B.nor / 3) : 0;
       spawnNB(0, nor); spawnNB(1, mid);
-      if (w === 3) { spawnNB(2, 1); if (B.abs) { save.ach.abs++; spawnNB(3, 1); S.alert = 5; S.banner = { t: 5, s: '☠ 절대 보스 출현! 이 판은 버티기 어려워요' }; Snd.boss(); S.shake = 1.2; } else { S.alert = 3.2; S.banner = { t: 3.2, s: '메인 보스 출현! ' + S.boss.dnm + (mid ? ' · 중간 보스 ' + mid : '') }; Snd.boss(); } }
+      if (last) { if (S.pcm && S.pcm.heat >= 20) { spawnNB(4, 1); S.banner = { t: 3.5, s: '🔥 계약자 출현! 네가 건 계약이 곧 내 힘이다' }; } else spawnNB(2, B.main || 1); if (B.abs) { save.ach.abs++; spawnNB(3, 1); S.alert = 5; S.banner = { t: 5, s: '☠ 절대 보스 출현! 이 판은 버티기 어려워요' }; Snd.boss(); S.shake = 1.2; } else { S.alert = 3.2; S.banner = { t: 3.2, s: '메인 보스 출현! ' + S.boss.dnm + (mid ? ' · 중간 보스 ' + mid : '') }; Snd.boss(); } }
       else if (mid || nor) S.banner = { t: 2.4, s: '악몽 ' + S.nm + '단계 · 웨이브 ' + w + '/' + S.maxW + (mid ? ' · 중간 보스 ' + mid : '') + (nor ? ' · 일반 보스 ' + nor : '') };
     }
     if (S.b40 && S.wave === 1) spawnBosses(2, 0, '보스 2마리 출현! ');
@@ -2783,11 +2870,12 @@ input { -webkit-user-select: text; user-select: text; }
     if (e.cor > 0) a *= 1 + e.cv;
     if (e.mk > 0) a *= 1 + e.mkv;
     if (e.hk > 0) a *= 1.05;
+    if (S.pcm && direct && S.inv <= 0) { let rf = S.pcm.refl ? .0002 : 0; if (e.rf > 0) rf += .002; if (rf) { const d = S.mh * rf; S.hp -= d; S.took += d; S.domeHit = .1; } }
     if (e.wv > 0) a *= 1 + (S.warpV || .3);
     if (els && els.mk5) e.hk = 3;
     if (e.frz > 0 && els && els.fzb) a *= 1 + els.fzb;
     /* elite: monsters take 5% less damage, 30% less from elite stage 40 */
-    if (S.elite) a *= 1 - (S.n >= 40 ? .3 : ELITE.def);
+    if (S.elite) a *= 1 - (S.nm >= 30 ? .45 : S.n >= 40 ? .3 : ELITE.def);
     if (S.sk.reson && S.teamEl >= 4) a *= 1 + .25 + .05 * (S.sk.reson.l - 1);
     if (S.sk.bounty && e.k === 'boss') a *= 1 + .2 + .05 * (S.sk.bounty.l - 1);
     let crit = false;
@@ -3052,6 +3140,10 @@ input { -webkit-user-select: text; user-select: text; }
       if (S.ab || S.nm) { if (S.aff.has('regen') && !(e.burn > 0) && !(e.nr > 0)) e.hp = Math.min(e.mh, e.hp + e.mh * (e.k === 'boss' ? .004 : .02) * dt); if (S.aff.has('rage') && !e.rg && e.hp < e.mh * .5) { e.rg = 1; e.sp *= 1.5; e.atk *= 1.5; } }
       if (e.cor > 0) e.cor -= dt;
       if (e.mk > 0) e.mk -= dt;
+      if (S.pcm && S.pcm.breg && e.k === 'boss' && !(e.burn > 0) && !(e.nr > 0)) e.hp = Math.min(e.mh, e.hp + e.mh * S.pcm.breg * dt);
+      if (e.nb === 4) { e.pt -= dt; if (e.pt <= 0) { e.pt = 12; spawnNB(1, 3); S.banner = { t: 1.6, s: '계약자가 군단장을 부릅니다' }; }
+        if (S.pcm && S.pcm.refl) { if (e.rf > 0) e.rf -= dt; e.rfT -= dt; if (e.rfT <= 0) { e.rfT = 8; e.rf = 2; S.banner = { t: 1.4, s: '계약자의 반사 장막! 2초' }; } }
+        if (S.pcm && S.pcm.breg && !e.split && !e.clone && e.hp < e.mh * .5) { e.split = 1; for (const dy of [-90, 90]) { const c = mkE('boss', e.x - 30, clamp(e.y + dy, FIELD0, FIELD1), e.el); c.nb = 4; c.bi = e.bi; c.r = 40; c.hp = c.mh = e.mh * .3; c.atk = e.atk * .5; c.cch = 1; c.pt = 99; c.rfT = 99; c.clone = 1; c.dnm = '계약자의 분신'; c.sumT = 99; S.bosses.push(c); S.en.push(c); } S.banner = { t: 2, s: '계약자가 분신을 만들었어요!' }; } }
       if (e.nr > 0) e.nr -= dt;
       if (e.hk > 0) e.hk -= dt;
       if (e.wv > 0) e.wv -= dt;
@@ -3078,6 +3170,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function update(dt) {
     S.t += dt;
+    if (S.pcm && S.pcm.time && S.t > S.pcm.time && !S.over) { S.banner = { t: 2, s: '⏳ 시간 초과!' }; endRun(false); return; }
     if (S.tstop > 0) S.tstop -= dt;
     if (S.r.thunder) { S.thT -= dt; if (S.thT <= 0) { S.thT = S.r.thunder; const t = densest(70); if (t) { for (const e of S.en) if (e.hp > 0 && Math.hypot(e.x - t.x, e.y - t.y) < 70) e.frz = Math.max(e.frz, 1.5); S.fx.push({ k: 'zap', x1: t.x + 10, y1: Math.max(0, t.y - 260), x2: t.x, y2: t.y, l: .3 }); S.fx.push({ k: 'ring', x: t.x, y: t.y, r: 70, l: .35, c: '#ffe14a' }); S.shake = Math.max(S.shake || 0, .25); } } }
     if (S.toSpawn > 0) { S.spawnT -= dt; if (S.spawnT <= 0) { spawn(); S.toSpawn--; S.spawnT = S.spawnIv * rnd(.5, 1.5); } }
@@ -3109,7 +3202,7 @@ input { -webkit-user-select: text; user-select: text; }
     for (let r = 0; r < n; r++) {
       const pool = [], act = Object.keys(S.sk).length;
       for (const s of SK) { if (!skUnlocked(s)) continue; const o = S.sk[s.id]; if (o ? o.l < 5 : act < 5) pool.push({ t: 'sk', id: s.id }); }
-      for (const p of PASS) { if (p.id === 'heal') { if (S.hp < S.mh * .95) pool.push({ t: 'ps', id: 'heal' }); } else if (S.pass[p.id] < p.max) pool.push({ t: 'ps', id: p.id }); }
+      for (const p of PASS) { if (p.id === 'heal') { if (S.hp < S.mh * .95 && !(S.pcm && S.pcm.noheal)) pool.push({ t: 'ps', id: 'heal' }); } else if (S.pass[p.id] < p.max) pool.push({ t: 'ps', id: p.id }); }
       if (!pool.length) break;
       const c = pool[Math.floor(Math.random() * pool.length)];
       if (c.t === 'sk') { if (S.sk[c.id]) S.sk[c.id].l++; else S.sk[c.id] = { l: 1, t: .5 }; got.push(SKM[c.id].nm + ' Lv ' + S.sk[c.id].l); }
@@ -3166,7 +3259,7 @@ input { -webkit-user-select: text; user-select: text; }
   const BCLR_N = 100, BCLR_G = 2000000, BCLR_MIN = 45;
   /* ---------- end of run ---------- */
   /* the label of the run in progress: abyss floor / nightmare stage / normal·elite stage (independent of the mode picked at home) */
-  const runLabel = () => S.ab ? '심연의 탑 ' + S.ab + '층' : S.nm ? '악몽 스테이지 ' + S.nm : stageLabel(S.n, !!S.elite);
+  const runLabel = () => S.ab ? '심연의 탑 ' + S.ab + '층' : S.pcm ? '계약의 지옥 · 열기 ' + S.pcm.heat : S.nm ? '악몽 스테이지 ' + S.nm : stageLabel(S.n, !!S.elite);
   function endRun(win, gaveUp) {
     if (S.over) return;
     S.over = true; S.pause = true;
@@ -3179,7 +3272,7 @@ input { -webkit-user-select: text; user-select: text; }
     const GE = gemEvtOn() ? GEVT.mul : 0, RW = rwMul(S.elite, n, S.ab), LOW = RW.item, GEMK = RW.gem + GE; /* gem event adds +2 to the existing gem multiplier (x3 -> x5) */
     gold *= RW.gold;
     const AF = S.ab ? abMul(S.ab) : 1; if (S.ab) gold = gold * 1.2 * (1 + .05 * Math.max(0, S.ab - 20)) * AF;
-    const NMF = nmS ? nmMul(nmS) : 1; gold *= NMF;
+    const NMF = nmS ? nmMul(nmS) * (S.pcm ? S.pcm.mul : 1) : 1; gold *= NMF;
     let drops = [];
     if (win && S.elite) drops = drops.concat(dropItems(1 * LOW, ODDS.eliteWin));
     if (win && S.bossK) drops = drops.concat(S.elite ? dropItems(2 * Math.max(1, S.bossKills) * LOW, ODDS.eliteBoss) : dropItems(1 * LOW, ODDS.stage));
@@ -3192,16 +3285,18 @@ input { -webkit-user-select: text; user-select: text; }
     /* nightmare: rings also come from 중간 보스 (12% each), so moving up from elite 40+ does not cut the ring supply */
     if (nmS && S.nbK[1] > 0) { let k = 0; for (let j = 0; j < S.nbK[1]; j++) if (Math.random() < .12) k++; if (k) rdrops = rdrops.concat(dropRings(k, RODDS.r40)); }
     if (S.rareK) { save.gem += 100 * GEMK; save.rareK = (save.rareK || 0) + 1; }
-    const xp = Math.round((2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1) * (S.elite && n >= 47 && n <= 49 ? 2 : 1) * (nmS ? 2 + .1 * (nmS - 1) : 1) * (1 + (S.md ? S.md.xp : 0))); /* nightmare: x2 at stage 1 (= elite 47~49), +0.1 per stage */ /* elite 30+: profile xp x2 · elite 47~49: another x2 */
+    const xp = Math.round((2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1) * (S.elite && n >= 47 && n <= 49 ? 2 : 1) * (nmS ? 2 + .1 * (nmS - 1) : 1) * (S.pcm ? S.pcm.mul : 1) * (1 + (S.md ? S.md.xp : 0))); /* nightmare: x2 at stage 1 (= elite 47~49), +0.1 per stage */ /* elite 30+: profile xp x2 · elite 47~49: another x2 */
     let cards = 0;
     if (win) cards = 3 + Math.floor(n / 4);
-    const tk = nmS ? save.nm : S.elite ? save.el : save;
+    const tk = S.pcm ? { unlocked: 0, cur: 0, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) } : nmS ? save.nm : S.elite ? save.el : save;
     if (win && S.elite && !S.ab) save.gem += Math.round(eGem(n) * (S.evt ? EVT.mul : 1) * GEMK * NMF);
     /* nightmare: gloves on a clear (50%), belts from bosses, first clear of every 10th stage */
     let gdrop = -1, gNew = false, nmFirst = 0; const bdrops = nmS && !gaveUp ? S.belts.slice() : [];
-    if (nmS) { for (const b of bdrops) addBelt(b); if (win && Math.random() < .5) { gdrop = rollGlove(); gNew = addGlove(gdrop); } if (win && nmS % 10 === 0 && !(tk.reach[i] & 1)) { nmFirst = nmS * 1000; save.gem += nmFirst; } }
+    if (nmS) { for (const b of bdrops) addBelt(b); if (win && Math.random() < .5) { gdrop = rollGlove(); gNew = addGlove(gdrop); } if (win && !S.pcm && nmS % 10 === 0 && !(tk.reach[i] & 1)) { nmFirst = nmS * 1000; save.gem += nmFirst; } }
+    /* pact rewards: seals = heat, best heat, heat cap +3 when the cap is cleared, milestone gems/seals once */
+    let pcRes = null; if (S.pcm && !gaveUp) { const P = save.pc, h = S.pcm.heat; P.plays++; if (win) { P.wins++; P.seal += h; const nb = h > P.best; P.best = Math.max(P.best, h); let capUp = false; if (h >= P.cap && P.cap < 60) { P.cap = Math.min(60, P.cap + 3); capUp = true; } const ms = []; for (const m of PACT_MS) if (h >= m && !P.ms[m]) { P.ms[m] = 1; save.gem += m * 1000; P.seal += m * 10; ms.push(m); } pcRes = { h, nb, capUp, ms }; } }
     const abGem = win && S.ab ? Math.round(100 * AF * (1 + (S.md ? S.md.ag : 0)) * (1 + GE)) : 0; save.gem += abGem;
-    let abUp = false; if (win && S.ab) { qAdd('boss'); save.ab.best = Math.max(save.ab.best, S.ab); if (S.ab === save.ab.fl) { save.ab.fl++; save.ab.next = Date.now() + AB_WAIT; abUp = true; } if (S.ab % 10 === 0 && !save.ab.got[S.ab]) save.ab.pend = S.ab; }
+    let abUp = false; if (win && S.ab) { qAdd('boss'); save.ab.best = Math.max(save.ab.best, S.ab); if (S.ab === save.ab.fl) { save.ab.fl++; save.ab.next = Date.now() + abWait(); abUp = true; } if (S.ab % 10 === 0 && !save.ab.got[S.ab]) save.ab.pend = S.ab; }
     const sGem = win && !S.elite ? (n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : n <= 5 ? 2 : 0) : 0;
     save.gem += sGem * (S.evt ? EVT.mul : 1) * GEMK;
     /* every 100th clear of a boss stage at 45 or higher (normal 45, 50) pays a 2,000,000 gold bonus */
@@ -3227,15 +3322,16 @@ input { -webkit-user-select: text; user-select: text; }
     win ? Snd.win() : Snd.lose();
     let h = '<div class="modal"><div class="ribbon"><div class="rb"><b class="ol">' + (win ? '스테이지 클리어!' : gaveUp ? '전투 포기' : '거점 함락') + '</b></div></div><div class="mbody">' +
       '<div class="res-stars">' + bigStar(stars >= 1) + bigStar(stars >= 2).replace('<svg', '<svg class="mid"') + bigStar(stars >= 3) + '</div>' +
-      '<p class="desc" style="text-align:center;color:#fff">' + (S.ab ? '심연의 탑 ' + S.ab + '층 · ' + AB_TH[abTheme(S.ab)].nm : nmS ? '악몽 ' + nmS + '단계' : stageLabel(n) + ' · ' + NAMES[i]) + ' · 남은 체력 ' + hpPct + '% · 처치 ' + S.kills + '</p>' +
+      '<p class="desc" style="text-align:center;color:#fff">' + (S.ab ? '심연의 탑 ' + S.ab + '층 · ' + AB_TH[abTheme(S.ab)].nm : S.pcm ? '계약의 지옥 · 열기 ' + S.pcm.heat : nmS ? '악몽 ' + nmS + '단계' : stageLabel(n) + ' · ' + NAMES[i]) + ' · 남은 체력 ' + hpPct + '% · 처치 ' + S.kills + '</p>' +
       (drops.length ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>장비 획득!</b></p><div class="rewards">' + drops.map(d => '<div class="rw">' + itemIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + iK(d.id).nm + '</b><span style="color:' + RAR[iG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[iG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       (rdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0ff"><b>💍 반지 획득!</b></p><div class="rewards">' + rdrops.map(d => '<div class="rw">' + ringIcon(d.id) + '<b class="ol-s" style="font-size:12px">' + rK(d.id).nm + '</b><span style="color:' + RAR[rG(d.id)].c + '">' + (d.isNew ? 'NEW · ' : '+1 · ') + RAR[rG(d.id)].nm + '</span></div>').join('') + '</div>' : '') +
       '<div class="rewards"><div class="rw">' + I.coin + '<b class="ol-s">+' + fmt(gold) + '</b><span>골드</span></div><div class="rw">' + lvBadge(save.lv) + '<b class="ol-s">+' + xp + '</b><span>경험치</span></div>' + (cards ? '<div class="rw">' + skillIcon('venom') + '<b class="ol-s">+' + cards + '</b><span>스킬 카드</span></div>' : '') + '</div>' +
       (S.rareK ? '<p class="desc" style="text-align:center;color:var(--yel)"><b>희귀 보스 처치!</b> 보너스 골드와 젬 ' + 100 * GEMK + '개를 받았어요.</p>' : S.rare && !win ? '<p class="desc" style="text-align:center;color:var(--bad)">1% 확률로 나타나는 <b>' + BOSSES[RARE_I].nm + '</b>을(를) 만났어요. 운이 나빴어요!</p>' : '') +
       (bclrBonus ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:16px"><b>🎉 45단계 이상 보스 ' + save.bclr + '번째 클리어! 보너스 ' + fmt(BCLR_G) + ' 골드</b></p>' : bclrOn ? '<p class="desc" style="text-align:center">45단계 이상 보스 클리어 ' + (save.bclr % BCLR_N) + '/' + BCLR_N + ' · 100번마다 200만 골드</p>' : '') +
       (sGem ? '<p class="desc" style="text-align:center;color:#ff9ad8"><b>' + (n <= 5 ? '클리어 보상' : '고단계 보상') + '</b> · 젬 +' + sGem * (S.evt ? EVT.mul : 1) * GEMK + '개</p>' : '') +
-      (S.ab && win ? '<p class="desc" style="text-align:center;color:#b98cff;font-size:15px"><b>🕳 심연 ' + S.ab + '층 정복!</b> · 젬 +' + abGem + (AF > 1 ? ' · 특성 보상 ×' + AF : '') + (abUp ? '<br>다음 층은 2분 뒤에 열려요' : '') + '</p>' + (save.ab.pend ? '<button class="btn p wide ol-s" data-act="abPickOpen">🎁 ' + save.ab.pend + '층 보상 고르기</button>' : '') : '') +
-      (nmS ? '<p class="desc" style="text-align:center;color:#ff8aa0"><b>😈 악몽 ' + nmS + '단계</b> · 정예 50 보상 ×' + NMF.toFixed(2).replace(/0$/, '') + ' · 처치: 일반 보스 ' + S.nbK[0] + ' · 중간 보스 ' + S.nbK[1] + ' · 메인 보스 ' + S.nbK[2] + (S.nmB && S.nmB.abs ? ' · <b style="color:#ff4a4a">절대 보스 등장</b>' : '') + '</p>' : '') +
+      (S.ab && win ? '<p class="desc" style="text-align:center;color:#b98cff;font-size:15px"><b>🕳 심연 ' + S.ab + '층 정복!</b> · 젬 +' + abGem + (AF > 1 ? ' · 특성 보상 ×' + AF : '') + (abUp ? (abWait() ? '<br>다음 층은 2분 뒤에 열려요' : '<br>다음 층이 바로 열렸어요') : '') + '</p>' + (save.ab.pend ? '<button class="btn p wide ol-s" data-act="abPickOpen">🎁 ' + save.ab.pend + '층 보상 고르기</button>' : '') : '') +
+      (S.pcm ? '<p class="desc" style="text-align:center;color:#ffb070;font-size:15px"><b>🔥 계약의 지옥 · 열기 ' + S.pcm.heat + ' · 보상 ×' + S.pcm.mul.toFixed(2).replace(/0$/, '') + '</b>' + (pcRes ? '<br>계약 인장 +' + pcRes.h + (pcRes.nb ? ' · <b style="color:var(--yel)">최고 열기 갱신!</b>' : '') + (pcRes.capUp ? ' · 열기 상한 ' + save.pc.cap + '으로 상승' : '') + (pcRes.ms.length ? '<br>🏆 이정표 열기 ' + pcRes.ms.join('·') + ' 달성 · 젬 +' + fmt(pcRes.ms.reduce((a, m) => a + m * 1000, 0)) : '') : '') + '</p>' : '') +
+      (nmS && !S.pcm ? '<p class="desc" style="text-align:center;color:#ff8aa0"><b>😈 악몽 ' + nmS + '단계</b> · 정예 50 보상 ×' + NMF.toFixed(2).replace(/0$/, '') + ' · 처치: 일반 보스 ' + S.nbK[0] + ' · 중간 보스 ' + S.nbK[1] + ' · 메인 보스 ' + S.nbK[2] + (S.nmB && S.nmB.abs ? ' · <b style="color:#ff4a4a">절대 보스 등장</b>' : '') + '</p>' : '') +
       (gdrop >= 0 ? '<p class="desc" style="text-align:center;color:' + GLT[GLV[gdrop].t].c + ';font-size:15px"><b>🧤 ' + GLT[GLV[gdrop].t].nm + ' 장갑 · ' + GLV[gdrop].nm + (gNew ? ' NEW' : ' +1') + '</b></p>' : '') +
       (bdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0a0"><b>🎗 탄띠 · ' + bdrops.map(b => '<span style="color:' + BG3[bGr(b)].c + '">' + beltName(b) + '</span>').join(' · ') + '</b></p>' : '') +
       (nmFirst ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:15px"><b>🏆 악몽 ' + nmS + '단계 첫 클리어 · 젬 +' + fmt(nmFirst) + '</b></p>' : '') +
@@ -3322,7 +3418,7 @@ input { -webkit-user-select: text; user-select: text; }
     { const ok = canSkip(), b = $('bSkip'); b.hidden = !ok; if (ok) { b.disabled = S.t < SKIP_WAIT; b.innerHTML = S.t < SKIP_WAIT ? '스킵<br>' + Math.ceil(SKIP_WAIT - S.t) : '스킵'; } }
     $('bGold').innerHTML = '<span>' + I.coin + fmt(save.gold) + '</span><small>이번 판 +' + fmt(S.gold) + '</small>';
     $('bXp').style.width = clamp(S.xp / xpNeed(S.lv) * 100, 0, 100) + '%';
-    $('bWave').textContent = (S.ab ? '심연 ' + S.ab + '층 · ' : '') + '웨이브 ' + S.wave + '/' + S.maxW + (S.nm ? ' · 처치 중간 ' + S.nbK[1] + '/' + S.nmB.mid + (S.nmB.abs && S.wave >= 3 ? ' · ☠ 절대 보스' : '') : S.b40 ? ' · 보스 ' + S.bossKills + '/3' : S.nBoss > 1 ? ' · 보스 2마리!' : isBossStage(S.n) ? ' · 보스 스테이지' : S.nBoss ? ' · 보스 출현 예정!' : '') + (rep.tot > 1 ? ' · 연속 ' + (rep.tot - rep.left) + '/' + rep.tot : '');
+    $('bWave').textContent = (S.ab ? '심연 ' + S.ab + '층 · ' : '') + '웨이브 ' + S.wave + '/' + S.maxW + (S.pcm && S.pcm.time ? ' · ⏳ ' + Math.max(0, Math.ceil(S.pcm.time - S.t)) + '초' : '') + (S.nm ? ' · 처치 중간 ' + S.nbK[1] + '/' + S.nmB.mid + (S.nmB.abs && S.wave >= 3 ? ' · ☠ 절대 보스' : '') : S.b40 ? ' · 보스 ' + S.bossKills + '/3' : S.nBoss > 1 ? ' · 보스 2마리!' : isBossStage(S.n) ? ' · 보스 스테이지' : S.nBoss ? ' · 보스 출현 예정!' : '') + (rep.tot > 1 ? ' · 연속 ' + (rep.tot - rep.left) + '/' + rep.tot : '');
     $('bHp').style.width = clamp(S.hp / S.mh * 100, 0, 100) + '%';
     $('bHpT').textContent = fmt(Math.ceil(S.hp));
     const ks = Object.keys(S.sk);
@@ -3935,7 +4031,7 @@ input { -webkit-user-select: text; user-select: text; }
     c.strokeStyle = INK; c.fillStyle = '#fff'; c.beginPath(); c.moveTo(r * .72, -r * .25); c.lineTo(r * .9, -r * .1); c.lineTo(r * .72, 0); c.lineTo(r * .9, r * .1); c.lineTo(r * .72, r * .25); c.closePath(); c.fill(); c.stroke();
     if (e.nb >= 2) { c.fillStyle = e.nb === 3 ? '#ff2a3a' : '#ffcf3f'; c.beginPath(); c.moveTo(-r * .35, -r * .45); c.lineTo(-r * .55, -r * .2); c.lineTo(-r * .35, 0); c.lineTo(-r * .55, r * .2); c.lineTo(-r * .35, r * .45); c.lineTo(-r * .2, 0); c.closePath(); c.fill(); c.stroke(); }
     /* tier tag */
-    const tag = ['일반', '중간', '메인', '절대'][e.nb], tc = ['#c87a8a', '#c27bff', '#ffcf3f', '#ff2a3a'][e.nb];
+    const tag = ['일반', '중간', '메인', '절대', '계약자'][e.nb], tc = ['#c87a8a', '#c27bff', '#ffcf3f', '#ff2a3a', '#d080ff'][e.nb] || ['#c87a8a', '#c27bff', '#ffcf3f', '#ff2a3a'][e.nb];
     c.font = "900 " + (e.nb >= 2 ? 15 : 12) + "px 'Black Han Sans', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; strokeT(c, tag, 0, -r - (e.nb < 2 ? 18 : 10), tc, 4);
   }
   const DSPR = {};
@@ -4251,8 +4347,8 @@ input { -webkit-user-select: text; user-select: text; }
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
       h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + (+d.ti > 0 && TITLES[+d.ti - 1] ? '<span style="color:' + TITLES[+d.ti - 1].c + ';font-size:12px">「' + TITLES[+d.ti - 1].nm + '」</span> ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b>' + (NET.mode === 'firebase' ? '' : '<span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span>') + '</div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
-        '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>' + (+d.nm > 0 ? '악몽 단계' : +d.es > 0 ? '정예 단계' : '스테이지') + '</span><b class="ol-s"' + (+d.nm > 0 ? ' style="color:#ff8aa0"' : +d.es > 0 ? ' style="color:#d9b8ff"' : '') + '>' + (+d.nm > 0 ? '악몽 ' + clamp(+d.nm, 1, 30) : +d.es > 0 ? '정예 ' + clamp(+d.es, 1, 50) : clamp(+d.st || 1, 1, 50)) + '</b></div><div><span>심연</span><b class="ol-s" style="color:#b98cff">' + (+d.ab > 0 ? clamp(+d.ab, 0, 9999) + '층' : '-') + '</b></div>' +
-        '<div><span>일반 스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 50) + '</b></div><div><span>💰 골드</span><b class="ol-s" style="color:var(--yel)">' + (d.gd != null ? fmt(clamp(+d.gd || 0, 0, 1e15)) : '-') + '</b></div><div><span>🎮 총 판수</span><b class="ol-s" style="color:#8fd0ff">' + fmt(clamp(+(d.tp != null ? d.tp : d.pl) || 0, 0, 1e9)) + '</b></div></div>' +
+        '<div class="fs" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><span>레벨</span><b class="ol-s">' + lvName(clamp(+d.lv || 1, 1, LV_MAX)) + '</b></div><div><span>' + (+d.nm > 0 ? '악몽 단계' : +d.es > 0 ? '정예 단계' : '스테이지') + '</span><b class="ol-s"' + (+d.nm > 0 ? ' style="color:#ff8aa0"' : +d.es > 0 ? ' style="color:#d9b8ff"' : '') + '>' + (+d.nm > 0 ? '악몽 ' + clamp(+d.nm, 1, 50) : +d.es > 0 ? '정예 ' + clamp(+d.es, 1, 50) : clamp(+d.st || 1, 1, 50)) + '</b></div><div><span>심연</span><b class="ol-s" style="color:#b98cff">' + (+d.ab > 0 ? clamp(+d.ab, 0, 9999) + '층' : '-') + '</b></div>' +
+        (+d.pcb > 0 ? '<div><span>🔥 계약 열기</span><b class="ol-s" style="color:#ffb070">' + clamp(+d.pcb, 0, 200) + '</b></div>' : '<div><span>일반 스테이지</span><b class="ol-s">' + clamp(+d.st || 1, 1, 50) + '</b></div>') + '<div><span>💰 골드</span><b class="ol-s" style="color:var(--yel)">' + (d.gd != null ? fmt(clamp(+d.gd || 0, 0, 1e15)) : '-') + '</b></div><div><span>🎮 총 판수</span><b class="ol-s" style="color:#8fd0ff">' + fmt(clamp(+(d.tp != null ? d.tp : d.pl) || 0, 0, 1e9)) + '</b></div></div>' +
         (isMe ? '' : (() => { const pv = on && peers[r.id] && peers[r.id].v ? String(peers[r.id].v) : '', dv = String(d.v || ''), cv = pv || dv;
           if (cv >= APP_VER) return '';
           return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
@@ -4315,7 +4411,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<button class="btn p wide ol-s" data-act="eliteBuy"' + (ok ? '' : ' disabled') + '>' + (ok ? '정예 모드 해금 · ' + (ELITE.cost / 1e4) + '만 골드' : '조건을 모두 채우면 해금할 수 있어요') + '</button>';
   }
   function rankPayload() {
-    return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, nm: nmOpen() ? save.nm.unlocked : 0, ab: save.ab.best, ti: save.tq.eq >= 0 && save.tq.eq < save.tq.st ? save.tq.eq + 1 : 0, pl: save.plays.reduce((a, b) => a + b, 0), tp: save.plays.reduce((a, b) => a + b, 0) + save.el.plays.reduce((a, b) => a + b, 0) + save.nm.plays.reduce((a, b) => a + b, 0) + save.tq.ar, gd: Math.floor(save.gold), pw: power(), hl: save.hl, dl: save.dl,
+    return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, nm: nmOpen() ? save.nm.unlocked : 0, pcb: save.pc.best, ab: save.ab.best, ti: save.tq.eq >= 0 && save.tq.eq < save.tq.st ? save.tq.eq + 1 : 0, pl: save.plays.reduce((a, b) => a + b, 0), tp: save.plays.reduce((a, b) => a + b, 0) + save.el.plays.reduce((a, b) => a + b, 0) + save.nm.plays.reduce((a, b) => a + b, 0) + save.tq.ar, gd: Math.floor(save.gold), pw: power(), hl: save.hl, dl: save.dl,
       v: APP_VER, cp: cmpPack(), eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? Object.assign({ n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se }, u.xb != null ? { xb: u.xb } : {}) : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
   }
 
@@ -4559,6 +4655,17 @@ input { -webkit-user-select: text; user-select: text; }
     achOpen: () => { popBack = popKind === 'inv'; openPop('🎖 훈장', achBody(), 'ach'); },
     achEq: el => { const id = el.dataset.id || ''; const A = ACH.find(x => x.id === id); if (id && (!A || !achLv(A))) return; save.ach.eq = id; Snd.click(); persist(); refreshPop(achBody()); },
     achClaim: el => { const only = el && el.dataset && el.dataset.id; let g = 0, n = 0; for (const A of ACH) { if (only && A.id !== only) continue; const k = achLv(A), c = save.ach.c[A.id] || 0; for (let i = c; i < k; i++) { g += achGem(i); n++; } save.ach.c[A.id] = k; } if (!n) return; save.gem += g; Snd.lvup(); toast('🎖 훈장 ' + n + '단계 성장 · 젬 +' + fmt(g)); persist(true); topbar(); refreshPop(achBody()); render(); },
+    pcOpen: () => { if (!PACT_OPEN()) { toast('🔒 악몽 30단계를 클리어하면 「계약의 지옥」이 열려요'); return; } popBack = popKind === 'inv'; openPop('🔥 계약의 지옥', pactBody(), 'pact'); },
+    pcTab: el => { pcTab = el.dataset.t; refreshPop(pactBody()); },
+    pcAdj: el => { const id = el.dataset.id, d = +el.dataset.d, Pc = PACTS.find(x => x.id === id); if (!Pc) return; const r = clamp((save.pc.on[id] || 0) + d, 0, Pc.r.length); if (r) save.pc.on[id] = r; else delete save.pc.on[id]; Snd.click(); persist(); refreshPop(pactBody()); },
+    pcClear: () => { save.pc.on = {}; persist(); refreshPop(pactBody()); },
+    pcGo: el => { if (pactHeat() > save.pc.cap) return; const c = +el.dataset.c || 1; pactMode = true; closePop(); repStart(c); startRun(); if (!S) pactMode = false; },
+    pcBuy: el => { const k = el.dataset.k, P = save.pc; const pay = c => { if (P.seal < c) return false; P.seal -= c; return true; };
+      if (k === 'prot') { if (!pay(50)) return; P.prot++; toast('🛡 큐브 보호권 +1 (보유 ' + P.prot + ')'); }
+      else if (k === 'frag') { if (!pay(60)) return; P.frag++; if (P.frag >= 20) { P.frag -= 20; addGlove(15); legendFlash('<span style="font-size:60px">🧤</span>', '무법자의 손!', '조각 20개를 모았어요'); } else toast('🧤 무법자의 손 조각 ' + P.frag + '/20'); }
+      else if (k === 'belt') { const h0 = +el.dataset.h; if (!(h0 >= 0 && h0 < 8) || !pay(400)) return; addBelt(bkey(h0, 2)); toast('🎗 ' + beltName(bkey(h0, 2)) + ' 획득!'); }
+      else if (k === 'xb') { const u = getUnit(el.dataset.u); if (!u || !u.m || u.xb == null || !pay(300)) return; const o = [0, 1, 2, 3, 4].filter(x => x !== u.se && x !== u.xb); const old = u.xb; u.xb = o[Math.floor(Math.random() * o.length)]; toast('🎯 ' + NMS[u.n] + ' 두 번째 강속성 ' + ENM[old] + ' → ' + ENM[u.xb]); }
+      Snd.coin(); persist(); refreshPop(pactBody()); },
     glBag: () => { popBack = popKind === 'inv'; glFocus = -1; openPop('🧤 장갑', gloveBody(), 'glove'); },
     glFocus: el => { const k = +el.dataset.k; if (!save.gl[k]) return; glFocus = k; popBack = true; openPop('🧤 ' + GLV[k].nm, gloveBody(), 'glove'); },
     glEq: el => { const k = +el.dataset.k; if (k >= 0 && !save.gl[k]) return; save.gslot = k; Snd.click(); persist(); refreshPop(gloveBody()); },
@@ -4581,7 +4688,7 @@ input { -webkit-user-select: text; user-select: text; }
       openPop('몇 번 할까요?', '<p class="desc" style="text-align:center;color:#fff">' + stageLabel(n) + ' · ' + NAMES[n - 1] + '<br>한 판에 에너지 ' + RUN_COST + ' · 지금 ' + save.en + '/' + EN_MAX + '</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + [1, 30, 50, 100].map(c => '<button class="btn ' + (c === 1 ? 'g' : 'y') + ' ol-s" style="font-size:22px;padding:12px 4px;line-height:1.15" data-act="startN" data-c="' + c + '"' + (ok ? '' : ' disabled') + '>' + c + '회' + (c > 1 ? '<br><small style="font-size:12px">완주 +' + ({ 30: 10, 50: 15, 100: 20 })[c] + '%</small>' : '') + '</button>').join('') + '</div>' +
         '<p class="desc" style="text-align:center">' + (ok ? '연속 전투는 에너지가 떨어지면 자동으로 멈춰요. 끝까지 다 돌면 그동안 번 골드·젬의 10% (30회) · 15% (50회) · 20% (100회)를 더 줘요.' : '에너지가 부족해요. 상단 + 버튼에서 젬으로 충전할 수 있어요.') + '</p>', 'startn'); },
-    startN: el => { const c = +el.dataset.c || 1; closePop(); repStart(c); startRun(); },
+    startN: el => { const c = +el.dataset.c || 1; pactMode = false; closePop(); repStart(c); startRun(); },
     chest: () => openPop('스테이지 상자', chestBody(), 'chest'),
     claimall: () => {
       const tot = { gold: 0, gem: 0, cards: 0 };
@@ -4647,7 +4754,7 @@ input { -webkit-user-select: text; user-select: text; }
       save.gold += g; rmSel.clear(); rmAsk = false; rmMode = false;
       Snd.coin(); toast(n + '명 제거 · +' + fmt(g) + '골드'); persist(); render();
     },
-    abGo: () => { if (!abOpen() || abLeft() > 0) return; startRun(true); },
+    abGo: () => { if (!abOpen() || abLeft() > 0) return; pactMode = false; startRun(true); },
     abBack: () => { leaveBattle(); setTab('boss'); },
     abPickOpen: () => { if (!save.ab.pend) return; openPop('🎁 심연 ' + save.ab.pend + '층 보상', abPickBody(), 'abpick', true); },
     abPick: el => { const f = save.ab.pend; if (!f) return; const o = abPicks(f)[+el.dataset.k]; if (!o) return; const t = abGive(o); save.ab.got[f] = 1; save.ab.pend = 0; Snd.lvup(); toast('🎁 ' + t + ' 받았어요'); persist(true); closePop(); if (S && S.over) { const rb = $('resBtns'); if (rb) { const b = document.querySelector('#bpop [data-act="abPickOpen"]'); if (b) b.remove(); } } else render(); },
@@ -4828,7 +4935,7 @@ input { -webkit-user-select: text; user-select: text; }
   NET.init();
   setTimeout(showDisNote, 2500);
   if (!window.jmReady && !(window.claude && window.claude.use)) setTimeout(repResume, 1500);
-  window.__G = { get MYB() { return MYB; }, draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
+  window.__G = { get MYB() { return MYB; }, pc: { PACTS, pactWind, pactHeat, pactBody, capeV, get mode() { return pactMode; } }, draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
 })();
 </script>
 <script type="module">
