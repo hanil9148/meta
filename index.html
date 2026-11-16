@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1705';
+  const APP_VER = 'v.261116-1720';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2411,7 +2411,6 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
-    { id: 'n261116u', t: '🎁 전설 총잡이 5명 선물', s: '모두에게 ★24 4속성(전설) 총잡이 5명을 무작위로 드려요. 4속성 ★24 다섯 명이면 강속성 2개 신화를 만들 수 있어요!', r: { u24: 5 }, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
@@ -2598,15 +2597,18 @@ input { -webkit-user-select: text; user-select: text; }
      normal (all stages): gold x5 · gems x5 · gear x5
      elite 1~5: gold x5 · gems x5 · gear x5     elite 6~50: gems x3
      abyss: its own rewards (elite-40 gold x1.2, +5%/floor from 21F, curses x1.25 / x1.6) */
+  const catchUp = () => !nmOpen() && save.elOn && save.el.unlocked <= 45;
   function rwMul(elite, n, ab) {
     if (ab) return { gold: 1, gem: 1, item: 1 };
     if (!elite || n <= 5) return { gold: 5, gem: 5, item: 5 };
+    /* catch-up: elite 6~45 gold x3 too, only while the player's elite progress is still at 45 or below and nightmare (지옥) is not reached */
+    if (n <= 45 && catchUp()) return { gold: 3, gem: 3, item: 1, cu: 1 };
     return { gold: 1, gem: 3, item: 1 };
   }
   function rwTxt(RW, evt, ab) {
     const p = [];
     if (ab) { p.push('골드 ×' + (1.2 * (1 + .05 * Math.max(0, ab - 20))).toFixed(2).replace(/\.?0+$/, '')); if (abMul(ab) > 1) p.push('특성 ×' + abMul(ab)); }
-    else { if (RW.gold > 1) p.push('골드 ×' + RW.gold); if (RW.gem > 1) p.push('젬 ×' + RW.gem); if (RW.item > 1) p.push('장비 ×' + RW.item); }
+    else { if (RW.cu) p.push('따라잡기'); if (RW.gold > 1) p.push('골드 ×' + RW.gold); if (RW.gem > 1) p.push('젬 ×' + RW.gem); if (RW.item > 1) p.push('장비 ×' + RW.item); }
     if (evt) p.push('이벤트 ×' + EVT.mul);
     return p.length ? '<p class="desc" style="text-align:center;color:#7ee0a0;font-size:15px"><b>📈 적용 배율 · ' + p.join(' · ') + '</b></p>' : '';
   }
