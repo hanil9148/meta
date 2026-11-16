@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1321';
+  const APP_VER = 'v.261116-1627';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1668,7 +1668,7 @@ input { -webkit-user-select: text; user-select: text; }
     const k = uRar(u);
     const aw = u.s >= 22 ? u.s - 21 : 0;
     return '<div class="htile r' + k + (cls ? ' ' + cls : '') + (aw ? ' aura' + (aw >= 8 ? ' aura3' : aw >= 5 ? ' aura2' : '') : '') + '"' + (extra || '') + '>' + (u.m && mythPortrait(u.n) ? '<span style="display:block;width:min(78px,88%);aspect-ratio:1;margin:8px auto -2px;border-radius:50%;background:radial-gradient(circle at 50% 45%,#3a2a5a 0%,#1a1230 70%);border:2px solid rgba(255,255,255,.6);overflow:hidden"><img src="' + mythPortrait(u.n) + '" alt="" style="width:144%;max-width:none;height:auto;margin:-18% 0 0 -24%;display:block"></span>' : face(HATS[u.n], uCol(u), { n: u.n })) + (aw ? '<span class="awk ol-s">각성 ' + aw + '</span>' : '') + (u.m ? '<span class="myb">신화</span>' : '') +
-      '<span class="hn ol-s">' + NMS[u.n] + '</span><span class="chips">' + (u.m ? '<i class="chip e' + u.se + ' se">' + ENM[u.se] + '★</i><i class="chip" style="background:#fff">5속성</i>' : u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + '</i>').join('')) + '</span>' +
+      '<span class="hn ol-s">' + NMS[u.n] + '</span><span class="chips">' + (u.m ? '<i class="chip e' + u.se + ' se">' + ENM[u.se] + '★</i>' + (u.xb != null ? '<i class="chip e' + u.xb + ' se">' + ENM[u.xb] + '★</i>' : '<i class="chip" style="background:#fff">5속성</i>') : u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + '</i>').join('')) + '</span>' +
       '<span class="st ol-s">★' + u.s + '</span></div>';
   }
   function fortBody() { return (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff;margin:0 0 6px">🛡 보호막 외형: <b style="color:var(--yel)">' + DOME_NM[domeTier()] + '</b> · 거점 평균 레벨에 따라 바뀌어요 (0~7 황야 철벽 · 8~15 수정 방벽 · 16~23 룬 결계 · 24~29 플라즈마 실드 · 30 오로라 장막)</p>' + tipBox('오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. <b>밀쳐내기</b>는 일정 시간마다 충격파로 거점 앞 몬스터를 뒤로 밀어내요(보스는 30%만, 절대 보스는 안 밀려요). 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.') +
@@ -1801,7 +1801,7 @@ input { -webkit-user-select: text; user-select: text; }
   const mythSel = new Set();
   function mythBody() {
     const list = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).sort((a, b) => a.s - b.s || a.e.length - b.e.length);
-    let h = '<p class="desc" style="color:#fff">재료로 쓸 ★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 눌러서 골라요. 고른 총잡이는 사라지고 <b>무작위 신화 총잡이</b>(★0)가 나와요. 출전 중이면 그 자리에 신화가 들어가요.</p>';
+    let h = '<p class="desc" style="color:#fff">재료로 쓸 ★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 눌러서 골라요. 고른 총잡이는 사라지고 <b>무작위 신화 총잡이</b>(★0)가 나와요. 출전 중이면 그 자리에 신화가 들어가요.</p><p class="desc" style="color:#ffe14a">⭐ 재료 5명이 모두 <b>4속성 · ★24 이상</b>이면 신화가 <b>강속성 2개</b>를 갖고 나와요. 1~3속성이 하나라도 섞이면 강속성은 1개예요.</p>' + (mythSel.size === MYTH_NEED && [...mythSel].every(k => { const u = getUnit(k); return u && u.s >= 24 && u.e.length >= 4; }) ? '<p class="desc" style="color:#7ee0a0;text-align:center"><b>✔ 강속성 2개 조건 충족!</b></p>' : '');
     h += '<div class="hgrid">' + list.map(u => { const k = ukey(u); return heroTile(u, ' data-act="mythPick" data-k="' + esc(k) + '" role="button"', mythSel.has(k) ? 'pick' : ''); }).join('') + '</div>';
     h += '<p class="desc" style="text-align:center;color:#fff">고른 재료 <b>' + mythSel.size + '/' + MYTH_NEED + '</b></p>';
     h += '<div class="slots4" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">' + MYTHT.map((t, n) => '<div class="desc" style="font-size:11px;text-align:center"><b>' + NMS[n] + '</b><br>' + t.nm + '</div>').join('') + '</div>';
@@ -1864,7 +1864,8 @@ input { -webkit-user-select: text; user-select: text; }
   function mythMake() {
     const keys = [...mythSel].filter(k => { const u = getUnit(k); return u && !u.m && u.s >= MYTH_STAR; });
     if (keys.length !== MYTH_NEED) return null;
-    const hi = keys.every(k => getUnit(k).s >= 24);
+    /* official rule: all 5 ingredients are 4-element gunslingers at ★24+ -> the mythic gets a 2nd strong element (1~3 elements never do) */
+    const hi = keys.every(k => { const u = getUnit(k); return u.s >= 24 && u.e.length >= 4; });
     const slotsFreed = [];
     save.slots = save.slots.map((k, i) => { if (keys.includes(k)) { slotsFreed.push(i); return null; } return k; });
     save.coll = save.coll.filter(u => !keys.includes(ukey(u)));
@@ -1888,7 +1889,7 @@ input { -webkit-user-select: text; user-select: text; }
     const at = save.slots.indexOf(selKey);
     let h = '<div class="row" style="align-items:center"><div class="htile r' + uRar(u) + '" style="width:96px;flex:none">' + face(HATS[u.n], uCol(u), { n: u.n }) + (u.m ? '<span class="myb">신화</span>' : '') + '<span class="hn ol-s">' + NMS[u.n] + '</span></div>' +
       '<div class="grow" style="display:grid;gap:4px"><span class="chips">' + u.e.map(e => '<i class="chip e' + e + (u.m && e === u.se ? ' se' : '') + '">' + ENM[e] + (u.m && e === u.se ? '★' : '') + ' · ' + EFF[e] + '</i>').join('') + '</span>' +
-      (u.m ? '<p class="desc" style="color:#ffd0ff"><b>✨ 신화</b> · 피해 ×1.3 · 강속성 <b>' + ENM[u.se] + '</b>(이 속성으로 때리면 ×1.3 더)<br><b>' + MYTHT[u.n].nm + '</b> · ' + MYTHT[u.n].d + '</p>' : '') +
+      (u.m ? '<p class="desc" style="color:#ffd0ff"><b>✨ 신화</b> · 피해 ×1.3 · 강속성 <b>' + ENM[u.se] + (u.xb != null ? ' · ' + ENM[u.xb] + '</b> (2개)' : '</b>') + '(이 속성으로 때리면 ×1.3 더)<br><b>' + MYTHT[u.n].nm + '</b> · ' + MYTHT[u.n].d + '</p>' : '') +
       '<p class="desc">공격력 <b>' + st.dmg.toFixed(1) + '</b> · 발사 간격 <b>' + st.iv.toFixed(2) + '초</b><br>초당 피해 약 <b>' + fmt(dps(st)) + '</b></p></div></div>';
     h += starRows(u.s);
     if (max) h += '<div class="msg ok">30성 달성! 최고 단계예요.</div>';
@@ -3069,7 +3070,7 @@ input { -webkit-user-select: text; user-select: text; }
   function openPause() {
     if (!S || S.over) return;
     S.pause = true;
-    $('bpop').innerHTML = '<div class="modal"><div class="ribbon"><div class="rb"><b class="ol">일시정지</b></div></div><div class="mbody"><p class="desc" style="text-align:center;color:#fff">' + stageLabel(S.n) + ' · 웨이브 ' + S.wave + '/3 · LV.' + S.lv + '</p>' +
+    $('bpop').innerHTML = '<div class="modal"><div class="ribbon"><div class="rb"><b class="ol">일시정지</b></div></div><div class="mbody"><p class="desc" style="text-align:center;color:#fff">' + runLabel() + ' · 웨이브 ' + S.wave + '/' + S.maxW + ' · LV.' + S.lv + '</p>' +
       '<button class="btn y wide ol-s" data-act="resume">계속하기</button><button class="btn r wide ol-s" data-act="giveup">포기하기</button><p class="desc" style="text-align:center">포기해도 플레이 횟수는 올라가고, 지금까지 번 골드의 절반을 받아요.</p></div></div>';
     $('bpop').hidden = false;
   }
@@ -3101,6 +3102,8 @@ input { -webkit-user-select: text; user-select: text; }
   }
   const BCLR_N = 100, BCLR_G = 2000000, BCLR_MIN = 45;
   /* ---------- end of run ---------- */
+  /* the label of the run in progress: abyss floor / nightmare stage / normal·elite stage (independent of the mode picked at home) */
+  const runLabel = () => S.ab ? '심연의 탑 ' + S.ab + '층' : S.nm ? '악몽 스테이지 ' + S.nm : stageLabel(S.n, !!S.elite);
   function endRun(win, gaveUp) {
     if (S.over) return;
     S.over = true; S.pause = true;
@@ -3248,7 +3251,7 @@ input { -webkit-user-select: text; user-select: text; }
     const t = Math.floor(S.t), key = [t, Math.floor(S.gold), Math.ceil(S.hp), S.lv, Math.floor(S.xp), S.wave, Object.keys(S.sk).map(k => k + S.sk[k].l).join()].join('|');
     if (!force && key === hudKey) return;
     hudKey = key;
-    $('bStage').textContent = S.nm ? '악몽 스테이지 ' + S.nm : stageLabel(S.n);
+    $('bStage').textContent = runLabel();
     $('bTime').textContent = '⏱ ' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
     $('bLv').textContent = 'LV. ' + S.lv;
     { const ok = canSkip(), b = $('bSkip'); b.hidden = !ok; if (ok) { b.disabled = S.t < SKIP_WAIT; b.innerHTML = S.t < SKIP_WAIT ? '스킵<br>' + Math.ceil(SKIP_WAIT - S.t) : '스킵'; } }
@@ -4174,7 +4177,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (rows.length > 1) h += '<div class="myrank ol-s">⚔ 전투력 순위 <b>' + myRank + '위</b> / ' + rows.length + '명</div>';
     rows.slice(0, 50).forEach((r, ri) => {
       const d = r.d, isMe = r.id === me || r.id === '__me', on = isMe || !!peers[r.id];
-      const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s, x.m ? 1 : 0, x.se] : null).filter(Boolean);
+      const eq = (Array.isArray(d.eq) ? d.eq : []).slice(0, 4).map(x => Array.isArray(x) ? x : x && typeof x === 'object' ? [x.n, x.e, x.s, x.m ? 1 : 0, x.se, x.xb] : null).filter(Boolean);
       const medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '';
       h += '<div class="fr' + (isMe ? ' me' : '') + '"><div class="ft"><span class="rk ol-s' + (ri < 3 ? ' top' : '') + '">' + (medal || (ri + 1) + '위') + '</span>' + face('#c8783a', isMe ? '#e0452e' : '#3fa9f5') + '<b class="ol-s">' + (isMe ? '나 · ' : '') + (+d.ti > 0 && TITLES[+d.ti - 1] ? '<span style="color:' + TITLES[+d.ti - 1].c + ';font-size:12px">「' + TITLES[+d.ti - 1].nm + '」</span> ' : '') + esc((d.nick || NET.nameOf(r.id) || '친구').slice(0, 10)) + '</b>' + (NET.mode === 'firebase' ? '' : '<span class="' + (on ? 'on' : 'off') + '">' + (on ? (peers[r.id] && peers[r.id].p ? '● 전투 중' : '● 접속 중') : '오프라인') + '</span>') + '</div>' +
         tierBlock(clamp(+d.pw || 0, 0, 1e13)) +
@@ -4185,7 +4188,7 @@ input { -webkit-user-select: text; user-select: text; }
           return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
             : (() => { const ls = lastSeen[r.id], lt = Math.max(ls ? ls.t : 0, +d.t || 0), lv = (ls && ls.v > dv ? ls.v : dv);
                 return '<div class="desc" style="font-size:11px">💤 <b>' + (lt ? agoTxt(lt) : '오래 전') + '</b> 마지막 접속 · 그때 버전 ' + esc(lv || '예전 버전') + '<br>아직 새 버전을 안 켰어요. 다음에 켜면 자동으로 최신 버전이 돼요</div>'; })(); })()) +
-        '<div class="desc" style="font-size:11px">' + (isMe ? (NET.mode === 'firebase' ? '내 정보는 접속할 때·10분마다·나갈 때 올라가요' : '내 정보는 바뀔 때마다 자동으로 올라가요') : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), st = clamp(+x[2] || 0, 0, 30); if (x[3]) { const se = clamp(+x[4] || 0, 0, 4); return '<span class="chip" style="background:linear-gradient(90deg,#ff9ad8,#ffe36a,#8ff0b0,#8fd0ff,#d9b8ff);font-weight:900">신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + '</span>'; } const es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">전설 ' + NMS[n] + ' ★' + st + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
+        '<div class="desc" style="font-size:11px">' + (isMe ? (NET.mode === 'firebase' ? '내 정보는 접속할 때·10분마다·나갈 때 올라가요' : '내 정보는 바뀔 때마다 자동으로 올라가요') : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), st = clamp(+x[2] || 0, 0, 30); if (x[3]) { const se = clamp(+x[4] || 0, 0, 4); return '<span class="chip" style="background:linear-gradient(90deg,#ff9ad8,#ffe36a,#8ff0b0,#8fd0ff,#d9b8ff);font-weight:900">신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + (x[5] != null && +x[5] >= 0 && +x[5] <= 4 && +x[5] !== se ? EGL[+x[5]] : '') + '</span>'; } const es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">전설 ' + NMS[n] + ' ★' + st + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
     });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
     return h;
@@ -4200,7 +4203,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function rankPayload() {
     return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, nm: nmOpen() ? save.nm.unlocked : 0, ab: save.ab.best, ti: save.tq.eq >= 0 && save.tq.eq < save.tq.st ? save.tq.eq + 1 : 0, pl: save.plays.reduce((a, b) => a + b, 0), tp: save.plays.reduce((a, b) => a + b, 0) + save.el.plays.reduce((a, b) => a + b, 0) + save.nm.plays.reduce((a, b) => a + b, 0) + save.tq.ar, gd: Math.floor(save.gold), pw: power(), hl: save.hl, dl: save.dl,
-      v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? { n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se } : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
+      v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? Object.assign({ n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se }, u.xb != null ? { xb: u.xb } : {}) : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
   }
 
   /* ================= network (claude.ai artifact capabilities, or Firebase build) ================= */
@@ -4567,7 +4570,7 @@ input { -webkit-user-select: text; user-select: text; }
     mixGo: () => { const nu = mythMix(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
     mythOpen: () => { mythSel.clear(); openPop('✨ 신화 강화', mythBody(), 'myth'); },
     mythPick: el => { const k = el.dataset.k; if (mythSel.has(k)) mythSel.delete(k); else if (mythSel.size < MYTH_NEED) mythSel.add(k); Snd.click(); refreshPop(mythBody()); },
-    mythGo: () => { const nu = mythMake(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 총잡이!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
+    mythGo: () => { const nu = mythMake(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 총잡이!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + (nu.xb != null ? '·' + ENM[nu.xb] + ' (2개!)' : '') + ' · ' + MYTHT[nu.n].nm); },
     ringbag: el => { popBack = popKind === 'inv'; ringFocus = null; ringSlot = +el.dataset.i; openPop('반지 · ' + (ringSlot + 1) + '번 칸', ringBody(), 'ring'); },
     ringEq: el => { const id = el.dataset.id; if (!save.rings[id]) return; save.rslot = save.rslot.map((x, j) => j !== ringSlot && x && rK(x) === rK(id) ? null : x); save.rslot[ringSlot] = id; Snd.click(); persist(); refreshPop(ringBody()); },
     ringOff: () => { save.rslot[ringSlot] = null; persist(); refreshPop(ringBody()); },
@@ -4635,7 +4638,7 @@ input { -webkit-user-select: text; user-select: text; }
   /* secret: hold a mythic gunslinger for 5 seconds to see its hidden strong element */
   let lpT = 0, lpFired = false;
   const lpUnit = el => { const t = el.closest('.htile'); if (!t) return null; const k = t.dataset.k || (t.dataset.act === 'slot' ? save.slots[+t.dataset.i] : null) || (popKind === 'hero' && t.closest('#pop') ? selKey : null); const u = k && getUnit(k); return u && u.m ? u : null; };
-  $('app').addEventListener('pointerdown', e => { clearTimeout(lpT); const u = lpUnit(e.target); if (!u) return; lpT = setTimeout(() => { lpFired = true; toast('🤫 숨은 강속성: ' + (u.xb != null ? ENM[u.xb] : '없음')); }, 5000); });
+  $('app').addEventListener('pointerdown', e => { clearTimeout(lpT); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('app').addEventListener(ev, () => clearTimeout(lpT));
   $('app').addEventListener('contextmenu', e => { if (e.target.closest('.htile')) e.preventDefault(); });
   $('app').addEventListener('click', e => { if (lpFired) { lpFired = false; e.stopPropagation(); e.preventDefault(); } }, true);
