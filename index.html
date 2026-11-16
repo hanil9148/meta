@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-0936';
+  const APP_VER = 'v.261116-1005';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -3038,6 +3038,7 @@ input { -webkit-user-select: text; user-select: text; }
   function endRun(win, gaveUp) {
     if (S.over) return;
     S.over = true; S.pause = true;
+    const gem0 = save.gem;
     const n = S.n, nmS = S.nm || 0, sN = nmS || n, i = sN - 1, hpPct = Math.round(Math.max(0, S.hp) / S.mh * 100);
     const rn = S.elite ? 50 : n, rk = S.elite ? eGoldK(n) : 1;
     let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) * Math.max(1, S.bossKills) * (S.sk.bounty ? 1.3 : 1) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
@@ -3083,6 +3084,9 @@ input { -webkit-user-select: text; user-select: text; }
     save.xp += xp;
     let lvUp = 0;
     while (save.lv < LV_MAX && save.xp >= lvNeed(save.lv)) { save.xp -= lvNeed(save.lv); save.lv++; save.gem += 10; lvUp++; }
+    /* repeat bonus: finishing every run of a 30 / 50 / 100 set pays +10% / +15% / +20% of the gold and gems earned in that set */
+    rep.gem += save.gem - gem0; rep.bonus = null;
+    if (REP_BONUS[rep.tot] && rep.left <= 0 && rep.done === rep.tot && !gaveUp) { const pc = REP_BONUS[rep.tot], bg = Math.round(rep.gold * pc), bm = Math.round(rep.gem * pc); save.gold += bg; save.gem += bm; rep.bonus = { pc, bg, bm }; }
     if (save.adis) dismantleAll();
     persist(true); if (NET.pushSoon) NET.pushSoon();
     const stars = win ? 1 + (hpPct >= 50 ? 1 : 0) + (S.took <= 0 ? 1 : 0) : 0;
@@ -3125,8 +3129,9 @@ input { -webkit-user-select: text; user-select: text; }
     if (rep.left > 0) { clearTimeout(rep.timer); rep.timer = setTimeout(repNext, 2200); }
   }
   /* Repeat runs ("다시 5회/10회"): after each result, start the same stage again until the count runs out, energy runs out or the player stops. */
-  const rep = { left: 0, tot: 1, gold: 0, done: 0, timer: 0 };
-  function repStart(c) { clearTimeout(rep.timer); rep.tot = c; rep.left = c - 1; rep.gold = 0; rep.done = 0; }
+  const rep = { left: 0, tot: 1, gold: 0, gem: 0, done: 0, timer: 0, bonus: null };
+  const REP_BONUS = { 30: .1, 50: .15, 100: .2 };
+  function repStart(c) { clearTimeout(rep.timer); rep.tot = c; rep.left = c - 1; rep.gold = 0; rep.gem = 0; rep.done = 0; rep.bonus = null; }
   function repStop() { clearTimeout(rep.timer); rep.left = 0; }
   function skipAdvance() {
     if (!S || !S.over) return;
@@ -3145,10 +3150,10 @@ input { -webkit-user-select: text; user-select: text; }
   function resButtons(n) {
     if (S && S.ab) return '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button><button class="btn p grow ol-s" data-act="abBack">🕳 심연으로</button></div>';
     return (rep.left > 0 ? '<div class="msg ok" id="repMsg">연속 전투 ' + (rep.tot - rep.left) + '/' + rep.tot + ' 끝 · 잠시 뒤 다음 판을 시작해요</div><button class="btn r wide ol-s" data-act="rstop">연속 전투 멈추기</button>'
-        : (rep.tot > 1 && rep.done > 1 ? '<div class="msg ok">연속 전투 ' + rep.done + '판 끝 · 총 ' + fmt(rep.gold) + '골드</div>' : '') +
+        : (rep.tot > 1 && rep.done > 1 ? '<div class="msg ok">연속 전투 ' + rep.done + '/' + rep.tot + '판 끝 · 총 ' + fmt(rep.gold) + '골드 · 젬 ' + fmt(rep.gem) + (rep.bonus ? '<br><b>🎁 끝까지 완주 보너스 +' + Math.round(rep.bonus.pc * 100) + '% · 골드 +' + fmt(rep.bonus.bg) + ' · 젬 +' + fmt(rep.bonus.bm) + '</b>' : REP_BONUS[rep.tot] ? '<br>중간에 멈춰서 완주 보너스는 없어요' : '') + '</div>' : '') +
           '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button>' + (n < trk().unlocked ? '<button class="btn g grow ol-s" data-act="bnext">다음 ▶</button>' : '') + '</div>' +
           '<div class="row"><span class="ol-s" style="font-family:var(--display);white-space:nowrap">다시 ' + I.bolt.replace('<svg', '<svg style="width:18px;height:18px;vertical-align:-3px"') + '</span>' +
-          [10, 20, 30].map(c => '<button class="btn y sm grow ol-s" data-act="again" data-c="' + c + '"' + (save.en < RUN_COST ? ' disabled' : '') + '>' + c + '회</button>').join('') + '</div>');
+          [30, 50, 100].map(c => '<button class="btn y sm grow ol-s" data-act="again" data-c="' + c + '"' + (save.en < RUN_COST ? ' disabled' : '') + '>' + c + '회</button>').join('') + '</div>');
   }
   function leaveBattle() { repStop(); S = null; $('battle').hidden = true; $('bpop').hidden = true; render(); if (window.__jmReload) window.__jmReload(); }
 
@@ -4365,8 +4370,8 @@ input { -webkit-user-select: text; user-select: text; }
     stageinfo: () => openPop('스테이지 정보', stageInfoBody(), 'info'),
     start: () => { tickEnergy(); const n = trk().cur, ok = save.en >= RUN_COST;
       openPop('몇 번 할까요?', '<p class="desc" style="text-align:center;color:#fff">' + stageLabel(n) + ' · ' + NAMES[n - 1] + '<br>한 판에 에너지 ' + RUN_COST + ' · 지금 ' + save.en + '/' + EN_MAX + '</p>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + [1, 10, 20, 30].map(c => '<button class="btn ' + (c === 1 ? 'g' : 'y') + ' ol-s" style="font-size:22px;padding:14px 4px" data-act="startN" data-c="' + c + '"' + (ok ? '' : ' disabled') + '>' + c + '회</button>').join('') + '</div>' +
-        '<p class="desc" style="text-align:center">' + (ok ? '연속 전투는 에너지가 떨어지면 자동으로 멈춰요.' : '에너지가 부족해요. 상단 + 버튼에서 젬으로 충전할 수 있어요.') + '</p>', 'startn'); },
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + [1, 30, 50, 100].map(c => '<button class="btn ' + (c === 1 ? 'g' : 'y') + ' ol-s" style="font-size:22px;padding:12px 4px;line-height:1.15" data-act="startN" data-c="' + c + '"' + (ok ? '' : ' disabled') + '>' + c + '회' + (c > 1 ? '<br><small style="font-size:12px">완주 +' + ({ 30: 10, 50: 15, 100: 20 })[c] + '%</small>' : '') + '</button>').join('') + '</div>' +
+        '<p class="desc" style="text-align:center">' + (ok ? '연속 전투는 에너지가 떨어지면 자동으로 멈춰요. 끝까지 다 돌면 그동안 번 골드·젬의 10% (30회) · 15% (50회) · 20% (100회)를 더 줘요.' : '에너지가 부족해요. 상단 + 버튼에서 젬으로 충전할 수 있어요.') + '</p>', 'startn'); },
     startN: el => { const c = +el.dataset.c || 1; closePop(); repStart(c); startRun(); },
     chest: () => openPop('스테이지 상자', chestBody(), 'chest'),
     claimall: () => {
