@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1720';
+  const APP_VER = 'v.261116-1803';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -829,12 +829,12 @@ input { -webkit-user-select: text; user-select: text; }
      It powers up the matching gunslinger's mythic trait; a non-mythic matching gunslinger gets damage +10% instead. f = 희귀 .3 · 영웅 .6 · 전설 1 */
   const BELT = [
     { nm: '관통 탄띠', d: f => '치명타 관통 ' + (f >= 1 ? 2 : 1) + '마리 · 치명타 피해 +' + Math.round(30 * f) + '%' },
-    { nm: '연발 탄띠', d: f => '피해 +' + Math.round(15 * f) + '% · 연속 사격 보너스 최대 +' + Math.round(60 + 30 * f) + '% · 쌓이는 속도 ' + (1 + .5 * f).toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + '배' },
-    { nm: '철갑 탄띠', d: f => '보스 피해 +' + Math.round(50 * f) + '% · 체력 많은 적 추가 피해 최대 +' + Math.round(60 + 35 * f) + '%' },
-    { nm: '폭렬 탄띠', d: f => '지진 ' + (f >= 1 ? 4 : 5) + '번째 공격마다 · 지진 피해 ' + Math.round(150 + 60 * f) + '% · 범위 +' + Math.round(25 * f) + '%' },
+    { nm: '연발 탄띠', d: f => '피해 +' + Math.round(15 * f) + '% · 연속 사격 보너스 최대 +' + Math.round(90 + 30 * f) + '% · 쌓이는 속도 ' + (1 + .5 * f).toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + '배' },
+    { nm: '철갑 탄띠', d: f => '보스 피해 +' + Math.round(50 * f) + '% · 체력 많은 적 추가 피해 최대 +' + Math.round(100 + 35 * f) + '%' },
+    { nm: '폭렬 탄띠', d: f => '지진 ' + (f >= 1 ? 4 : 5) + '번째 공격마다 · 지진 피해 ' + Math.round(170 + 60 * f) + '% · 범위 +' + Math.round(25 * f) + '%' },
     { nm: '소이 탄띠', d: f => '불타는 적 추가 피해 +' + Math.round(60 + 40 * f) + '% · 화상 번지는 범위 +' + Math.round(30 * f) + '%' },
-    { nm: '냉각 탄띠', d: f => '빙결 확률 ' + Math.round(25 + 7 * f) + '% · 빙결 ' + (1 + .3 * f).toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + '초 · 언 적 추가 피해 ' + Math.round(90 + 30 * f) + '%' },
-    { nm: '회오리 탄띠', d: f => '회오리 확률 ' + Math.round(40 + 10 * f) + '% · 회오리 피해 ' + Math.round(80 + 15 * f) + '%' },
+    { nm: '냉각 탄띠', d: f => '빙결 확률 ' + Math.round(25 + 7 * f) + '% · 빙결 ' + (1 + .3 * f).toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + '초 · 언 적 추가 피해 ' + Math.round(120 + 30 * f) + '%' },
+    { nm: '회오리 탄띠', d: f => '회오리 확률 ' + Math.round(64 + 10 * f) + '% · 회오리 피해 ' + Math.round(138 + 15 * f) + '%' },
     { nm: '뇌전 탄띠', d: f => '연쇄 ' + (f >= 1 ? 6 : 5) + '회 · 연쇄 피해 ' + Math.round(125 + 30 * f) + '%' }
   ];
   const BG3 = [{ nm: '희귀', c: '#3fa9f5', f: .3 }, { nm: '영웅', c: '#c27bff', f: .6 }, { nm: '전설', c: '#ffb72e', f: 1 }];
@@ -1118,9 +1118,11 @@ input { -webkit-user-select: text; user-select: text; }
   /* Mythic gunslingers: all 5 elements, damage x1.3, one random strong element (x1.3 more when hitting with it), a trait per name.
      Made from five ★22+ gunslingers (random name + strong element), starting again from ★0. */
   const MYTH_NEED = 5, MYTH_STAR = 22;
+  /* mythic tuning (boss specialists 성민·금유, 해천 damage + no-regen, 진명 burn slow) */
+  const MYB = { sb: 1.8, sd: 1.3, gb: 3.3, gd: 1.4, gg: 1, js: .3, hf: 1.2, hs: 1, hd: 1.15, wd: 1.62, wg: .64, wm: 1.38, he: .6, bx: .5, ds: .95, dq: 1.7, kc: 1, hx: 2 };
   const MYTHT = [
-    { nm: '백발백중', d: '치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통' }, { nm: '속사포', d: '공격 속도 +60% · 같은 적을 계속 쏘면 1발마다 피해 +2% (최대 +60%)' }, { nm: '거인 사냥꾼', d: '보스 피해 +80% · 모든 피해 +15% · 체력이 많은 적일수록 피해 최대 +60%' }, { nm: '대지 분쇄', d: '범위 피해 반경 1.8배 · 범위 피해 85% · 5번째 공격마다 지진(넓은 범위 150%) · 범위 피해도 치명타 적용' },
-    { nm: '지옥불', d: '화상 피해 7배 · 주변 적에게 화상이 번짐 · 불타는 적에게 피해 +60% · 화상도 치명타 적용' }, { nm: '절대 영도', d: '25% 확률로 1초 빙결 · 얼어 있는 적에게 피해 +90% · 언 적을 때리면 주변에 얼음 파편(60%)' }, { nm: '폭풍 연사', d: '항상 3연사 · 총알 피해 +25% · 총알마다 40% 확률로 회오리(주변 80% 피해)' }, { nm: '천둥 사슬', d: '연쇄 5회 · 연쇄 피해 125% · 멀리 튕김 · 연쇄도 치명타 적용' }
+    { nm: '백발백중', d: '1인 몹 담당 · 치명타 확률 +30% · 치명타 피해 +100% · 치명타가 뒤의 적 1마리를 관통 · 체력 20% 이하 적에게 피해 +60% · 킬 체인: 치명타로 처치하면 남은 피해가 다음 적에게 튕겨요(최대 3번) · 약점 표식: 맞은 적은 3초 동안 모든 아군에게 받는 피해 +5%' }, { nm: '속사포', d: '보스 담당 · 보스부터 노려요 · 체력 20% 이하 보스에게 피해 +50% · 공격 속도 +60% · 피해 +30% · 보스 피해 +180% · 같은 적을 계속 쏘면 1발마다 피해 +2% (최대 +90%)' }, { nm: '거인 사냥꾼', d: '보스 담당 · 보스부터 노려요 · 체력 20% 이하 보스에게 피해 +50% · 보스 피해 +330% · 모든 피해 +40% · 체력이 많은 적일수록 피해 최대 +100%' }, { nm: '대지 분쇄', d: '잡몹 담당 · 범위 피해 반경 1.8배 · 범위 피해 95% · 5번째 공격마다 지진(넓은 범위 170%) · 범위 피해도 치명타 적용' },
+    { nm: '지옥불', d: '제어 담당 · 아직 안 불탄 적부터 노려 전체에 화상을 걸어요 · 화상 피해 7배 · 주변 적에게 화상이 번짐 · 불타는 적에게 피해 +60% · 불붙은 적 이동 속도 -30% · 화상도 치명타 적용' }, { nm: '절대 영도', d: '제어 담당 · 아직 안 언 적부터 노려 전체를 얼려요 · 25% 확률로 1초 빙결 · 모든 피해 +15% · 얼어 있는 적에게 피해 +120% · 언 적을 때리면 주변에 얼음 파편(100%) · 맞은 적은 3초 동안 재생 불가' }, { nm: '폭풍 연사', d: '잡몹 담당 · 항상 3연사 · 총알 피해 +62% · 총알마다 64% 확률로 회오리(주변 138% 피해) · 회오리가 주변 몹을 한곳으로 끌어모아요(다른 범위 공격과 시너지)' }, { nm: '천둥 사슬', d: '연쇄 5회 · 연쇄 피해 125% · 멀리 튕김 · 연쇄도 치명타 적용' }
   ];
   const uCol = u => EC[u.m ? u.se : u.e[0]];
   const uRar = u => u.m ? 5 : u.e.length;
@@ -1243,13 +1245,13 @@ input { -webkit-user-select: text; user-select: text; }
     const el = u.e.slice(), o = { dmg, iv, el, burn, slow, chain, splash, twin };
     if (u.m) {
       o.dmg *= 1.3; el.se = u.se; o.se = u.se; if (u.xb != null) el.xb = u.xb;
-      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; } else if (u.n === 1) { o.iv /= 1.6; o.ramp = 1; } else if (u.n === 2) { el.boss = .8; o.dmg *= 1.15; el.giant = .6; } else if (u.n === 3) { o.splash = 61; o.spm = .85; el.sc = 1; o.quake = 1; }
-      else if (u.n === 4) { o.burn = 2.8; o.bsp = 80; el.sc = 1; el.ign = .6; } else if (u.n === 5) { o.frz = .25; el.fzb = .9; el.shat = 1; } else if (u.n === 6) { o.twin = 2; el.gale = .4; o.dmg *= 1.25; } else if (u.n === 7) { o.chain = 5; o.chm = 1.25; o.chr = 140; el.sc = 1; }
+      if (u.n === 0) { el.cb = .3; el.cdm = 1; el.cpi = 1; el.exe1 = MYB.he; el.kc = 1; el.mk5 = 1; o.dmg *= MYB.hx; } else if (u.n === 1) { o.iv /= 1.6; o.ramp = 1; o.rampMax = 45; el.boss = MYB.sb; o.dmg *= MYB.sd; el.bexe = MYB.bx; o.bf = 1; } else if (u.n === 2) { el.boss = MYB.gb; o.dmg *= MYB.gd; el.giant = MYB.gg; el.bexe = MYB.bx; o.bf = 1; } else if (u.n === 3) { o.splash = 61; o.spm = MYB.ds; el.sc = 1; o.quake = 1; o.qm = MYB.dq; }
+      else if (u.n === 4) { o.burn = 2.8; o.bsp = 80; el.sc = 1; el.ign = .6; el.bsl = MYB.js; o.ccai = 'burn'; } else if (u.n === 5) { o.frz = .25; el.fzb = MYB.hf; el.shat = 1; el.shm = MYB.hs; el.nr = 1; o.dmg *= MYB.hd; o.ccai = 'frz'; } else if (u.n === 6) { o.twin = 2; el.gale = MYB.wg; el.galm = MYB.wm; o.dmg *= MYB.wd; el.pull = .25; } else if (u.n === 7) { o.chain = 5; o.chm = 1.25; o.chr = 140; el.sc = 1; }
     }
     { const B = beltOn(); if (B && B.h === u.n) { const f = B.f; if (!u.m) o.dmg *= 1 + .1 * f;
-      else if (u.n === 0) { el.cpi = f >= 1 ? 2 : 1; el.cdm += .3 * f; } else if (u.n === 1) { o.rampMax = 30 + 15 * f; o.rampInc = 1 + .5 * f; o.dmg *= 1 + .15 * f; } else if (u.n === 2) { el.boss += .5 * f; el.giant += .35 * f; }
-      else if (u.n === 3) { o.quake = f >= 1 ? 4 : 5; o.qm = 1.5 + .6 * f; o.splash *= 1 + .25 * f; } else if (u.n === 4) { el.ign += .4 * f; o.bsp *= 1 + .3 * f; } else if (u.n === 5) { o.frz += .07 * f; o.frd = 1 + .3 * f; el.fzb += .3 * f; }
-      else if (u.n === 6) { el.gale += .1 * f; el.galm = .8 + .15 * f; } else if (u.n === 7) { o.chain = f >= 1 ? 6 : 5; o.chm += .3 * f; } } }
+      else if (u.n === 0) { el.cpi = f >= 1 ? 2 : 1; el.cdm += .3 * f; } else if (u.n === 1) { o.rampMax = 45 + 15 * f; o.rampInc = 1 + .5 * f; o.dmg *= 1 + .15 * f; } else if (u.n === 2) { el.boss += .5 * f; el.giant += .35 * f; }
+      else if (u.n === 3) { o.quake = f >= 1 ? 4 : 5; o.qm = MYB.dq + .6 * f; o.splash *= 1 + .25 * f; } else if (u.n === 4) { el.ign += .4 * f; o.bsp *= 1 + .3 * f; } else if (u.n === 5) { o.frz += .07 * f; o.frd = 1 + .3 * f; el.fzb += .3 * f; }
+      else if (u.n === 6) { el.gale += .1 * f; el.galm += .15 * f; } else if (u.n === 7) { o.chain = f >= 1 ? 6 : 5; o.chm += .3 * f; } } }
     return o;
   }
   const dps = st => st.dmg / st.iv * (1 + (st.twin || 0)) * (1 + (st.chain ? .5 + (st.chain > 2 ? .4 : 0) : 0) + (st.splash ? .4 + (st.spm ? .3 : 0) : 0) + (st.burn ? .3 * (st.burn > .5 ? 2 : 1) : 0) + (st.frz ? .15 : 0)) * (st.se != null ? 1.1 : 1);
@@ -1643,6 +1645,7 @@ input { -webkit-user-select: text; user-select: text; }
           '<button class="arrow ol-s" data-act="next"' + (n >= tk.unlocked ? ' disabled' : '') + '>▶</button></div>' +
       '<div class="scene"><canvas id="hcv"></canvas>' +
         (isNm() ? '<span class="bossflag ol-s" style="background:#a0142a">😈 일반·중간·메인 보스 · 절대 보스 5%</span>' : isBossStage(n) ? '<span class="bossflag ol-s">보스 출현 스테이지</span>' : '') +
+        (gemEvtOn() ? '<span class="bossflag ol-s" style="top:' + (isBossStage(n) || isNm() ? 44 : 10) + 'px;background:#c2268a">💎 젬 이벤트 · 전체 구간 젬 배율 +2 · ' + Math.max(1, Math.ceil((GEVT.to - Date.now()) / 60000)) + '분 남음</span>' : '') +
         (evtOn() ? '<span class="bossflag ol-s" style="top:' + (isBossStage(n) ? 44 : 10) + 'px;background:#ff8a1e">🔥 이벤트 · 정예 1~' + EVT.maxSt + ' · 일반 40~50 보상 ' + EVT.mul + '배 · ' + Math.max(1, Math.ceil((EVT.to - Date.now()) / 60000)) + '분 남음</span>' : '') +
         '<span class="plays ol-s">' + (tk.reach[i] & 1 ? '클리어 ✓ · 플레이 ' + tk.plays[i] + '번' : n < stMax() ? '클리어하면 다음 단계가 열려요' : '마지막 단계') + '</span>' +
         '<span class="pw ol-s">' + tierEmblem(tierOf(power()), 'sm') + fmt(power()) + '</span></div>' +
@@ -1830,7 +1833,7 @@ input { -webkit-user-select: text; user-select: text; }
   const pickFree = n => { const owned = new Set(save.coll.filter(u => u.m && !pickSel.has(ukey(u))).map(ukey)); return [0, 1, 2, 3, 4].filter(se => !owned.has(ukey({ n, e: [0, 1, 2, 3, 4], m: 1, se }))); };
   function pickBody() {
     const list = save.coll.filter(u => u.m).sort((a, b) => a.s - b.s || a.n - b.n);
-    let h = '<p class="desc" style="color:#fff">재료 신화 <b>3명</b>을 고르고, 받을 <b>총잡이</b>를 골라요. 재료 3명은 사라지고 고른 총잡이 신화가 나와요. 강속성은 무작위(아직 없는 강속성 중), 별은 <b>★0부터</b>예요.</p>';
+    let h = '<p class="desc" style="color:#fff">재료 신화 <b>3명</b>을 고르고, 받을 <b>총잡이</b>를 골라요. 재료 3명은 사라지고 고른 총잡이 신화가 나와요. 강속성은 무작위(아직 없는 강속성 중), 별은 <b>★0부터</b>예요.</p><p class="desc" style="color:#ffe14a">⭐ 재료 3명이 모두 <b>강속성 2개</b> 신화면, 나오는 신화도 <b>강속성 2개</b>예요.</p>' + (pickSel.size === 3 && [...pickSel].every(k => { const u = getUnit(k); return u && u.xb != null; }) ? '<p class="desc" style="color:#7ee0a0;text-align:center"><b>✔ 강속성 2개 유지 조건 충족!</b></p>' : '');
     h += '<div class="hgrid">' + list.map(u => { const k = ukey(u); return heroTile(u, ' data-act="pickPick" data-k="' + esc(k) + '" role="button"', pickSel.has(k) ? 'pick' : ''); }).join('') + '</div>';
     h += '<p class="desc" style="text-align:center;color:#fff">고른 재료 <b>' + pickSel.size + '/3</b></p>';
     h += '<p class="desc" style="color:#fff;margin-bottom:4px"><b>받을 총잡이</b></p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' + NMS.map((nm, n) => { const ok = pickFree(n).length > 0; return '<button class="btn sm ol-s" style="background:' + (n === pickN ? 'var(--yel)' : 'rgba(255,255,255,.1)') + ';color:#fff' + (n === pickN ? ';box-shadow:0 0 0 3px #fff inset' : '') + '" data-act="pickTo" data-n="' + n + '"' + (ok ? '' : ' disabled') + '>' + nm + '</button>'; }).join('') + '</div>';
@@ -1843,8 +1846,11 @@ input { -webkit-user-select: text; user-select: text; }
     const ses = pickFree(pickN); if (!ses.length) return null;
     const freed = [];
     save.slots = save.slots.map((k, i) => { if (keys.includes(k)) { freed.push(i); return null; } return k; });
+    /* three 2-strong-element mythics -> the chosen mythic keeps 2 strong elements (both random) */
+    const two = keys.every(k => getUnit(k).xb != null);
     save.coll = save.coll.filter(u => !keys.includes(ukey(u)));
     const nu = { n: pickN, e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se: ses[Math.floor(Math.random() * ses.length)] };
+    if (two) { const o = [0, 1, 2, 3, 4].filter(x => x !== nu.se); nu.xb = o[Math.floor(Math.random() * o.length)]; }
     save.coll.push(nu);
     const free = freed.length ? freed[0] : save.slots.indexOf(null);
     if (free >= 0) save.slots[free] = ukey(nu);
@@ -2489,6 +2495,9 @@ input { -webkit-user-select: text; user-select: text; }
   /* elite rewards sit above normal 50: gold x1.3 of stage 50 at elite 1, +10% per elite stage */
   /* event: 2026-11-14 22:00~23:00 KST, elite 1~4 and normal 40~50 rewards (gold, gems) x4 — judged by when the run started */
   const EVT = { from: Date.UTC(2026, 10, 14, 13, 0), to: Date.UTC(2026, 10, 14, 14, 0), maxSt: 4, mul: 4 };
+  /* gem event: 2026-11-16 19:00~20:00 KST, every mode and stage, +2 on the gem multiplier */
+  const GEVT = { from: Date.UTC(2026, 10, 16, 10, 0), to: Date.UTC(2026, 10, 16, 11, 0), mul: 2 };
+  const gemEvtOn = () => { const t = Date.now(); return t >= GEVT.from && t < GEVT.to; };
   const evtOn = () => { const t = Date.now(); return t >= EVT.from && t < EVT.to; };
   const evtFor = (elite, n) => evtOn() && (elite ? n <= EVT.maxSt : n >= 40);
   /* elite rewards x2 (gold and gems) */
@@ -2755,11 +2764,15 @@ input { -webkit-user-select: text; user-select: text; }
     if (els && els.length) a *= 1 + S.g.el + (els.sye || 0);
     if (e.k === 'boss') a *= 1 + S.g.boss + S.r.boss + (els && els.boss || 0);
     if (e.half) a *= .5;
+    if (els && els.exe1 && e.hp < e.mh * .2) a *= 1 + els.exe1;
+    if (els && els.bexe && e.k === 'boss' && e.hp < e.mh * .2) a *= 1 + els.bexe;
     if (S.gle && els && els.length) { let gm = 0; for (const x of els) if (S.gle[x] > gm) gm = S.gle[x]; a *= 1 + gm; }
     if (m > 1 && S.r.weak) a *= 1 + S.r.weak;
     if (S.r.exe && e.hp < e.mh * .3) a *= 1 + S.r.exe;
     if (e.cor > 0) a *= 1 + e.cv;
     if (e.mk > 0) a *= 1 + e.mkv;
+    if (e.hk > 0) a *= 1.05;
+    if (els && els.mk5) e.hk = 3;
     if (e.frz > 0 && els && els.fzb) a *= 1 + els.fzb;
     /* elite: monsters take 5% less damage, 30% less from elite stage 40 */
     if (S.elite) a *= 1 - (S.n >= 40 ? .3 : ELITE.def);
@@ -2773,10 +2786,15 @@ input { -webkit-user-select: text; user-select: text; }
     if (direct && e.arm) a = Math.max(a * .3, a - e.arm);
     const wasFrz = e.frz > 0;
     dmgAdd(S.curSrc, Math.min(a, Math.max(0, e.hp)));
+    if (e.k === 'boss') S.bossDmg = (S.bossDmg || 0) + Math.min(a, Math.max(0, e.hp));
+    if (els && els.nr) e.nr = 3;
     e.hp -= a; e.fl = .08;
+    /* 한일 kill chain: a critical hit that kills passes the leftover damage on to the nearest enemy, up to 3 times */
+    if (crit && els && els.kc && e.hp <= 0) { let rem = -e.hp, from = e; const done = [e];
+      for (let k = 0; k < 3 && rem > 0; k++) { const o = nearest(from.x, from.y, done, 150); if (!o) break; const h0 = o.hp, d = rem * MYB.kc; S.fx.push({ k: 'zap', x1: from.x, y1: from.y, x2: o.x, y2: o.y, l: .12 }); dmgAdd(S.curSrc, Math.min(d, Math.max(0, h0))); o.hp -= d; o.fl = .08; o.hk = 3; done.push(o); rem = d - h0; from = o; } }
     /* mythic traits: 한일 crit pierces one enemy behind, 해천 hitting a frozen enemy throws ice shards */
     if (els && canCrit) { if (crit && els.cpi) { const ex2 = [e]; for (let q = 0; q < els.cpi; q++) { const o = nearest(e.x, e.y, ex2, 80); if (!o) break; ex2.push(o); hit(o, a, [], true, false); } }
-      if (wasFrz && els.shat) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 40) hit(o, a * .6, [], false, false); }
+      if (wasFrz && els.shat) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 40) hit(o, a * (els.shm || .6), [], false, false); }
     dmgNum(e.x, e.y - e.r - 6, a, crit ? 'crit' : m > 1 ? 'weak' : m < 1 ? 'res' : 'n');
     Snd.hit(crit);
     if (e.hp <= 0) kill(e);
@@ -2828,10 +2846,13 @@ input { -webkit-user-select: text; user-select: text; }
     S.bul.push({ src: s, x: s.x + Math.cos(a) * 14, y: s.y - 4 + Math.sin(a) * 14, t, sp: 760, dmg: st.dmg * atkMul(), el: st.el, burn: st.burn, slow: st.slow, chain: st.chain, splash: st.splash, c: st.el.length ? EC[st.se != null ? st.se : st.el[0]] : '#fff3a0', frz: st.frz || 0, frd: st.frd || 1, spm: st.spm || 0, chm: st.chm || 0, bsp: st.bsp || 0, chr: st.chr || 0, ice: S.sk.ice ? .05 * S.sk.ice.l : 0, pierce: S.g.pierce, boom: S.g.boom, extra, k: st.el.length ? (st.se != null ? st.se : st.el[0]) : -1, sm: s.pet != null ? .7 : 1, sp0: Math.random() * 6, d0: Math.max(1, Math.hypot(t.x - s.x, t.y - s.y)) });
   }
   function updShooters(dt) {
-    const tg = front();
+    /* targeting AI: boss specialists hit bosses first (the one closest to the fort); 해천 / 진명 spread CC to enemies not yet frozen / burning */
+    const tg0 = front(); let bossT = null, frzT = null, brnT = null, bv = -1e9, fv = -1e9, rv = -1e9;
+    for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; const v = e.x - edgeX(e.y); if (e.k === 'boss' && v > bv) { bv = v; bossT = e; } if (!(e.frz > 0) && !e.cci && v > fv) { fv = v; frzT = e; } if (!(e.burn > 0) && v > rv) { rv = v; brnT = e; } }
     const spdm = (1 + S.pass.spd * .12 + S.g.spd) * (1 + S.r.spd) * (S.rapid > 0 ? 2 : 1);
     if (S.rapid > 0) S.rapid -= dt;
     for (const s of S.sh) {
+      const tg = s.st && s.st.bf && bossT ? bossT : s.st && s.st.ccai === 'frz' && frzT ? frzT : s.st && s.st.ccai === 'burn' && brnT ? brnT : tg0;
       if (s.robot) { s.x = S.robo.x - 14; s.y = S.robo.y + 6; }
       s.cd -= dt; s.fl -= dt;
       if (tg) s.ang = Math.atan2(tg.y - s.y, tg.x - s.x);
@@ -2864,6 +2885,7 @@ input { -webkit-user-select: text; user-select: text; }
         if (e.hp > 0) {
           if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
           if (S.r.gust && e.k !== 'boss' && e.x > visL + 40 && Math.random() < S.r.gust) { e.x = Math.max(visL + 10, e.x - 40); e.fl = .1; }
+          if (b.burn && b.el && b.el.bsl) { e.slow = Math.max(e.slow, 2); e.sf = Math.max(e.sf, b.el.bsl); }
           if (b.burn) { e.burn = 3; e.bsrc = b.src; const bcx = b.el && b.el.sc ? 1 + Math.min(1, critChance() + (b.el.cb || 0)) * (.5 + critBonus() / 100 + S.r.cdm + Math.max(0, critChance() + (b.el.cb || 0) - 1)) : 1; e.bd = Math.max(e.bd, b.dmg * b.burn * bcx * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
@@ -2874,7 +2896,9 @@ input { -webkit-user-select: text; user-select: text; }
           for (let i = 0; i < b.chain; i++) { const o = nearest(hitL[hitL.length - 1].x, hitL[hitL.length - 1].y, hitL, b.chr || 90); if (!o) break; S.fx.push({ k: 'zap', x1: hitL[hitL.length - 1].x, y1: hitL[hitL.length - 1].y, x2: o.x, y2: o.y, l: .15 }); hit(o, b.dmg * (b.chm || .6), b.el, false, false); hitL.push(o); }
         }
         if (b.quake) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 120) hit(o, b.dmg * (b.qm || 1.5), b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 120, l: .4, c: '#c8a060' }); S.shake = Math.max(S.shake || 0, .15); }
-        if (b.el && b.el.gale && Math.random() < b.el.gale) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 65) hit(o, b.dmg * (b.el.galm || .8), b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 65, l: .25, c: '#6fe0b0' }); }
+        if (b.el && b.el.gale && Math.random() < b.el.gale) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 65) hit(o, b.dmg * (b.el.galm || .8), b.el, false, false);
+          /* 정욱's whirlwind pulls monsters within 110 toward the hit point (bosses a little, CC-immune not at all) so area attacks hit more of them */
+          if (b.el.pull) for (const o of S.en) { if (o === e || o.hp <= 0 || o.cci) continue; const d = Math.hypot(o.x - e.x, o.y - e.y); if (d < 110 && d > 8) { const k = o.k === 'boss' ? .1 : b.el.pull; o.x += (e.x - o.x) * k; o.y = clamp(o.y + (e.y - o.y) * k, FIELD0, FIELD1); } } S.fx.push({ k: 'ring', x: e.x, y: e.y, r: 65, l: .25, c: '#6fe0b0' }); }
         if (b.splash) { for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.splash) hit(o, b.dmg * (b.spm || .6), b.el, false, false); S.fx.push({ k: 'ring', x: e.x, y: e.y, r: b.splash, l: .25, c: '#ffcf6a' }); }
       } else { b.x += dx / d * st; b.y += dy / d * st; }
     }
@@ -3000,9 +3024,11 @@ input { -webkit-user-select: text; user-select: text; }
       if (e.burn > 0) { e.burn -= dt; dmgAdd(e.bsrc, Math.min(e.bd * dt, Math.max(0, e.hp))); e.hp -= e.bd * dt; }
       if (e.pois > 0) { e.pois -= dt; e.hp -= e.pd * dt; }
       if (e.hp <= 0) { kill(e); continue; }
-      if (S.ab || S.nm) { if (S.aff.has('regen') && !(e.burn > 0)) e.hp = Math.min(e.mh, e.hp + e.mh * (e.k === 'boss' ? .004 : .02) * dt); if (S.aff.has('rage') && !e.rg && e.hp < e.mh * .5) { e.rg = 1; e.sp *= 1.5; e.atk *= 1.5; } }
+      if (S.ab || S.nm) { if (S.aff.has('regen') && !(e.burn > 0) && !(e.nr > 0)) e.hp = Math.min(e.mh, e.hp + e.mh * (e.k === 'boss' ? .004 : .02) * dt); if (S.aff.has('rage') && !e.rg && e.hp < e.mh * .5) { e.rg = 1; e.sp *= 1.5; e.atk *= 1.5; } }
       if (e.cor > 0) e.cor -= dt;
       if (e.mk > 0) e.mk -= dt;
+      if (e.nr > 0) e.nr -= dt;
+      if (e.hk > 0) e.hk -= dt;
       if (S.tstop > 0 && e.ts !== S.wave) { e.ts = S.wave; e.frz = Math.max(e.frz, S.tstop); }
       let sp = e.sp * S.fs;
       if (S.r.swamp && e.x > edgeX(e.y) - 110) sp *= 1 - S.r.swamp;
@@ -3124,7 +3150,7 @@ input { -webkit-user-select: text; user-select: text; }
     let gold = Math.round(S.gold * (gaveUp ? .5 : 1) + ((win ? 40 * (1 + .25 * (rn - 1)) : 0) + (S.bossK ? 150 * (1 + .3 * (rn - 1)) * Math.max(1, S.bossKills) * (S.sk.bounty ? 1.3 : 1) : 0) + (S.rareK ? 3000 * (1 + .3 * (rn - 1)) : 0)) * rk);
     if (S.evt) gold *= EVT.mul;
     /* one reward table for every mode: see rwMul() */
-    const RW = rwMul(S.elite, n, S.ab), LOW = RW.item, GEMK = RW.gem;
+    const GE = gemEvtOn() ? GEVT.mul : 0, RW = rwMul(S.elite, n, S.ab), LOW = RW.item, GEMK = RW.gem + GE; /* gem event adds +2 to the existing gem multiplier (x3 -> x5) */
     gold *= RW.gold;
     const AF = S.ab ? abMul(S.ab) : 1; if (S.ab) gold = gold * 1.2 * (1 + .05 * Math.max(0, S.ab - 20)) * AF;
     const NMF = nmS ? nmMul(nmS) : 1; gold *= NMF;
@@ -3148,7 +3174,7 @@ input { -webkit-user-select: text; user-select: text; }
     /* nightmare: gloves on a clear (50%), belts from bosses, first clear of every 10th stage */
     let gdrop = -1, gNew = false, nmFirst = 0; const bdrops = nmS && !gaveUp ? S.belts.slice() : [];
     if (nmS) { for (const b of bdrops) addBelt(b); if (win && Math.random() < .5) { gdrop = rollGlove(); gNew = addGlove(gdrop); } if (win && nmS % 10 === 0 && !(tk.reach[i] & 1)) { nmFirst = nmS * 1000; save.gem += nmFirst; } }
-    const abGem = win && S.ab ? Math.round(100 * AF * (1 + (S.md ? S.md.ag : 0))) : 0; save.gem += abGem;
+    const abGem = win && S.ab ? Math.round(100 * AF * (1 + (S.md ? S.md.ag : 0)) * (1 + GE)) : 0; save.gem += abGem;
     let abUp = false; if (win && S.ab) { qAdd('boss'); save.ab.best = Math.max(save.ab.best, S.ab); if (S.ab === save.ab.fl) { save.ab.fl++; save.ab.next = Date.now() + AB_WAIT; abUp = true; } if (S.ab % 10 === 0 && !save.ab.got[S.ab]) save.ab.pend = S.ab; }
     const sGem = win && !S.elite ? (n > 30 ? (n >= 45 ? 6 + 2 * (n - 45) : 4) + (isBossStage(n) ? 20 : 0) : n <= 5 ? 2 : 0) : 0;
     save.gem += sGem * (S.evt ? EVT.mul : 1) * GEMK;
@@ -3188,7 +3214,7 @@ input { -webkit-user-select: text; user-select: text; }
       (bdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0a0"><b>🎗 탄띠 · ' + bdrops.map(b => '<span style="color:' + BG3[bGr(b)].c + '">' + beltName(b) + '</span>').join(' · ') + '</b></p>' : '') +
       (nmFirst ? '<p class="desc" style="text-align:center;color:var(--yel);font-size:15px"><b>🏆 악몽 ' + nmS + '단계 첫 클리어 · 젬 +' + fmt(nmFirst) + '</b></p>' : '') +
       (win && S.elite && !S.ab ? '<p class="desc" style="text-align:center;color:#d9b8ff"><b>' + (nmS ? '악몽' : '정예') + ' 클리어</b> · 일반 50단계의 ' + Math.round(eGoldK(n) * NMF * 100) + '% 골드 + 젬 ' + Math.round(eGem(n) * (S.evt ? EVT.mul : 1) * GEMK * NMF) + '개</p>' : '') +
-      rwTxt(RW, S.evt, S.ab) +
+      rwTxt(RW, S.evt, S.ab) + (GE ? '<p class="desc" style="text-align:center;color:#ff9ad8;font-size:15px"><b>💎 젬 이벤트 적용! 젬 배율 +2 (×' + GEMK + ')</b></p>' : '') +
       (S.bossK ? '<p class="desc" style="text-align:center"><b>보스 처치' + (S.bossKills > 1 ? ' ×' + S.bossKills : '') + '</b> 보너스가 포함됐어요.</p>' : '') +
       (lvUp ? '<p class="desc" style="text-align:center;color:var(--yel)">프로필 레벨 업! ' + lvName(save.lv) + ' · 젬 +' + (10 * lvUp) + (SK.some(s => s.un > save.lv - lvUp && s.un <= save.lv) ? ' · 새 스킬 해금' : '') + '</p>' : '') +
       (unl ? '<p class="desc" style="text-align:center;color:var(--ok)"><b>' + (nmS ? '악몽 ' + (nmS + 1) + '단계' : stageLabel(n + 1) + ' · ' + NAMES[n]) + '</b> 해금!' + (S.elite ? '' : ' · 보관함 +1칸 (' + capOf() + '칸)') + '</p>' : '<p class="desc" style="text-align:center">' + (sN === tk.unlocked && sN < STAGES && !win ? '클리어하면 다음 단계가 열려요' : '이 단계 플레이 ' + tk.plays[i] + '번') + '</p>') +
@@ -4620,7 +4646,7 @@ input { -webkit-user-select: text; user-select: text; }
     pickOpen: () => { pickSel.clear(); pickN = -1; openPop('✨ 신화 3명 지정 조합', pickBody(), 'mix'); },
     pickPick: el => { const k = el.dataset.k; if (pickSel.has(k)) pickSel.delete(k); else if (pickSel.size < 3) pickSel.add(k); Snd.click(); refreshPop(pickBody()); },
     pickTo: el => { pickN = +el.dataset.n; Snd.click(); refreshPop(pickBody()); },
-    pickGo: () => { const nu = mythPick(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 지정 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
+    pickGo: () => { const nu = mythPick(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 지정 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + (nu.xb != null ? '·' + ENM[nu.xb] + ' (2개!)' : '') + ' · ' + MYTHT[nu.n].nm); },
     mythHub: () => openPop('✨ 신화 공방', mythHubBody(), 'mythhub'),
     mixOpen: () => { mixSel.clear(); openPop('✨ 신화 2명 조합', mixBody(), 'mix'); },
     mixPick: el => { const k = el.dataset.k; if (mixSel.has(k)) mixSel.delete(k); else if (mixSel.size < 2) mixSel.add(k); Snd.click(); refreshPop(mixBody()); },
@@ -4771,7 +4797,7 @@ input { -webkit-user-select: text; user-select: text; }
   NET.init();
   setTimeout(showDisNote, 2500);
   if (!window.jmReady && !(window.claude && window.claude.use)) setTimeout(repResume, 1500);
-  window.__G = { draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
+  window.__G = { get MYB() { return MYB; }, draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
 })();
 </script>
 <script type="module">
