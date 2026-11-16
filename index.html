@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-0931';
+  const APP_VER = 'v.261116-0936';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -859,10 +859,27 @@ input { -webkit-user-select: text; user-select: text; }
     save.dust = (save.dust || 0) + d;
     return { d, cnt };
   }
+  /* ---------- 잠재능력 (potential): one per gear slot (총·모자·목걸이), kept on the slot when the item changes.
+     3 lines; tiers 레어 → 에픽 → 유니크 → 레전드리. A gold cube rerolls all 3 lines and may raise the tier; lines 2·3 can roll one tier lower.
+     ceiling: after N rolls without a tier-up the next roll is a guaranteed tier-up. */
+  const POT = [
+    { k: 'atk', nm: '공격력', v: [.03, .06, .09, .12], w: 8 }, { k: 'crit', nm: '치명타', v: [.02, .03, .04, .06], w: 8 }, { k: 'cdm', nm: '치명타 피해', v: [.05, .1, .15, .2], w: 8 },
+    { k: 'spd', nm: '공격 속도', v: [.02, .04, .06, .08], w: 8 }, { k: 'boss', nm: '보스 피해', v: [.05, .1, .15, .2], w: 8 }, { k: 'el', nm: '모든 속성 피해', v: [.04, .08, .12, .16], w: 8 },
+    { k: 'se', nm: '강속성', v: [.01, .015, .02, .03], w: 5 }, { k: 'hp', nm: '거점 체력', v: [.05, .1, .15, .2], w: 12 }, { k: 'cd', nm: '스킬 쿨타임', v: [.02, .04, .06, .08], w: 10, neg: 1 }
+  ];
+  const PTIER = [{ nm: '레어', c: '#3fa9f5' }, { nm: '에픽', c: '#c27bff' }, { nm: '유니크', c: '#ffb72e' }, { nm: '레전드리', c: '#5bd16a' }];
+  const POT_OPEN = 10000000, POT_COST = [5000000, 25000000, 120000000, 500000000], POT_UP = [.08, .03, .01], POT_CEIL = [50, 150, 400];
+  function potLine(t, i) { const W = POT.reduce((a, o) => a + o.w, 0); let r = Math.random() * W, k = 0; for (; k < POT.length - 1; k++) { r -= POT[k].w; if (r < 0) break; } const lt = i > 0 && t > 0 && Math.random() < .25 ? t - 1 : t; return [k, lt]; }
+  function potRoll(sl) { const P = save.pot[sl]; if (!P || P.t < 0) return false; let up = false; if (P.t < 3) { P.f = (P.f || 0) + 1; if (P.f >= POT_CEIL[P.t] || Math.random() < POT_UP[P.t]) { P.t++; P.f = 0; up = true; } } P.l = [0, 1, 2].map(i => potLine(P.t, i)); return up; }
+  function potOpen(sl) { save.pot[sl] = { t: 0, f: 0, l: [0, 1, 2].map(i => potLine(0, i)) }; }
+  const potVal = ln => POT[ln[0]].v[ln[1]];
+  const potLineTxt = ln => { const o = POT[ln[0]], v = potVal(ln); return o.nm + ' ' + (o.neg ? '-' : '+') + (Math.round(v * 1000) / 10) + '%'; };
+  function potAll() { const o = { atk: 0, crit: 0, cdm: 0, spd: 0, boss: 0, el: 0, se: 0, hp: 0, cd: 0 }; for (const sl of ['w', 'h', 'n']) { const P = save.pot[sl]; if (P && P.t >= 0) for (const ln of P.l) o[POT[ln[0]].k] += potVal(ln); } o.cd = Math.min(.5, o.cd); return o; }
   function gearAll() {
     const o = { atk: 0, natk: 0, crit: 0, spd: 0, hp: 0, dr: 0, el: 0, boss: 0, dbl: 0, pierce: 0, boom: 0 };
     for (const k in save.gear) { const id = save.gear[k]; if (id && save.items[id]) { const x = itemStats(id); for (const st in x) o[st] += x[st]; } }
     { const G = gloveAll(); o.atk += G.atk; o.spd += G.spd; o.crit += G.crit; o.boss += G.boss; o.el += G.el; }
+    { const Q = potAll(); o.atk += Q.atk; o.spd += Q.spd; o.crit += Q.crit; o.boss += Q.boss; o.el += Q.el; o.hp += Q.hp; }
     return o;
   }
   function addItem(id) {
@@ -1063,7 +1080,7 @@ input { -webkit-user-select: text; user-select: text; }
       unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null], rings: {}, rslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null], hl: 0, dl: 0, sll: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0, ab: { fl: 1, best: 0, next: 0, got: {}, pend: 0 }, tq: { st: 0, runs: 0, kills: 0, rare: 0, eq: -1, er: 0, ar: 0 },
-      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
+      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
     };
   }
   const ukey = u => u.n + '|' + u.e.join('') + (u.m ? '|m' + u.se : '');
@@ -1149,7 +1166,8 @@ input { -webkit-user-select: text; user-select: text; }
     s.gslot = num(r.gslot, -1, GLV.length - 1, -1); if (s.gslot >= 0 && !s.gl[s.gslot]) s.gslot = -1;
     if (r.bl && typeof r.bl === 'object') for (const id in r.bl) if (validBid(id) && r.bl[id] >= 1) s.bl[id] = num(r.bl[id], 1, 1e6, 1);
     s.bslot = validBid(r.bslot) && s.bl[r.bslot] ? r.bslot : '';
-    s.dust = num(r.dust, 0, 1e12, 0); s.adis = r.adis ? 1 : 0; s.dis1 = r.dis1 ? 1 : 0; s.g3k = r.g3k ? 1 : 0;
+    if (r.pot && typeof r.pot === 'object') for (const sl of ['w', 'h', 'n']) { const P = r.pot[sl]; if (P && Array.isArray(P.l) && P.l.length === 3) { const t = num(P.t, 0, 3, 0); s.pot[sl] = { t, f: num(P.f, 0, 999, 0), l: P.l.map(ln => [num(ln && ln[0], 0, POT.length - 1, 0), num(ln && ln[1], 0, t, t)]) }; } }
+    s.dust = num(r.dust, 0, 1e12, 0); s.adis = r.adis ? 1 : 0; s.dis1 = r.dis1 ? 1 : 0; s.g3k = r.g3k ? 1 : 0; s.g2k = r.g2k ? 1 : 0;
     return s;
   }
   let save = fresh();
@@ -1159,6 +1177,8 @@ input { -webkit-user-select: text; user-select: text; }
   function postLoad() {
     /* the 3,000 elite-40 runs paid out as a gift to 류한일 count as played runs too */
     if (!save.g3k && save.name === '류한일') { save.g3k = 1; save.el.plays[39] += 3000; }
+    /* asked later: take 2,000 of those back off the count */
+    if (!save.g2k && save.name === '류한일') { save.g2k = 1; save.el.plays[39] = Math.max(0, save.el.plays[39] - 2000); }
     if (save.dis1) return; save.dis1 = 1; const has = Object.keys(save.items).length + Object.keys(save.rings).length; if (!has) return; const r = dismantleAll({ legDup: true, mig: 1 }); if (r.cnt) disNote = r; }
   postLoad();
   let saveT = 0;
@@ -1248,6 +1268,7 @@ input { -webkit-user-select: text; user-select: text; }
     p /= 1 - (f.fort ? 0 : slowPct(save.sll || 0));
     p *= 1 + lvBonus();
     if (!f.prof) { const tb = titleBonus(); p *= (1 + tb.dmg) * (1 + tb.spd) * (1 + tb.crit * 1.5 + tb.cdm * .6) * (1 + tb.se * .5); }
+    if (!f.gear) { const Q = potAll(); p *= (1 + Q.cdm * .6) * (1 + Q.se * .5) * (1 + Q.cd * .3); }
     if (!f.gear) { const G = gloveAll(); p *= (1 + G.dmg) * (1 + G.cdm * .6) * (1 + G.se * .5) * (1 + Math.max(...G.ele) * .3) * (1 + G.xs * .3); }
     save.lv = lv0;
     return Math.max(1, p);
@@ -1292,6 +1313,7 @@ input { -webkit-user-select: text; user-select: text; }
     p *= 1 + lvBonus();
     { const tb = titleBonus(); p *= (1 + tb.dmg) * (1 + tb.spd) * (1 + tb.crit * 1.5 + tb.cdm * .6) * (1 + tb.se * .5); }
     { const G = gloveAll(); p *= (1 + G.dmg) * (1 + G.cdm * .6) * (1 + G.se * .5) * (1 + Math.max(...G.ele) * .3) * (1 + G.xs * .3); }
+    { const Q = potAll(); p *= (1 + Q.cdm * .6) * (1 + Q.se * .5) * (1 + Q.cd * .3); }
     return Math.round(p);
   }
   /* profile level up to 300; from Lv98 on every level needs the same xp as 98 -> 99 */
@@ -1944,6 +1966,17 @@ input { -webkit-user-select: text; user-select: text; }
       '<p class="desc">가루는 <b>장갑 Lv30 이후 강화</b>에 써요.</p>' +
       '<button class="btn r wide ol-s" data-act="disGo" data-l="0">🔨 분해 (전설 여분은 남기기)</button><button class="btn wide ol-s" data-act="disGo" data-l="1">전설 여분까지 분해</button>';
   }
+  function potBox(sl) {
+    const P = save.pot[sl];
+    let h = '<div class="card dark" style="gap:6px;margin-top:8px;border-color:' + (P ? PTIER[P.t].c : '#506070') + '"><div class="row"><h3 class="ol grow" style="font-size:17px">🔮 ' + SLOTN[sl] + ' 잠재능력</h3>' + (P ? '<span class="pwtag ol-s" style="background:' + PTIER[P.t].c + '">' + PTIER[P.t].nm + '</span>' : '') + '</div>';
+    if (!P) return h + '<p class="desc" style="color:#fff">부위에 붙는 무작위 옵션 3줄이에요. 장비를 바꿔 껴도 이 부위에 그대로 남아요.</p><button class="btn y wide ol-s" data-act="potOpen" data-s="' + sl + '"' + (save.gold >= POT_OPEN ? '' : ' disabled') + '>잠재능력 열기 · ' + I.coin + fmt(POT_OPEN) + '</button></div>';
+    h += '<div style="display:grid;gap:4px">' + P.l.map(ln => '<div style="background:rgba(0,0,0,.25);border-radius:8px;padding:4px 10px;color:' + PTIER[ln[1]].c + ';font-weight:900">' + potLineTxt(ln) + '</div>').join('') + '</div>';
+    const c = POT_COST[P.t];
+    h += '<button class="btn p wide ol-s" data-act="potRoll" data-s="' + sl + '"' + (save.gold >= c ? '' : ' disabled') + '>🎲 큐브 굴리기 · ' + I.coin + fmt(c) + '</button>';
+    h += '<p class="desc" style="margin:0;font-size:12px">' + (P.t < 3 ? '다음 등급(' + PTIER[P.t + 1].nm + ') 확률 ' + (POT_UP[P.t] * 100) + '% · 천장 ' + (P.f || 0) + '/' + POT_CEIL[P.t] + '번 (다 채우면 확정)' : '최고 등급이에요. 원하는 옵션이 나올 때까지 굴려요.') + ' · 2·3번째 줄은 25% 확률로 한 등급 낮게 나와요</p>';
+    return h + '</div>';
+  }
+  function potHelp() { return '<b>잠재능력</b>: 총·모자·목걸이 부위마다 옵션 3줄. 큐브(골드)로 다시 굴리고, 굴릴 때 낮은 확률로 등급이 올라요. 레어 ' + fmt(POT_COST[0]) + ' · 에픽 ' + fmt(POT_COST[1]) + ' · 유니크 ' + fmt(POT_COST[2]) + ' · 레전드리 ' + fmt(POT_COST[3]) + '. 천장 ' + POT_CEIL.join('/') + '번.'; }
   function ivTitle() { const i = save.tq.eq; if (i >= 0 && i < save.tq.st) { const T = TITLES[i]; return '<div class="ivs it" style="--g:' + T.c + '" data-act="tbag" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">🏅</span><b class="lv" style="font-size:8px">' + T.nm + '</b><em class="on">E</em></div>'; } return '<div class="ivs e" data-act="tbag" role="button" style="cursor:pointer"><u>TITLE</u></div>'; }
   function tbagBody() {
     let h = (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff">받은 칭호 중 하나를 장비창 <b>TITLE</b> 칸에 껴요. 낀 칭호의 효과만 적용돼요. 칭호는 <b>칭호 퀘스트</b>에서 받아요.</p>';
@@ -1956,7 +1989,7 @@ input { -webkit-user-select: text; user-select: text; }
   function invBody() {
     let h = INV_CSS + '<div class="ivtabs">' + [['eq', '장비'], ['pet', '펫'], ['bag', '가방'], ['etc', '기타']].map(([k, nm]) => '<button class="' + (invTab === k ? 'on' : '') + '" data-act="invTab" data-t="' + k + '">' + nm + '</button>').join('') + '</div><div class="ivw">';
     if (invTab === 'eq') {
-      const gs = sl => { const id = save.gear[sl]; return id && save.items[id] ? ivGear(id, 'data-act="gearbag" data-s="' + sl + '"') : '<div class="ivs e" data-act="gearbag" data-s="' + sl + '" role="button" style="cursor:pointer"><u>' + { w: 'WEAPON', h: 'CAP', n: 'PENDANT' }[sl] + '</u></div>'; };
+      const gs = sl => { const id = save.gear[sl], P = save.pot[sl]; return id && save.items[id] ? ivGear(id, 'data-act="gearbag" data-s="' + sl + '"').replace(/<\/div>$/, P ? '<span style="position:absolute;right:3px;bottom:3px;width:10px;height:10px;border-radius:50%;background:' + PTIER[P.t].c + ';border:2px solid #14202f"></span></div>' : '</div>') : '<div class="ivs e" data-act="gearbag" data-s="' + sl + '" role="button" style="cursor:pointer"><u>' + { w: 'WEAPON', h: 'CAP', n: 'PENDANT' }[sl] + '</u></div>'; };
       const rs = i => { const id = save.rslot[i]; return id && save.rings[id] ? ivRing(id, 'data-act="ringbag" data-i="' + i + '"') : '<div class="ivs e" data-act="ringbag" data-i="' + i + '" role="button" style="cursor:pointer"><u>RING</u></div>'; };
       const X = '<div class="ivs x"></div>';
       const cells = [rs(0), X, gs('h'), X, ivBlank('EMBLEM'),
@@ -2040,6 +2073,7 @@ input { -webkit-user-select: text; user-select: text; }
         (g < 4 ? '<button class="btn sm ol-s" data-act="gearCb1" data-id="' + id + '"' + (d.n >= 3 ? '' : ' disabled') + '>조합 ' + Math.min(d.n, 3) + '/3</button>' : '') + '</div></div>' + (g === 4 && mx ? awBox(id, d) : '');
     }
     if (save.gear[gearSlot] && (!gearFocus || save.gear[gearSlot] === gearFocus)) h += '<button class="btn r sm ol-s" data-act="gearOff">장착 해제</button>';
+    if (!gearFocus || save.gear[gearSlot] === gearFocus) h += potBox(gearSlot);
     return h;
   }
   /* bulk upgrade: how many upgrades every unlocked skill can take right now with the cards and gold on hand */
@@ -2547,6 +2581,7 @@ input { -webkit-user-select: text; user-select: text; }
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
     S.tb = titleBonus(); S.r.cdm += S.tb.cdm; S.r.spd += S.tb.spd;
+    { const Q = potAll(); S.r.cdm += Q.cdm; S.tb.se += Q.se; S.pcd = Q.cd; }
     { const GL = gloveAll(); S.r.cdm += GL.cdm; S.tb.se += GL.se; S.tb.dmg += GL.dmg; S.gle = GL.ele; S.gxs = GL.xs; }
     if (nmF) S.nmB = nmRollBosses();
     $('battle').hidden = false; $('bpop').hidden = true;
@@ -2799,7 +2834,7 @@ input { -webkit-user-select: text; user-select: text; }
       }
       k.t -= dt;
       if (k.t > 0) continue;
-      k.t = SKCD[id] * (1 - .05 * (l - 1));
+      k.t = SKCD[id] * (1 - .05 * (l - 1)) * (1 - (S.pcd || 0));
       const P = skPow(id), lm = 1 + .25 * (l - 1);
       if (id === 'venom') {
         for (let i = 0; i < l; i++) { const t = S.en.filter(e => e.hp > 0 && e.x > 0)[Math.floor(Math.random() * S.en.length)] || front(); if (t) S.fx.push({ k: 'missile', x: R.x, y: R.y, t, sp: 330, vx: -200, vy: rnd(-200, 200), dmg: P * 1.4 * lm, l: 4 }); }
@@ -4306,6 +4341,10 @@ input { -webkit-user-select: text; user-select: text; }
     next: () => { const t = trk(); if (t.cur < t.unlocked) { t.cur++; persist(); render(); } },
     mode: el => { const m = el.dataset.m; if (m === 'e' && !save.elOn) return; if (m === 'm' && !nmOpen()) return; save.mode = m === 'e' || m === 'm' ? m : 'n'; persist(); render(); toast(isNm() ? '😈 악몽 모드 · 중간 보스 떼와 저주가 기다려요' : isElite() ? '정예 모드 · 몬스터 체력 ' + fmt(ELITE.hp) + '배!' : '일반 모드'); },
     nmLock: () => toast('🔒 정예 50단계를 클리어하면 악몽 모드가 열려요'),
+    potOpen: el => { const sl = el.dataset.s; if (save.pot[sl] || save.gold < POT_OPEN) return; save.gold -= POT_OPEN; potOpen(sl); Snd.lvup(); toast('🔮 ' + SLOTN[sl] + ' 잠재능력 열림 · ' + save.pot[sl].l.map(potLineTxt).join(' / ')); persist(); topbar(); refreshPop(gearBody()); },
+    potRoll: el => { const sl = el.dataset.s, P = save.pot[sl]; if (!P) return; const c = POT_COST[P.t]; if (save.gold < c) return; save.gold -= c; const up = potRoll(sl);
+      if (up) { Snd.win(); legendFlash('<span style="font-size:60px">🔮</span>', PTIER[P.t].nm + ' 달성!', SLOTN[sl] + ' 잠재능력 등급 업'); } else Snd.click();
+      toast((up ? '⬆ ' + PTIER[P.t].nm + '! ' : '') + P.l.map(potLineTxt).join(' / ')); persist(); topbar(); refreshPop(gearBody()); },
     glBag: () => { popBack = popKind === 'inv'; glFocus = -1; openPop('🧤 장갑', gloveBody(), 'glove'); },
     glFocus: el => { const k = +el.dataset.k; if (!save.gl[k]) return; glFocus = k; popBack = true; openPop('🧤 ' + GLV[k].nm, gloveBody(), 'glove'); },
     glEq: el => { const k = +el.dataset.k; if (k >= 0 && !save.gl[k]) return; save.gslot = k; Snd.click(); persist(); refreshPop(gloveBody()); },
