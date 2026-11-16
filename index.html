@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1627';
+  const APP_VER = 'v.261116-1645';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -886,7 +886,7 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'play', nm: '백전노장', ic: '⚔', u: '판', g: [400, 1200, 2400, 4000, 8000, 14000, 20000, 30000, 40000, 60000], v: totalPlays, b: 'xp', bv: .05 },
     { id: 'boss', nm: '보스 사냥꾼', ic: '👹', u: '마리 보스 처치', g: [200, 600, 1600, 3200, 6000, 12000, 20000, 32000, 48000, 80000], v: () => save.ach.bk, b: 'boss', bv: .02 },
     { id: 'rare', nm: '행운의 사냥꾼', ic: '🍀', u: '마리 희귀 보스', g: [4, 12, 20, 40, 80, 140, 200, 300, 400, 600], v: () => save.rareK || 0, b: 'rare', bv: .001 },
-    { id: 'elite', nm: '정예 정복자', ic: '🟣', u: '판 정예', g: [400, 1200, 2400, 4000, 6000, 9000, 13000, 18000, 24000, 32000], v: () => sum(save.el.plays), b: 'spd', bv: .01 },
+    { id: 'elite', nm: '정예 정복자', ic: '🟣', u: '판 정예·악몽', g: [400, 1200, 2400, 4000, 6000, 9000, 13000, 18000, 24000, 32000], v: () => sum(save.el.plays) + sum(save.nm.plays), b: 'spd', bv: .01 },
     { id: 'nm', nm: '악몽 돌파자', ic: '😈', u: '판 악몽', g: [100, 300, 600, 1000, 1600, 2400, 3500, 5000, 7000, 10000], v: () => sum(save.nm.plays), b: 'dr', bv: .015 },
     { id: 'abyss', nm: '심연 탐험가', ic: '🕳', u: '층 심연 정복', g: [20, 40, 60, 80, 120, 160, 200, 280, 400, 600], v: () => save.ab.best, b: 'se', bv: .005 },
     { id: 'myth', nm: '신화 수집가', ic: '✨', u: '개 신화 별 합계', g: [20, 40, 60, 80, 100, 120, 150, 180], v: () => save.coll.filter(u => u.m).reduce((a, u) => a + u.s, 0), b: 'cdm', bv: .025 },
@@ -3126,6 +3126,8 @@ input { -webkit-user-select: text; user-select: text; }
     /* rings: elite stage 30+, each boss killed has a 40% (30~39) / 60% (40~50) chance */
     let rdrops = [];
     if (S.elite && n >= 30 && S.bossKills > 0) { let k = 0; for (let j = 0; j < S.bossKills; j++) if (Math.random() < (n >= 40 ? .6 : .4)) k++; if (k) rdrops = dropRings(k, n >= 40 ? RODDS.r40 : RODDS.r30); }
+    /* nightmare: rings also come from 중간 보스 (12% each), so moving up from elite 40+ does not cut the ring supply */
+    if (nmS && S.nbK[1] > 0) { let k = 0; for (let j = 0; j < S.nbK[1]; j++) if (Math.random() < .12) k++; if (k) rdrops = rdrops.concat(dropRings(k, RODDS.r40)); }
     if (S.rareK) { save.gem += 100 * GEMK; save.rareK = (save.rareK || 0) + 1; }
     const xp = Math.round((2 + Math.floor(n / 3) + (win ? 3 : 0)) * (S.elite && n >= 30 ? 2 : 1) * (S.elite && n >= 47 && n <= 49 ? 2 : 1) * (nmS ? 2 + .1 * (nmS - 1) : 1) * (1 + (S.md ? S.md.xp : 0))); /* nightmare: x2 at stage 1 (= elite 47~49), +0.1 per stage */ /* elite 30+: profile xp x2 · elite 47~49: another x2 */
     let cards = 0;
