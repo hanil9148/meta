@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1645';
+  const APP_VER = 'v.261116-1705';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1481,6 +1481,14 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.cards) { const got = giveCards(r.cards); out.push(got); }
     /* bulk run rewards (gift mail): gear, rings and profile xp of k elite clears with 3 bosses each */
     /* gift: equipped gear to max level, equipped pets to max star */
+    /* gift: k random 4-element gunslingers at ★24 (a gunslinger already owned below ★24 is raised to ★24 instead) */
+    if (r.u24) { const pool = []; for (let n = 0; n < NMS.length; n++) for (let skip = 0; skip < 5; skip++) pool.push({ n, e: [0, 1, 2, 3, 4].filter(x => x !== skip) });
+      const got = []; for (let i = 0; i < r.u24 && pool.length; i++) { let pick = -1;
+        for (let t = 0; t < 200 && pick < 0; t++) { const j = Math.floor(Math.random() * pool.length), c = pool[j], ex = save.coll.find(u => !u.m && ukey(u) === ukey({ n: c.n, e: c.e })); if (!ex || ex.s < 24) pick = j; }
+        if (pick < 0) break; const c = pool.splice(pick, 1)[0], ex = save.coll.find(u => !u.m && ukey(u) === ukey({ n: c.n, e: c.e }));
+        if (ex) ex.s = 24; else save.coll.push({ n: c.n, e: c.e, s: 24, dc: 0 }); got.push(NMS[c.n] + '(' + c.e.map(x => EGL[x]).join('') + ')'); }
+      const over = save.coll.length - capOf(); if (over > 0) save.capBuy = Math.min(190, save.capBuy + over);
+      out.push('★24 4속성 총잡이 ' + got.length + '명: ' + got.join(' · ')); }
     if (r.maxGear) { let k = 0; for (const sl of ['w', 'h', 'n']) { const id = save.gear[sl], d = id && save.items[id]; if (d) { d.lv = GMAX[iG(id)]; k++; } } out.push('장착 장비 ' + k + '개 최대 레벨'); }
     if (r.maxPet) { let k = 0; for (const pid of save.pslot) { const x = pid && save.pcoll.find(q => q.id === pid); if (x) { x.s = PET_MAX; k++; } } out.push('장착 펫 ' + k + '마리 ★' + PET_MAX); }
     if (r.runs) { const k = r.runs; let it = dropItems(k, ODDS.eliteWin).length + dropItems(6 * k, ODDS.eliteBoss).length + dropItems(Math.round(k * .03), ODDS.rare).length;
@@ -2403,6 +2411,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'n261116u', t: '🎁 전설 총잡이 5명 선물', s: '모두에게 ★24 4속성(전설) 총잡이 5명을 무작위로 드려요. 4속성 ★24 다섯 명이면 강속성 2개 신화를 만들 수 있어요!', r: { u24: 5 }, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
   ];
@@ -4190,9 +4199,52 @@ input { -webkit-user-select: text; user-select: text; }
           return on ? '<div class="desc" style="font-size:11px;color:var(--bad)">⚠ 예전 버전으로 접속 중 (' + esc(cv || '아주 예전') + ') · 판이 끝나면 자동 업데이트돼요. 안 되면 새로고침</div>'
             : (() => { const ls = lastSeen[r.id], lt = Math.max(ls ? ls.t : 0, +d.t || 0), lv = (ls && ls.v > dv ? ls.v : dv);
                 return '<div class="desc" style="font-size:11px">💤 <b>' + (lt ? agoTxt(lt) : '오래 전') + '</b> 마지막 접속 · 그때 버전 ' + esc(lv || '예전 버전') + '<br>아직 새 버전을 안 켰어요. 다음에 켜면 자동으로 최신 버전이 돼요</div>'; })(); })()) +
+        (isMe ? '' : '<button class="btn c sm ol-s" data-act="cmp" data-id="' + esc(r.id) + '" style="justify-self:start">⚖ 내 아이템과 비교</button>') +
         '<div class="desc" style="font-size:11px">' + (isMe ? (NET.mode === 'firebase' ? '내 정보는 접속할 때·10분마다·나갈 때 올라가요' : '내 정보는 바뀔 때마다 자동으로 올라가요') : '마지막 갱신 ' + agoTxt(+d.t || 0)) + '</div><div class="fu">' + (eq.length ? eq.map(x => { const n = clamp(+x[0] || 0, 0, 7), st = clamp(+x[2] || 0, 0, 30); if (x[3]) { const se = clamp(+x[4] || 0, 0, 4); return '<span class="chip" style="background:linear-gradient(90deg,#ff9ad8,#ffe36a,#8ff0b0,#8fd0ff,#d9b8ff);font-weight:900">신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + (x[5] != null && +x[5] >= 0 && +x[5] <= 4 && +x[5] !== se ? EGL[+x[5]] : '') + '</span>'; } const es = String(x[1] || '').split('').map(c => clamp(+c || 0, 0, 4)).slice(0, 4); return '<span class="chip" style="background:#fbe8c4">전설 ' + NMS[n] + ' ★' + st + ' ' + es.map(e => EGL[e]).join('') + '</span>'; }).join('') : '<span class="desc">출전 총잡이 없음</span>') + '</div></div>';
     });
     h += '<p class="desc">' + (NET.mode === 'firebase' ? '이 주소를 친구에게 알려주세요. 구글로 로그인하면 여기에 올라와요.' : '공유 메뉴에서 친구를 초대하면(기여자 이상 권한) 여기에 올라와요.') + ' 친구들은 내 레벨·스테이지·전투력·출전 총잡이를 볼 수 있어요.</p>';
+    return h;
+  }
+  /* ---------- 아이템 비교 (ranking) ---------- */
+  function cmpPack() {
+    return { g: ['w', 'h', 'n'].map(sl => { const id = save.gear[sl], d = id && save.items[id]; return d ? [id, d.lv, d.aw || 0, d.ae == null ? -1 : d.ae] : null; }),
+      r: save.rslot.map(id => id && save.rings[id] ? [id, save.rings[id].lv] : null), gl: save.gslot >= 0 && save.gl[save.gslot] ? [save.gslot, save.gl[save.gslot].lv] : null, bl: save.bslot || '',
+      pt: save.pslot.map(pid => { const x = pid && save.pcoll.find(q => q.id === pid); return x ? [x.p, x.g, x.s] : null; }),
+      po: ['w', 'h', 'n'].map(sl => { const P = save.pot[sl]; return P ? [P.t, P.l] : null; }), fo: [save.hl, save.dl, save.sll, save.kbl || 0], md: achAll().tiers, dust: save.dust || 0 };
+  }
+  let cmpId = null;
+  function cmpBody() {
+    const row = rankRows().find(r => r.id === cmpId); if (!row) return '<p class="empty">상대 정보를 찾지 못했어요.</p>';
+    const T = row.d || {}, A = cmpPack(), B = T.cp && typeof T.cp === 'object' ? T.cp : null, me = rankPayload();
+    const nick = esc((T.nick || NET.nameOf(row.id) || '친구').slice(0, 10));
+    if (!B) return '<p class="desc" style="color:#fff">' + nick + '님은 아직 예전 버전이라 아이템 정보가 없어요. 이 버전으로 한 번 접속하면 비교할 수 있어요.</p>';
+    const arr = (x, n) => Array.isArray(x) ? x.slice(0, n) : [];
+    const gTxt = g => { if (!Array.isArray(g) || !validId(g[0])) return ['없음', -1]; const aw = clamp(+g[2] || 0, 0, 10); return [RAR[iG(g[0])].nm + ' ' + iK(g[0]).nm + ' Lv' + clamp(+g[1] || 1, 1, 99) + (aw ? ' · 각성' + aw : ''), iG(g[0]) * 1e4 + clamp(+g[1] || 1, 1, 99) * 10 + aw]; };
+    const rTxt = g => { if (!Array.isArray(g) || !validRid(g[0])) return ['없음', -1]; return [RAR[rG(g[0])].nm + ' ' + rK(g[0]).nm + (RMAX[rG(g[0])] > 1 ? ' Lv' + clamp(+g[1] || 1, 1, 50) : ''), rG(g[0]) * 100 + clamp(+g[1] || 1, 1, 50)]; };
+    const glTxt = g => { if (!Array.isArray(g) || !(+g[0] >= 0 && +g[0] < GLV.length)) return ['없음', -1]; const k = +g[0]; return [GLT[GLV[k].t].nm + ' ' + GLV[k].nm + ' Lv' + clamp(+g[1] || 1, 1, 99), GLV[k].t * 1000 + clamp(+g[1] || 1, 1, 99)]; };
+    const blTxt = id => validBid(id) ? [beltName(id), bGr(id) * 10 + 1] : ['없음', -1];
+    const ptTxt = x => Array.isArray(x) && +x[0] >= 0 && +x[0] < PETN.length ? [PGR[clamp(+x[1] || 0, 0, 3)].nm + ' ' + PETN[+x[0]] + ' ★' + clamp(+x[2] || 0, 0, PET_MAX), clamp(+x[1] || 0, 0, 3) * 100 + clamp(+x[2] || 0, 0, PET_MAX)] : ['없음', -1];
+    const poTxt = x => Array.isArray(x) && Array.isArray(x[1]) ? [PTIER[clamp(+x[0] || 0, 0, 3)].nm + ' · ' + x[1].slice(0, 3).map(ln => Array.isArray(ln) && POT[+ln[0]] ? POT[+ln[0]].nm.replace(' 피해', '피').replace('모든 속성', '속성') : '?').join('/'), clamp(+x[0] || 0, 0, 3)] : ['없음', -1];
+    const uTxt = x => { if (!x) return ['없음', -1]; const a = Array.isArray(x) ? x : [x.n, x.e, x.s, x.m ? 1 : 0, x.se, x.xb]; const n = clamp(+a[0] || 0, 0, 7), st = clamp(+a[2] || 0, 0, 30);
+      if (+a[3]) { const se = clamp(+a[4] || 0, 0, 4), xb = a[5] != null && +a[5] !== se ? clamp(+a[5], 0, 4) : null; return ['신화 ' + NMS[n] + ' ★' + st + ' · 강' + EGL[se] + (xb != null ? EGL[xb] : ''), 1e4 + st * 10 + (xb != null ? 1 : 0)]; }
+      const es = String(a[1] || '').split('').filter(c => /[0-4]/.test(c)); return [NMS[n] + ' ★' + st + ' · ' + es.map(c => EGL[+c]).join(''), es.length * 100 + st]; };
+    const sec = (nm, rows) => '<div class="card dark" style="gap:4px;padding:8px 10px"><b class="ol-s" style="font-family:var(--display);font-size:15px">' + nm + '</b>' + rows.join('') + '</div>';
+    const line = (lab, a, b) => { const diff = a[0] !== b[0], up = a[1] > b[1] ? 1 : a[1] < b[1] ? -1 : 0;
+      return '<div style="display:grid;grid-template-columns:54px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;font-size:12px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08)"><span class="desc" style="font-size:11px">' + lab + '</span>' +
+        '<span style="color:' + (diff ? (up < 0 ? '#ff5a5a' : '#7ee0a0') : '#fff') + ';font-weight:' + (diff ? 900 : 400) + '">' + (diff && up < 0 ? '▼ ' : diff && up > 0 ? '▲ ' : '') + a[0] + '</span>' +
+        '<span style="color:' + (diff ? (up > 0 ? '#ff5a5a' : '#7ee0a0') : '#fff') + ';font-weight:' + (diff ? 900 : 400) + '">' + (diff && up > 0 ? '▼ ' : diff && up < 0 ? '▲ ' : '') + b[0] + '</span></div>'; };
+    const num = (v, f) => [f ? f(v) : fmt(v), +v || 0];
+    const eqA = save.slots.map(getUnit).filter(Boolean), eqB = arr(T.eq, 3);
+    let h = '<div style="display:grid;grid-template-columns:54px 1fr 1fr;gap:6px;font-family:var(--display);font-size:14px;color:#fff;padding:0 10px"><span></span><b>나</b><b>' + nick + '</b></div>' +
+      '<p class="desc" style="margin:0 0 4px;font-size:11px">다른 부분은 <b style="color:#ff5a5a">빨간색(▼ 더 낮음)</b> · <b style="color:#7ee0a0">초록색(▲ 더 높음)</b>으로 보여요.</p>';
+    h += sec('📊 요약', [line('전투력', num(me.pw), num(+T.pw || 0)), line('레벨', num(me.lv, lvName), num(clamp(+T.lv || 1, 1, LV_MAX), lvName)), line('훈장', num(A.md, v => v + '단계'), num(+B.md || 0, v => v + '단계')), line('가루', num(A.dust), num(+B.dust || 0))]);
+    h += sec('🤠 출전 총잡이', [0, 1, 2].map(i => line((i + 1) + '번', uTxt(eqA[i] ? [eqA[i].n, eqA[i].e.join(''), eqA[i].s, eqA[i].m ? 1 : 0, eqA[i].se, eqA[i].xb] : null), uTxt(eqB[i]))));
+    h += sec('🔫 장비 · 잠재능력', [['총', 0], ['모자', 1], ['목걸이', 2]].map(([nm, i]) => line(nm, gTxt(A.g[i]), gTxt(arr(B.g, 3)[i]))).concat([['총 잠재', 0], ['모자 잠재', 1], ['목걸이 잠재', 2]].map(([nm, i]) => line(nm, poTxt(A.po[i]), poTxt(arr(B.po, 3)[i])))));
+    h += sec('💍 반지 · 장갑 · 탄띠', [0, 1, 2].map(i => line('반지 ' + (i + 1), rTxt(A.r[i]), rTxt(arr(B.r, 3)[i]))).concat([line('장갑', glTxt(A.gl), glTxt(B.gl)), line('탄띠', blTxt(A.bl), blTxt(B.bl))]));
+    h += sec('🐶 펫', [0, 1, 2].map(i => line('펫 ' + (i + 1), ptTxt(A.pt[i]), ptTxt(arr(B.pt, 3)[i]))));
+    const tA = save.tq.eq >= 0 && save.tq.eq < save.tq.st ? save.tq.eq + 1 : 0, tB = clamp(+T.ti || 0, 0, TITLES.length);
+    const fo = arr(B.fo, 4);
+    h += sec('🏅 칭호 · 거점', [line('칭호', [tA ? TITLES[tA - 1].nm : '없음', tA], [tB ? TITLES[tB - 1].nm : '없음', tB])].concat(['체력', '방어력', '감속장', '밀쳐내기'].map((nm, i) => line(nm, num(A.fo[i], v => 'Lv' + v), num(clamp(+fo[i] || 0, 0, 30), v => 'Lv' + v)))));
     return h;
   }
   function agoTxt(t) { if (!t) return '알 수 없음'; const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? '방금' : s < 3600 ? Math.floor(s / 60) + '분 전' : s < 86400 ? Math.floor(s / 3600) + '시간 전' : Math.floor(s / 86400) + '일 전'; }
@@ -4205,7 +4257,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function rankPayload() {
     return { nick: save.name, lv: save.lv, st: save.unlocked, es: save.elOn ? save.el.unlocked : 0, nm: nmOpen() ? save.nm.unlocked : 0, ab: save.ab.best, ti: save.tq.eq >= 0 && save.tq.eq < save.tq.st ? save.tq.eq + 1 : 0, pl: save.plays.reduce((a, b) => a + b, 0), tp: save.plays.reduce((a, b) => a + b, 0) + save.el.plays.reduce((a, b) => a + b, 0) + save.nm.plays.reduce((a, b) => a + b, 0) + save.tq.ar, gd: Math.floor(save.gold), pw: power(), hl: save.hl, dl: save.dl,
-      v: APP_VER, eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? Object.assign({ n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se }, u.xb != null ? { xb: u.xb } : {}) : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
+      v: APP_VER, cp: cmpPack(), eq: save.slots.map(getUnit).filter(Boolean).map(u => u.m ? Object.assign({ n: u.n, e: u.e.join(''), s: u.s, m: 1, se: u.se }, u.xb != null ? { xb: u.xb } : {}) : { n: u.n, e: u.e.join(''), s: u.s }), t: Date.now() };
   }
 
   /* ================= network (claude.ai artifact capabilities, or Firebase build) ================= */
@@ -4498,6 +4550,7 @@ input { -webkit-user-select: text; user-select: text; }
     qclaim: el => { const q = QS.find(x => x.id === el.dataset.id); if (!q || !qReady(q)) return; const rw = qRew(q); qSlot(q.id).c = 1; const t = giveR(rw); Snd.coin(); toast(t + ' 받았어요'); persist(); refreshPop(missionsBody()); topbar(); },
     qgo: el => { closePop(); setTab(el.dataset.t); },
     mail: () => openPop('우편', mailBody(), 'mail'),
+    cmp: el => { cmpId = el.dataset.id; openPop('⚖ 아이템 비교', cmpBody(), 'cmp'); },
     mailget: el => { mailGet(el.dataset.id); refreshPop(mailBody()); },
     mailall: () => { for (const m of mailItems()) mailGet(m.id); refreshPop(mailBody()); },
     friends: () => { NET.sync(); openPop('랭킹', friendsBody(), 'friends'); },
@@ -4716,7 +4769,7 @@ input { -webkit-user-select: text; user-select: text; }
   NET.init();
   setTimeout(showDisNote, 2500);
   if (!window.jmReady && !(window.claude && window.claude.use)) setTimeout(repResume, 1500);
-  window.__G = { draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
+  window.__G = { draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
 })();
 </script>
 <script type="module">
