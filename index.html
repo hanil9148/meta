@@ -534,7 +534,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-0902';
+  const APP_VER = 'v.261116-0909';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -705,7 +705,10 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'prush', nm: '펫 돌격', un: 60, c1: '#ff8ac8', c2: '#6a1a4a', d: '펫들이 앞으로 뛰쳐나가 길 위의 적을 들이받아요. 펫 별이 높을수록 세요.' },
     { id: 'reson', nm: '속성 공명', un: 65, c1: '#8af0ff', c2: '#3a2a8a', d: '출전 팀 속성이 4종 이상이면 모든 피해 +25% (레벨마다 +5%).' },
     { id: 'bounty', nm: '현상금 사냥', un: 70, c1: '#ffe07a', c2: '#6a4a0a', d: '보스·희귀 보스에게 주는 피해 +20% (레벨마다 +5%), 보스 처치 골드 +30%.' },
-    { id: 'last', nm: '최후의 저항', un: 80, c1: '#c8d8ff', c2: '#2a3a6a', d: '거점 체력이 30% 아래로 떨어지면 5초 동안 무적 + 주변 대폭발. 한 판에 1번.' }
+    { id: 'last', nm: '최후의 저항', un: 80, c1: '#c8d8ff', c2: '#2a3a6a', d: '거점 체력이 30% 아래로 떨어지면 5초 동안 무적 + 주변 대폭발. 한 판에 1번.' },
+    { id: 'mark', nm: '현상금 표적', un: 99, c1: '#ff5a5a', c2: '#5a0a0a', d: '8초마다 체력이 가장 많은 적에게 표적을 찍어요. 4초 동안 받는 피해 +30% (레벨마다 +5%).' },
+    { id: 'rain', nm: '탄막 폭격', un: 113, c1: '#ffd23f', c2: '#5a3a0a', d: '10초마다 하늘에서 총알 20발이 쏟아져요. 한 발에 공격력 200% (레벨마다 +20%).' },
+    { id: 'rally', nm: '결전의 함성', un: 128, c1: '#ff9a3a', c2: '#5a1a0a', d: '웨이브가 시작되면 6초 동안 모든 피해 +40% · 치명타 +15% (레벨마다 +5% · +2%).' }
   ];
   const SKM = {}; SK.forEach(s => SKM[s.id] = s);
   const PASS = [
@@ -730,6 +733,9 @@ input { -webkit-user-select: text; user-select: text; }
       drone: '<rect x="18" y="22" width="20" height="14" rx="5" fill="#e8e8ff" stroke="#1a0a3a" stroke-width="2.6"/><path d="M10 18h12M34 18h12" stroke="#1a0a3a" stroke-width="3" stroke-linecap="round"/><path d="M16 18v6M40 18v6" stroke="#1a0a3a" stroke-width="2.6"/><circle cx="28" cy="29" r="3" fill="#ff4a4a"/>',
       shuri: '<path d="M28 8l5 15 15 5-15 5-5 15-5-15-15-5 15-5Z" fill="#ffd0a0" stroke="#5a1a0a" stroke-width="2.6" stroke-linejoin="round"/><circle cx="28" cy="28" r="3.5" fill="#5a1a0a"/>',
       ice: '<path d="M10 40l26-26 6 6-26 26Z" fill="#e8fbff" stroke="#2a6aa8" stroke-width="2.6"/><path d="M38 12l8 8M42 10l-2 4M48 16l-4 2" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
+      mark: '<circle cx="28" cy="28" r="15" fill="none" stroke="#fff" stroke-width="3.5"/><circle cx="28" cy="28" r="6" fill="#ff3a3a" stroke="#5a0a0a" stroke-width="2.4"/><path d="M28 6v10M28 40v10M6 28h10M40 28h10" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>',
+      rain: '<path d="M12 10l4 14M24 6l4 14M36 10l4 14M18 28l4 14M30 26l4 14M42 28l4 14" stroke="#fff6c8" stroke-width="5" stroke-linecap="round"/><path d="M12 10l4 14M24 6l4 14M36 10l4 14M18 28l4 14M30 26l4 14M42 28l4 14" stroke="#ffb020" stroke-width="2.4" stroke-linecap="round"/>',
+      rally: '<path d="M10 22h8l16-10v32L18 34h-8Z" fill="#ffe0b0" stroke="#5a1a0a" stroke-width="2.6" stroke-linejoin="round"/><path d="M40 20c4 4 4 12 0 16M44 15c7 7 7 19 0 26" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
       grav: '<path d="M28 28m-16 0a16 16 0 1 0 32 0 12 12 0 1 0-24 0 8 8 0 1 0 16 0 4 4 0 1 0-8 0" fill="none" stroke="#e8c8ff" stroke-width="3.2"/>',
       atk: '<path d="M14 42l20-20M30 14h12v12" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>',
       spd: '<path d="M10 28h22M18 18h24M18 38h24" stroke="#fff" stroke-width="5" stroke-linecap="round"/>',
@@ -1599,7 +1605,7 @@ input { -webkit-user-select: text; user-select: text; }
       '<span class="hn ol-s">' + NMS[u.n] + '</span><span class="chips">' + (u.m ? '<i class="chip e' + u.se + ' se">' + ENM[u.se] + '★</i><i class="chip" style="background:#fff">5속성</i>' : u.e.map(e => '<i class="chip e' + e + '">' + ENM[e] + '</i>').join('')) + '</span>' +
       '<span class="st ol-s">★' + u.s + '</span></div>';
   }
-  function fortBody() { return (popBack ? invBackBtn() : '') + tipBox('오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.') +
+  function fortBody() { return (popBack ? invBackBtn() : '') + '<p class="desc" style="color:#fff;margin:0 0 6px">🛡 보호막 외형: <b style="color:var(--yel)">' + DOME_NM[domeTier()] + '</b> · 거점 평균 레벨에 따라 바뀌어요 (0~7 황야 철벽 · 8~15 수정 방벽 · 16~23 룬 결계 · 24~29 플라즈마 실드 · 30 오로라 장막)</p>' + tipBox('오른쪽 거점은 육각 보호막이 지켜요. <b>체력</b>은 버틸 수 있는 양, <b>방어력</b>은 적에게 받는 피해를 줄이고, <b>감속장</b>은 맵 전체 몬스터를 느리게 해요. 레벨이 오를수록 실패 확률이 커지고, 5레벨부터는 실패하면 한 단계 내려갈 수 있어요.') +
       enhRow('hp') + enhRow('dl') + enhRow('sl') + (gmsg ? '<div class="msg ' + gmsg.c + '">' + esc(gmsg.t) + '</div>' : ''); }
   /* ---------- 심연의 탑 tab ---------- */
   const abLeft = () => Math.max(0, save.ab.next - Date.now());
@@ -2548,6 +2554,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function nextWave() {
     S.wave++;
+    if (S.sk && S.sk.rally) { const l = S.sk.rally.l; S.rallyT = 6; S.rallyV = .4 + .05 * (l - 1); S.rallyC = .15 + .02 * (l - 1); }
     if (S.r.time) S.tstop = S.r.time;
     const c = Math.round((12 + 6 * S.wave) * S.P.cnt);
     S.toSpawn = c; S.spawnIv = 18 / c; S.spawnT = .6; S.waveDone = 0;
@@ -2604,8 +2611,8 @@ input { -webkit-user-select: text; user-select: text; }
     S.en.push(mkE(pickKind(), spawnX(rnd(0, 30)), rnd(FIELD0 + 10, FIELD1 - 10), el));
   }
   function xpNeed(l) { return 5 + l * 3; }
-  function critChance() { return .05 + S.pass.crit * .06 + S.g.crit + (S.tb ? S.tb.crit : 0); }
-  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk) * (1 + S.lvb) * (1 + (S.tb ? S.tb.dmg : 0));
+  function critChance() { return .05 + S.pass.crit * .06 + S.g.crit + (S.tb ? S.tb.crit : 0) + (S.rallyT > 0 ? S.rallyC : 0); }
+  const atkMul = () => (1 + S.pass.atk * .15) * (1 + S.g.atk) * (1 + S.g.natk) * (1 + S.r.atk) * (1 + S.lvb) * (1 + (S.tb ? S.tb.dmg : 0)) * (S.rallyT > 0 ? 1 + S.rallyV : 1);
   function skPow(id) { return S.avg * atkMul() * (1 + .15 * (skOf(id).lv - 1)); }
 
   /* damage numbers in Korean units: 1234조 5678억 9012만 3456 (empty groups are left out) */
@@ -2640,6 +2647,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (m > 1 && S.r.weak) a *= 1 + S.r.weak;
     if (S.r.exe && e.hp < e.mh * .3) a *= 1 + S.r.exe;
     if (e.cor > 0) a *= 1 + e.cv;
+    if (e.mk > 0) a *= 1 + e.mkv;
     if (e.frz > 0 && els && els.fzb) a *= 1 + els.fzb;
     /* elite: monsters take 5% less damage, 30% less from elite stage 40 */
     if (S.elite) a *= 1 - (S.n >= 40 ? .3 : ELITE.def);
@@ -2761,8 +2769,8 @@ input { -webkit-user-select: text; user-select: text; }
     S.bul = S.bul.filter(b => !b.dead);
   }
   /* active skills */
-  const SKCD = { venom: 2.4, solar: 4.5, web: 6, cannon: 3.2, frost: 5, plasma: 2.8, cloud: 6.5, shuri: 1.9, grav: 7.5, rapid: 12, tnt: 5.5, prush: 7 };
-  const PASSIVE_SK = { ice: 1, reson: 1, bounty: 1, last: 1 };
+  const SKCD = { mark: 8, rain: 10, venom: 2.4, solar: 4.5, web: 6, cannon: 3.2, frost: 5, plasma: 2.8, cloud: 6.5, shuri: 1.9, grav: 7.5, rapid: 12, tnt: 5.5, prush: 7 };
+  const PASSIVE_SK = { ice: 1, reson: 1, bounty: 1, last: 1, rally: 1 };
   function lastStand() {
     S.lastUsed = true; const l = S.sk.last.l; S.inv = 5 + .5 * (l - 1);
     const P = skPow('last') * 6 * (1 + .25 * (l - 1));
@@ -2772,6 +2780,7 @@ input { -webkit-user-select: text; user-select: text; }
   function updSkills(dt) {
     if (S.inv > 0) { S.inv -= dt; S.domeHit = Math.max(S.domeHit, .05); }
     if (S.sk.last && !S.lastUsed && S.hp > 0 && S.hp < S.mh * .3) lastStand();
+    if (S.rallyT > 0) S.rallyT -= dt;
     const R = S.robo;
     for (const id in S.sk) {
       const k = S.sk[id], l = k.l;
@@ -2823,6 +2832,14 @@ input { -webkit-user-select: text; user-select: text; }
         let any = false;
         for (const s of S.sh) if (s.pet != null) { const st = s.ps || 0; any = true; S.fx.push({ k: 'shuri', pet: s.pet, x: s.x - 10, y: s.y, vx: -360, vy: 0, dmg: P * 2.2 * lm * (1 + .15 * st), l: 1.6, hits: [], rot: 0 }); }
         if (!any) k.t = 2;
+      } else if (id === 'mark') {
+        let t = null; for (const e of S.en) if (e.hp > 0 && e.x > -60 && (!t || e.hp > t.hp)) t = e; if (!t) { k.t = .5; continue; }
+        t.mk = 4; t.mkv = .3 + .05 * (l - 1); S.fx.push({ k: 'ring', x: t.x, y: t.y, r: t.r + 18, l: .45, c: '#ff4a4a' });
+      } else if (id === 'rain') {
+        const live = S.en.filter(e => e.hp > 0 && e.x > -40); if (!live.length) { k.t = .5; continue; }
+        const dmg = P * (2 + .2 * (l - 1));
+        for (let i = 0; i < 20; i++) { const e = live[Math.floor(Math.random() * live.length)]; if (e.hp > 0) hit(e, dmg, [], false, true); if (i < 12) S.fx.push({ k: 'ring', x: e.x + rnd(-8, 8), y: e.y + rnd(-8, 8), r: 14, l: .3, c: '#ffe14a' }); }
+        S.banner = { t: 1, s: '탄막 폭격!' }; Snd.zap();
       } else if (id === 'grav') {
         const t = densest(90); if (!t) { k.t = .5; continue; }
         S.fx.push({ k: 'grav', x: t.x, y: t.y, r: 100, l: 2.5, dps: P * 1.5 * lm });
@@ -2869,6 +2886,7 @@ input { -webkit-user-select: text; user-select: text; }
       if (e.hp <= 0) { kill(e); continue; }
       if (S.ab || S.nm) { if (S.aff.has('regen') && !(e.burn > 0)) e.hp = Math.min(e.mh, e.hp + e.mh * (e.k === 'boss' ? .004 : .02) * dt); if (S.aff.has('rage') && !e.rg && e.hp < e.mh * .5) { e.rg = 1; e.sp *= 1.5; e.atk *= 1.5; } }
       if (e.cor > 0) e.cor -= dt;
+      if (e.mk > 0) e.mk -= dt;
       if (S.tstop > 0 && e.ts !== S.wave) { e.ts = S.wave; e.frz = Math.max(e.frz, S.tstop); }
       let sp = e.sp * S.fs;
       if (S.r.swamp && e.x > edgeX(e.y) - 110) sp *= 1 - S.r.swamp;
@@ -3246,25 +3264,52 @@ input { -webkit-user-select: text; user-select: text; }
     c.beginPath(); c.roundRect(14, -50, 10, 24, 5); c.fill(); c.stroke();
     c.restore();
   }
+  /* dome look by average fort level: 0~7 황야 철벽 · 8~15 수정 방벽 · 16~23 룬 결계 · 24~29 플라즈마 실드 · 30 오로라 장막 */
+  const DOME_NM = ['황야 철벽', '수정 방벽', '룬 결계', '플라즈마 실드', '오로라 장막'];
+  const domeTier = () => { const a = Math.floor(((save.hl || 0) + (save.dl || 0) + (save.sll || 0)) / 3); return a >= 30 ? 4 : a >= 24 ? 3 : a >= 16 ? 2 : a >= 8 ? 1 : 0; };
+  let DCRY = null;
+  function domeArc(c, rx, ry) { c.beginPath(); c.ellipse(DCX, DCY, rx, ry, 0, Math.PI * .5, Math.PI * 1.5); c.stroke(); }
   function drawDome(c, t, hit) {
+    const tier = domeTier(), fx = vfx(), H = hit > 0;
     c.save();
     c.beginPath(); c.ellipse(DCX, DCY, DRX, DRY, 0, 0, 6.283); c.clip();
-    c.fillStyle = hit > 0 ? 'rgba(255,120,120,.22)' : 'rgba(90,230,200,.16)'; c.fillRect(DCX - DRX, DCY - DRY, DRX * 2, DRY * 2);
-    c.strokeStyle = 'rgba(140,255,230,.22)'; c.lineWidth = 1.5;
-    const s = 18, hh = s * Math.sqrt(3);
-    for (let y = DCY - DRY; y < DCY + DRY; y += hh / 2) {
-      const row = Math.round((y - DCY + DRY) / (hh / 2));
-      for (let x = DCX - DRX + (row % 2 ? s * 1.5 : 0); x < DCX + DRX; x += s * 3) {
-        c.beginPath();
-        for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; c.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s); }
-        c.closePath(); c.stroke();
-      }
+    if (tier === 0) {
+      c.fillStyle = 'rgba(255,150,40,.10)'; c.fillRect(DCX - DRX, DCY - DRY, DRX * 2, DRY * 2);
+      c.strokeStyle = 'rgba(255,170,60,.22)'; c.lineWidth = 1.5; c.beginPath();
+      for (let x = DCX - DRX; x < DCX + 20; x += 18) { c.moveTo(x, DCY - DRY); c.lineTo(x + 70, DCY + DRY); c.moveTo(x + 70, DCY - DRY); c.lineTo(x, DCY + DRY); } c.stroke();
+    } else if (tier === 1) {
+      const g = c.createRadialGradient(DCX, DCY, 20, DCX, DCY, DRX); g.addColorStop(0, 'rgba(120,200,255,.04)'); g.addColorStop(1, 'rgba(120,200,255,.32)'); c.fillStyle = g; c.fillRect(DCX - DRX, DCY - DRY, DRX * 2, DRY * 2);
+      if (!DCRY) { let sd = 7; const r = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; }; DCRY = []; for (let k = 0; k < 46; k++) { const a = Math.PI * .5 + r() * Math.PI, d = .55 + r() * .45; DCRY.push([a, d, 150 + r() * 80 | 0, .22 + r() * .3, 8 + r() * 6]); } }
+      c.strokeStyle = 'rgba(220,250,255,.65)'; c.lineWidth = 1;
+      for (const [a, d, col, al, sz] of DCRY) { const x = DCX + Math.cos(a) * DRX * d, y = DCY + Math.sin(a) * DRY * d; c.fillStyle = 'rgba(' + col + ',220,255,' + al + ')'; c.beginPath(); c.moveTo(x, y - sz * 1.5); c.lineTo(x + sz, y); c.lineTo(x, y + sz * 1.5); c.lineTo(x - sz, y); c.closePath(); c.fill(); c.stroke(); }
+      if (fx) { const sw = DCY - DRY + ((t * 140) % (DRY * 2)), lg = c.createLinearGradient(0, sw - 40, 0, sw + 40); lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.35)'); lg.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = lg; c.fillRect(DCX - DRX, sw - 40, DRX * 2, 80); }
+    } else if (tier === 2) {
+      c.fillStyle = 'rgba(255,190,80,.10)'; c.fillRect(DCX - DRX, DCY - DRY, DRX * 2, DRY * 2);
+    } else if (tier === 3) {
+      c.lineWidth = 10;
+      for (let k = 0; k < (fx ? 12 : 6); k++) { const f = k / 12; c.strokeStyle = 'hsla(' + (190 + f * 80) + ',100%,65%,' + (.1 + .14 * (1 + Math.sin(t * 3 + k)) / 2) + ')'; c.beginPath(); for (let y = DCY - DRY; y <= DCY + DRY; y += 10) { const x = DCX - DRX * (.35 + .6 * f) + Math.sin(y * .04 + t * 4 + k) * 10; y === DCY - DRY ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); }
+    } else {
+      for (let k = 0; k < 5; k++) { const h = [150, 190, 280, 320, 120][k], g = c.createLinearGradient(DCX - DRX, 0, DCX, 0); g.addColorStop(0, 'hsla(' + h + ',90%,60%,0)'); g.addColorStop(.6, 'hsla(' + h + ',90%,60%,.2)'); g.addColorStop(1, 'hsla(' + h + ',90%,70%,.05)'); c.fillStyle = g;
+        c.beginPath(); c.moveTo(DCX - DRX, DCY - DRY); for (let y = DCY - DRY; y <= DCY + DRY; y += 12) c.lineTo(DCX - DRX * (.2 + k * .15) + Math.sin(y * .03 + t * 2 + k * 1.3) * 24, y); c.lineTo(DCX, DCY + DRY); c.lineTo(DCX, DCY - DRY); c.fill(); }
+      c.fillStyle = '#fff'; for (let k = 0; k < 30; k++) { const a = Math.PI * .5 + ((k * 0.618) % 1) * Math.PI, d = ((k * 0.381) % 1); c.globalAlpha = .3 + .5 * (1 + Math.sin(t * 3 + k)) / 2; c.fillRect(DCX + Math.cos(a) * DRX * d, DCY + Math.sin(a) * DRY * d, 2, 2); } c.globalAlpha = 1;
     }
+    if (H) { c.fillStyle = 'rgba(255,90,90,.22)'; c.fillRect(DCX - DRX, DCY - DRY, DRX * 2, DRY * 2); }
     c.restore();
     c.save();
-    if (vfx()) { c.shadowColor = '#6ff5d8'; c.shadowBlur = 14; }
-    c.strokeStyle = hit > 0 ? '#ff9a8a' : '#8ff8e0'; c.lineWidth = 4;
-    c.beginPath(); c.ellipse(DCX, DCY, DRX, DRY, 0, Math.PI * .5, Math.PI * 1.5); c.stroke();
+    const glow = (col, b) => { if (fx) { c.shadowColor = col; c.shadowBlur = b; } };
+    if (tier === 0) {
+      for (let j = 0; j < 11; j++) { const a = Math.PI * .55 + j * (Math.PI * .9 / 10), x = DCX + Math.cos(a) * DRX, y = DCY + Math.sin(a) * DRY; c.save(); c.translate(x + (H ? rnd(-1.5, 1.5) : 0), y); c.rotate(a + Math.PI / 2); c.fillStyle = H ? '#8a5a4a' : '#6a5a4a'; c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.roundRect(-18, -10, 36, 20, 3); c.fill(); c.stroke(); c.fillStyle = '#c8b8a0'; for (const q of [-12, 12]) { c.beginPath(); c.arc(q, 0, 2.5, 0, 6.283); c.fill(); } c.restore(); }
+      glow('#ffb84a', 12); c.strokeStyle = H ? '#ff8a6a' : '#ffcf6a'; c.lineWidth = 3; domeArc(c, DRX - 16, DRY - 16);
+    } else if (tier === 1) { glow('#7fd8ff', 16); c.strokeStyle = H ? '#ff9a8a' : '#c8f0ff'; c.lineWidth = 5; domeArc(c, DRX, DRY); }
+    else if (tier === 2) {
+      const RN = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ'; glow(H ? '#ff4a2a' : '#ffb72e', 12);
+      [[1, 0], [.82, 1], [.64, 2]].forEach(([sc, k]) => { c.strokeStyle = H ? 'rgba(255,110,80,' + (.9 - k * .2) + ')' : 'rgba(255,210,120,' + (.9 - k * .2) + ')'; c.lineWidth = k ? 2 : 4; domeArc(c, DRX * sc, DRY * sc);
+        c.fillStyle = H ? '#ff8a6a' : '#ffd27a'; c.font = (15 - k * 2) + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        for (let q = 0; q < 12; q++) { const a = Math.PI * .55 + q * (Math.PI * .9 / 11) + (k % 2 ? -1 : 1) * t * .3; const aa = ((a - Math.PI * .5) % Math.PI + Math.PI) % Math.PI + Math.PI * .5; c.fillText(RN[(q * 3 + k * 5) % RN.length], DCX + Math.cos(aa) * (DRX * sc - 13), DCY + Math.sin(aa) * (DRY * sc - 13)); } });
+    } else if (tier === 3) {
+      glow('#b07bff', 22); c.strokeStyle = H ? '#ff9a8a' : '#d8b8ff'; c.lineWidth = 5; domeArc(c, DRX, DRY);
+      if (fx && Math.sin(t * 7) > .3) { c.strokeStyle = '#fff6a0'; c.lineWidth = 2.5; c.shadowColor = '#ffe14a'; const a0 = Math.PI * .6 + ((Math.floor(t * 2) * 0.37) % 1) * Math.PI * .8; c.beginPath(); for (let q = 0; q < 7; q++) { const a = a0 + q * .05, x = DCX + Math.cos(a) * DRX, y = DCY + Math.sin(a) * DRY; q ? c.lineTo(x + (q % 2 ? 8 : -8), y) : c.moveTo(x, y); } c.stroke(); }
+    } else { const g2 = c.createLinearGradient(0, DCY - DRY, 0, DCY + DRY); g2.addColorStop(0, '#7fffd0'); g2.addColorStop(.5, '#b08aff'); g2.addColorStop(1, '#ff8ac8'); glow('#b08aff', 20); c.strokeStyle = H ? '#ff9a8a' : g2; c.lineWidth = 5; domeArc(c, DRX, DRY); }
     c.restore();
     c.fillStyle = '#7a4a24'; c.strokeStyle = INK; c.lineWidth = 3;
     c.beginPath(); c.roundRect(300, GROUND - 22, 70, 22, 4); c.fill(); c.stroke();
@@ -3898,6 +3943,7 @@ input { -webkit-user-select: text; user-select: text; }
       c.font = "900 " + Math.round(br * 1.25) + "px 'Black Han Sans', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle'; strokeT(c, EGL[e.el], bx, by + 1.5, '#fff', 4.5);
     }
     if (e.xres) { const sx = r * .75, sy = -r * .75, w = e.xres >= 4 ? 7 : 5.5; c.fillStyle = e.xres >= 4 ? '#c27bff' : '#8fb4d8'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(sx, sy - w); c.lineTo(sx + w, sy - w * .5); c.lineTo(sx + w * .8, sy + w * .4); c.lineTo(sx, sy + w); c.lineTo(sx - w * .8, sy + w * .4); c.lineTo(sx - w, sy - w * .5); c.closePath(); c.fill(); c.stroke(); }
+    if (e.mk > 0) { c.strokeStyle = '#ff3a3a'; c.lineWidth = 2.5; const q = r + 9 + Math.sin(e.ph * 2) * 2; c.beginPath(); c.arc(0, 0, q, 0, 6.283); c.moveTo(-q - 6, 0); c.lineTo(-q + 6, 0); c.moveTo(q - 6, 0); c.lineTo(q + 6, 0); c.moveTo(0, -q - 6); c.lineTo(0, -q + 6); c.moveTo(0, q - 6); c.lineTo(0, q + 6); c.stroke(); }
     if (e.burn > 0) { c.fillStyle = '#ff6a3d'; c.beginPath(); c.arc(-r * .5, -r - 4, 3, 0, 6.283); c.fill(); }
     if (e.pois > 0) { c.fillStyle = '#7fff6a'; c.beginPath(); c.arc(0, -r - 4, 3, 0, 6.283); c.fill(); }
     if (e.slow > 0) { c.strokeStyle = '#3fa9f5'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, r + 7, 0, 6.283); c.stroke(); }
