@@ -542,7 +542,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-2029';
+  const APP_VER = 'v.261116-2035';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -1779,7 +1779,7 @@ input { -webkit-user-select: text; user-select: text; }
     { const elig = save.coll.filter(u => !u.m && u.s >= MYTH_STAR).length;
       h += '<div class="card" style="border-color:#c27bff;margin:0"><div class="row"><h3 class="ol grow">✨ 신화 강화</h3><span class="desc" style="color:#fff">★' + MYTH_STAR + ' 이상 ' + elig + '명</span></div><p class="desc">★' + MYTH_STAR + ' 이상 총잡이 <b>' + MYTH_NEED + '명</b>을 합치면 <b>무작위 신화 총잡이</b> 1명이 나와요. 신화는 <b>5속성 전부</b> · 피해 ×1.3 · 무작위 <b>강속성</b> 1개(그 속성으로 때리면 ×1.3 더) · 총잡이마다 고유 특성이 있고, <b>★0부터</b> 다시 키워요.</p>' +
         '<button class="btn p wide ol-s" data-act="mythOpen"' + (elig >= MYTH_NEED ? '' : ' disabled') + '>' + (elig >= MYTH_NEED ? '재료 고르기' : '★' + MYTH_STAR + ' 이상이 ' + MYTH_NEED + '명 필요해요 (' + elig + '/' + MYTH_NEED + ')') + '</button>' +
-        (() => { const mc = save.coll.filter(u => u.m).length; return '<p class="desc" style="margin-top:8px"><b>신화 2명 조합</b> · 신화 2명을 합치면 8명 중 하나가 <b>똑같은 확률(12.5%)</b>로 나와요(강속성 무작위, ★0부터).</p><button class="btn y wide ol-s" data-act="mixOpen"' + (mc >= 2 ? '' : ' disabled') + '>' + (mc >= 2 ? '신화 2명 고르기' : '신화가 2명 필요해요 (' + mc + '/2)') + '</button>' + '<p class="desc" style="margin-top:8px"><b>신화 3명 지정 조합</b> · 신화 3명을 합치면 <b>원하는 총잡이</b>로 바꿔요(강속성 무작위, ★0부터).</p><button class="btn p wide ol-s" data-act="pickOpen"' + (mc >= 3 ? '' : ' disabled') + '>' + (mc >= 3 ? '신화 3명 고르기' : '신화가 3명 필요해요 (' + mc + '/3)') + '</button>'; })() + '</div>'; }
+        (() => { const mc = save.coll.filter(u => u.m).length; return '<p class="desc" style="margin-top:8px"><b>신화 2명 조합</b> · 신화 2명을 합치면 8명 중 하나가 <b>똑같은 확률(12.5%)</b>로 나와요(강속성 무작위, ★0부터). 두 명 다 <b>강속성 2개</b>면 결과도 <b>강속성 2개</b>예요.</p><button class="btn y wide ol-s" data-act="mixOpen"' + (mc >= 2 ? '' : ' disabled') + '>' + (mc >= 2 ? '신화 2명 고르기' : '신화가 2명 필요해요 (' + mc + '/2)') + '</button>' + '<p class="desc" style="margin-top:8px"><b>신화 3명 지정 조합</b> · 신화 3명을 합치면 <b>원하는 총잡이</b>로 바꿔요(강속성 무작위, ★0부터).</p><button class="btn p wide ol-s" data-act="pickOpen"' + (mc >= 3 ? '' : ' disabled') + '>' + (mc >= 3 ? '신화 3명 고르기' : '신화가 3명 필요해요 (' + mc + '/3)') + '</button>'; })() + '</div>'; }
     return h;
   }
   function titlesBody() {
@@ -1921,6 +1921,8 @@ input { -webkit-user-select: text; user-select: text; }
   function mythMix() {
     const keys = [...mixSel].filter(k => { const u = getUnit(k); return u && u.m; });
     if (keys.length !== 2) return null;
+    /* two 2-strong-element mythics -> the result keeps 2 strong elements too */
+    const two = keys.every(k => getUnit(k).xb != null);
     const freed = [];
     save.slots = save.slots.map((k, i) => { if (keys.includes(k)) { freed.push(i); return null; } return k; });
     save.coll = save.coll.filter(u => !keys.includes(ukey(u)));
@@ -1929,7 +1931,8 @@ input { -webkit-user-select: text; user-select: text; }
     let ses = [0, 1, 2, 3, 4].filter(se => !owned.has(ukey({ n, e: [0, 1, 2, 3, 4], m: 1, se })));
     if (!ses.length) ses = [0, 1, 2, 3, 4];
     const nu = { n, e: [0, 1, 2, 3, 4], s: 0, dc: 0, m: 1, se: ses[Math.floor(Math.random() * ses.length)] };
-    if (owned.has(ukey(nu))) { nu.s = 0; const ex = save.coll.find(u => ukey(u) === ukey(nu)); mixSel.clear(); return ex; }
+    if (two) { const o = [0, 1, 2, 3, 4].filter(x => x !== nu.se); nu.xb = o[Math.floor(Math.random() * o.length)]; }
+    if (owned.has(ukey(nu))) { nu.s = 0; const ex = save.coll.find(u => ukey(u) === ukey(nu)); if (two && ex && ex.xb == null) ex.xb = nu.xb; mixSel.clear(); return ex; }
     save.coll.push(nu);
     const free = freed.length ? freed[0] : save.slots.indexOf(null);
     if (free >= 0) save.slots[free] = ukey(nu);
@@ -2513,7 +2516,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
-    { id: 'g261116xb', to: ['박현호', '서정욱'], t: '🎁 운영자 선물', s: '강속성 2개 신화 총잡이 1명 (랜덤)', r: { myxb: 1 }, until: Date.UTC(2026, 10, 23, 15, 0) },
+    { id: 'n261116g2', t: '💎 젬 이벤트 21:30~22:00', s: '30분 동안 전체 구간 젬 배율 +2! 시작할 때 이벤트 시간이면 적용돼요', r: {}, until: Date.UTC(2026, 10, 16, 13, 0) },
     { id: 'n261116p', t: '🔥 새 모드 「계약의 지옥」', s: '악몽 30을 깨면 열려요. 악몽 40급 판에 계약을 직접 쌓아 난이도를 올리고, 열기 1마다 보상 +8%. 30분마다 바뀌는 역풍 계약은 열기 2배. 열기 20부터 최종 보스 「계약자」 등장. 인장으로 강속성 재설정권·전설 탄띠·무법자의 손 조각을 사요. 최고 열기 30이면 「계약자의 망토」(최고 열기만큼 성장)!', r: {}, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
     { id: 'n261114', t: '강해져라 !!', s: 'PvP 15일 20시 출시 예정 · 50만 골드', r: { gold: 500000 }, until: Date.UTC(2026, 10, 15, 18, 23) }
@@ -2594,7 +2597,7 @@ input { -webkit-user-select: text; user-select: text; }
   /* event: 2026-11-14 22:00~23:00 KST, elite 1~4 and normal 40~50 rewards (gold, gems) x4 — judged by when the run started */
   const EVT = { from: Date.UTC(2026, 10, 14, 13, 0), to: Date.UTC(2026, 10, 14, 14, 0), maxSt: 4, mul: 4 };
   /* gem event: 2026-11-16 19:00~20:00 KST, every mode and stage, +2 on the gem multiplier */
-  const GEVT = { from: Date.UTC(2026, 10, 16, 10, 0), to: Date.UTC(2026, 10, 16, 11, 0), mul: 2 };
+  const GEVT = { from: Date.UTC(2026, 10, 16, 12, 30), to: Date.UTC(2026, 10, 16, 13, 0), mul: 2 }; /* 21:30~22:00 KST */
   const gemEvtOn = () => { const t = Date.now(); return t >= GEVT.from && t < GEVT.to; };
   const evtOn = () => { const t = Date.now(); return t >= EVT.from && t < EVT.to; };
   const evtFor = (elite, n) => evtOn() && (elite ? n <= EVT.maxSt : n >= 40);
@@ -4815,7 +4818,7 @@ input { -webkit-user-select: text; user-select: text; }
     mythHub: () => openPop('✨ 신화 공방', mythHubBody(), 'mythhub'),
     mixOpen: () => { mixSel.clear(); openPop('✨ 신화 2명 조합', mixBody(), 'mix'); },
     mixPick: el => { const k = el.dataset.k; if (mixSel.has(k)) mixSel.delete(k); else if (mixSel.size < 2) mixSel.add(k); Snd.click(); refreshPop(mixBody()); },
-    mixGo: () => { const nu = mythMix(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + ' · ' + MYTHT[nu.n].nm); },
+    mixGo: () => { const nu = mythMix(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 조합!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + (nu.xb != null ? '·' + ENM[nu.xb] + ' (2개!)' : '') + ' · ' + MYTHT[nu.n].nm); },
     mythOpen: () => { mythSel.clear(); openPop('✨ 신화 강화', mythBody(), 'myth'); },
     mythPick: el => { const k = el.dataset.k; if (mythSel.has(k)) mythSel.delete(k); else if (mythSel.size < MYTH_NEED) mythSel.add(k); Snd.click(); refreshPop(mythBody()); },
     mythGo: () => { const nu = mythMake(); if (!nu) return; Snd.lvup(); persist(true); closePop(); legendFlash(face(HATS[nu.n], uCol(nu), { n: nu.n }), '✨ 신화 총잡이!', NMS[nu.n] + ' · 강속성 ' + ENM[nu.se] + (nu.xb != null ? '·' + ENM[nu.xb] + ' (2개!)' : '') + ' · ' + MYTHT[nu.n].nm); },
