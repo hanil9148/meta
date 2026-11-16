@@ -436,6 +436,10 @@ input { -webkit-user-select: text; user-select: text; }
 .bsl-empty { font-size: 10px; color: var(--dim); font-family: var(--display); line-height: 26px; }
 .bslot { position: relative; width: 40px; height: 40px; border: 3px solid var(--ink); border-radius: 8px; background: rgba(20,32,47,.8); overflow: hidden; }
 .bslot svg { width: 100%; height: 100%; display: block; }
+.bslot.nw { animation: bsglow 1.6s ease-out both; }
+.bslot.nw::after { content: ''; position: absolute; inset: 0; pointer-events: none; animation: bsfill 1.6s ease-out both; animation-delay: inherit; }
+@keyframes bsglow { 0%, 30% { border-color: #ffe066; box-shadow: 0 0 12px 3px rgba(255,224,102,.9); } 100% { border-color: var(--ink); box-shadow: 0 0 0 0 rgba(255,224,102,0); } }
+@keyframes bsfill { 0% { background: rgba(255,246,170,.75); } 100% { background: rgba(255,246,170,0); } }
 .bslot em { position: absolute; right: 1px; bottom: 0; font-style: normal; font-family: var(--display); font-size: 11px; }
 #bpop { position: absolute; inset: 0; z-index: 5; background: rgba(5,8,14,.7); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 34px 12px 14px; }
 .lvup { display: grid; gap: 8px; }
@@ -538,7 +542,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261116-1906';
+  const APP_VER = 'v.261116-1933';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -918,7 +922,9 @@ input { -webkit-user-select: text; user-select: text; }
   function pactHeat(on) { on = on || save.pc.on; const w = pactWind(); let h = 0; for (const P of PACTS) { const r = on[P.id] || 0; if (r) h += P.h * r * (P.id === w ? 2 : 1); } if (on.time && on.wave) h += 2; return h; }
   const pactMul = h => 1 + .08 * h;
   const capeOn = () => save.pc.best >= 30, capeV = () => capeOn() ? .003 * save.pc.best : 0;
-  let PACT_NG = false; /* 장비 배신: gloves and belts count as empty while a pact run is being set up */
+  let PACT_NG = false;
+  /* 상극: 진명(4) and 해천(5) mythics in the same team lock each other's control out and lose 30% damage */
+  const clashOn = us => { const m = (us || []).filter(u => u && u.m); return m.some(u => u.n === 4) && m.some(u => u.n === 5); }; /* 장비 배신: gloves and belts count as empty while a pact run is being set up */
   /* ---------- 업적 + 훈장: 12 achievements with 10 tiers each (수집가 8). The medal of an achievement levels up by itself as tiers are reached.
      One medal goes in the MEDAL slot (its bonus x level); every tier reached anywhere also adds +0.15% damage. Each tier pays gems once (claim). */
   const sum = a => a.reduce((x, y) => x + y, 0);
@@ -1796,7 +1802,7 @@ input { -webkit-user-select: text; user-select: text; }
     const tier = Math.min(5, Math.floor((save.hl + save.dl) / 10));
     let h = '<div class="scroll">';
     h += '<div class="card"><div class="row"><h3 class="ol grow">🎒 장비창</h3><span class="pwtag ol-s" style="font-size:15px">' + I.sword + fmt(power()) + '</span></div><p class="desc">장비·반지·펫·거점은 모두 장비창에서 관리해요. 아이템을 누르면 장착·강화·조합을 할 수 있어요.</p><button class="btn y wide ol-s" data-act="invOpen" style="font-size:18px">🎒 장비창 열기</button></div>';
-    h += '<div class="card"><h3 class="ol">출전 총잡이</h3>' + tipBox('전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 위에 떠 있는 드론도 항상 같이 쏴요.') + '<div class="slots4">';
+    h += '<div class="card"><h3 class="ol">출전 총잡이</h3>' + (clashOn(save.slots.map(getUnit)) ? '<p class="desc" style="margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#5a1a1a;color:#ffd0d0;font-size:12px"><b>⚡ 상극!</b> 해천과 진명(신화)을 같이 내보내면 서로의 제어가 꺼지고 둘 다 피해 -30%가 돼요.</p>' : '') + tipBox('전장에는 3명까지 보낼 수 있어요. 슬롯을 고른 뒤 아래 목록에서 총잡이를 누르면 상세 화면에서 출전시키거나 스타포스 강화를 할 수 있어요. 위에 떠 있는 드론도 항상 같이 쏴요.') + '<div class="slots4">';
     for (let i = 0; i < 3; i++) {
       const u = getUnit(save.slots[i]);
       h += u ? heroTile(u, ' data-act="slot" data-i="' + i + '" role="button"', i === selSlot ? 'sel' : '') : '<div class="htile emp ol-s' + (i === selSlot ? ' sel' : '') + '" data-act="slot" data-i="' + i + '" role="button">' + (i + 1) + '번 슬롯<br>비어 있음</div>';
@@ -2707,7 +2713,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function abParams(f) { const P = eParams(AB_UNLOCK, true), af = abAff(f); P.hpm *= .8 * Math.pow(1.12, f - 1); P.dm *= .8 * Math.pow(1.08, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
   /* nightmare stage f: elite 50 strength, HP x1.1 and attack x1.06 per stage, curses like the abyss */
-  function nmParams(f) { const P = eParams(ESTAGES, true), af = nmAff(f); if (f >= 30) P.cnt *= 1.5; /* nightmare 30~50: monsters x1.5 (and defence x1.5, see hit) */ P.hpm *= Math.pow(1.08, f - 1); P.dm *= Math.pow(1.04, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
+  function nmParams(f) { const P = eParams(ESTAGES, true), af = nmAff(f); if (f >= 31) P.cnt *= .945; else if (f >= 30) P.cnt *= 1.5; /* nightmare 30: monsters x1.5; 31~50: x0.945 (fewer, normal mobs +10% HP in spawn) but +4 mid bosses every wave; defence x1.5 from 30, see hit */ P.hpm *= Math.pow(1.08, f - 1); P.dm *= Math.pow(1.04, f - 1); if (af.includes('swarm')) { P.cnt *= 2; P.hpm *= .5; } if (af.includes('giant')) { P.cnt *= .5; P.hpm *= 2.5; } return P; }
   /* nightmare boss tiers (HP vs the elite-50 boss): 일반 x0.15 (2~4) · 중간 x0.4 (3~10, 70% 7~9) · 메인 x2 (1, last wave, CC time halved)
      · 절대 (5%, last wave): x60 HP, takes half damage, attack x10, immune to freeze/stun/stop/slow — that run is meant to be lost */
   const NB = [{ nm: '일반 보스', hp: .15, r: 24, atk: .4, c: '#8a2a3a', bl: .01 }, { nm: '중간 보스', hp: 1, r: 30, atk: 1, c: '#6a1a8a', bl: .03 }, { nm: '메인 보스', hp: 2, r: 44, atk: 1.2, c: '#3a0a14', bl: .2 }, { nm: '절대 보스', hp: 60, r: 58, atk: 10, c: '#0a0004', bl: 1 }];
@@ -2743,12 +2749,14 @@ input { -webkit-user-select: text; user-select: text; }
     const sh = [{ x: 364, y: 150, st: hstat(null), u: null, cd: .3, ang: Math.PI, fl: 0, robot: true }];
     const aw = awAll();
     units.forEach((u, i) => { if (u) { const st = hstat(u); st.dmg *= 1 + synVal(u); st.el.sye = synFor(u) ? 1 : 0; aw.forEach((v, a) => { if (v > 0 && !st.el.includes(a)) st.el.push(a); }); sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1], st, u, cd: .2 + i * .1, ang: Math.PI, fl: 0, syn: synFor(u) }); } });
+    const clash = clashOn(units);
+    if (clash) for (const s of sh) { const u = s.u; if (!u || !u.m || (u.n !== 4 && u.n !== 5)) continue; const st = s.st; st.dmg *= .7; st.ccai = null; if (u.n === 5) { st.frz = 0; st.el.fzb = 0; st.el.shat = 0; st.el.nr = 0; } else { st.el.bsl = 0; } }
     const avg = sh.reduce((a, b) => a + b.st.dmg, 0) / sh.length;
     [0, 1, 2].forEach(i => { const x = !(pcF && pon.pet) && slotPet(i); if (x) sh.push({ x: SPOTS[i + 1][0], y: SPOTS[i + 1][1] + 13, st: petStat(x, units[i]), u: null, pet: x.p, pg: x.g, ps: x.s, cd: .4 + i * .1, ang: Math.PI, fl: 0 }); });
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
       elite, n, P, sh, avg, g: G, aw, ab: abF, nm: nmF, minis: [], miniK: 0, nbK: [0, 0, 0, 0, 0], belts: [], aff: new Set(abF ? abAff(abF) : nmF ? nmAff(nmF) : []), maxW: abF ? 2 : 3 + (pcF && pon.wave ? pon.wave : 0), teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), lvb: lvBonus(), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
-      lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
+      clash, lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
     S.tb = titleBonus(); S.r.cdm += S.tb.cdm; S.r.spd += S.tb.spd;
@@ -2767,6 +2775,7 @@ input { -webkit-user-select: text; user-select: text; }
     $('battle').hidden = false; $('bpop').hidden = true;
     fitBattle();
     nextWave();
+    if (S.clash && !S.banner) S.banner = { t: 3, s: '⚡ 상극! 해천·진명 제어 꺼짐 · 둘 다 피해 -30%' };
     updHud(true);
     Snd.click();
   }
@@ -2787,7 +2796,7 @@ input { -webkit-user-select: text; user-select: text; }
     }
     /* elite: two independent 30% rolls for extra bosses (max 2 bosses; boss stages keep their fixed boss) */
     if (S.nm) { const B = S.nmB, w = S.wave, last = w === S.maxW, mid = last ? B.mid - 2 * Math.floor(B.mid * .3) : w <= 2 ? Math.floor(B.mid * .3) : 0, nor = last ? B.nor - 2 * Math.floor(B.nor / 3) : w <= 2 ? Math.floor(B.nor / 3) : 0;
-      spawnNB(0, nor); spawnNB(1, mid);
+      spawnNB(0, nor); spawnNB(1, mid); if (S.nm >= 31) { spawnNB(1, 4); B.xm = (B.xm || 0) + 4; }
       if (last) { if (S.pcm && S.pcm.heat >= 20) { spawnNB(4, 1); S.banner = { t: 3.5, s: '🔥 계약자 출현! 네가 건 계약이 곧 내 힘이다' }; } else spawnNB(2, B.main || 1); if (B.abs) { save.ach.abs++; spawnNB(3, 1); S.alert = 5; S.banner = { t: 5, s: '☠ 절대 보스 출현! 이 판은 버티기 어려워요' }; Snd.boss(); S.shake = 1.2; } else { S.alert = 3.2; S.banner = { t: 3.2, s: '메인 보스 출현! ' + S.boss.dnm + (mid ? ' · 중간 보스 ' + mid : '') }; Snd.boss(); } }
       else if (mid || nor) S.banner = { t: 2.4, s: '악몽 ' + S.nm + '단계 · 웨이브 ' + w + '/' + S.maxW + (mid ? ' · 중간 보스 ' + mid : '') + (nor ? ' · 일반 보스 ' + nor : '') };
     }
@@ -2826,7 +2835,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function spawn() {
     const el = S.elite || Math.random() < Math.min(.8, .1 + S.P.d * .03) ? Math.floor(Math.random() * 5) : -1;
-    S.en.push(mkE(pickKind(), spawnX(rnd(0, 30)), rnd(FIELD0 + 10, FIELD1 - 10), el));
+    const e = mkE(pickKind(), spawnX(rnd(0, 30)), rnd(FIELD0 + 10, FIELD1 - 10), el); if (S.nm >= 31) { e.hp *= 1.1; e.mh *= 1.1; } S.en.push(e);
   }
   function xpNeed(l) { return 5 + l * 3; }
   function critChance() { return .05 + S.pass.crit * .06 + S.g.crit + (S.tb ? S.tb.crit : 0) + (S.rallyT > 0 ? S.rallyC : 0); }
@@ -2948,7 +2957,7 @@ input { -webkit-user-select: text; user-select: text; }
   function updShooters(dt) {
     /* targeting AI: boss specialists hit bosses first (the one closest to the fort); 해천 / 진명 spread CC to enemies not yet frozen / burning */
     const tg0 = front(); let bossT = null, rbT = null, frzT = null, brnT = null, bv = -1e9, qv = -1e9, fv = -1e9, rv = -1e9;
-    for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; const v = e.x - edgeX(e.y); if (e.k === 'boss' && v > bv) { bv = v; bossT = e; } if (e.k === 'boss' && !(e.nb != null && e.nb < 2) && v > qv) { qv = v; rbT = e; } if (!(e.frz > 0) && !e.cci && v > fv) { fv = v; frzT = e; } if (!(e.burn > 0) && v > rv) { rv = v; brnT = e; } }
+    for (const e of S.en) { if (e.hp <= 0 || e.x < visL) continue; const v = e.x - edgeX(e.y); if (e.k === 'boss' && v > bv) { bv = v; bossT = e; } if (e.k === 'boss' && !(e.nb != null && e.nb < 2) && v > qv) { qv = v; rbT = e; } if (!(e.frz > 0) && !e.cci && !(e.jslT > S.t) && v > fv) { fv = v; frzT = e; } if (!(e.burn > 0) && !(e.hfzT > S.t) && v > rv) { rv = v; brnT = e; } }
     const spdm = (1 + S.pass.spd * .12 + S.g.spd) * (1 + S.r.spd) * (S.rapid > 0 ? 2 : 1);
     if (S.rapid > 0) S.rapid -= dt;
     for (const s of S.sh) {
@@ -2985,11 +2994,12 @@ input { -webkit-user-select: text; user-select: text; }
         if (e.hp > 0) {
           if (S.r.cor) { e.cor = 3; e.cv = S.r.cor; }
           if (S.r.gust && e.k !== 'boss' && e.x > visL + 40 && Math.random() < S.r.gust) { e.x = Math.max(visL + 10, e.x - 40); e.fl = .1; }
-          if (b.burn && b.el && b.el.bsl) { e.slow = Math.max(e.slow, 2); e.sf = Math.max(e.sf, b.el.bsl); }
+          /* 해천 freeze and 진명 slow never stack on one enemy: whichever control landed first holds it */
+          if (b.burn && b.el && b.el.bsl && !(e.hfzT > S.t)) { e.slow = Math.max(e.slow, 2); e.sf = Math.max(e.sf, b.el.bsl); e.jslT = S.t + 2; }
           if (b.burn) { e.burn = 3; e.bsrc = b.src; const bcx = b.el && b.el.sc ? 1 + Math.min(1, critChance() + (b.el.cb || 0)) * (.5 + critBonus() / 100 + S.r.cdm + Math.max(0, critChance() + (b.el.cb || 0) - 1)) : 1; e.bd = Math.max(e.bd, b.dmg * b.burn * bcx * emul([0], e)); if (b.bsp) for (const o of S.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < b.bsp) { o.burn = 3; o.bd = Math.max(o.bd, b.dmg * b.burn * .7 * emul([0], o)); } }
           if (b.slow) { e.slow = 2; e.sf = Math.max(e.sf, b.slow); }
           if (b.ice && Math.random() < b.ice) e.frz = Math.max(e.frz, 1);
-          if (b.frz && Math.random() < b.frz) e.frz = Math.max(e.frz, b.frd || 1);
+          if (b.frz && Math.random() < b.frz) { const hc = b.src && b.src.st && b.src.st.ccai === 'frz'; if (!(hc && e.jslT > S.t)) { e.frz = Math.max(e.frz, b.frd || 1); if (hc) e.hfzT = S.t + (b.frd || 1); } }
         }
         if (b.chain) {
           const hitL = [e];
@@ -3205,13 +3215,14 @@ input { -webkit-user-select: text; user-select: text; }
       for (const p of PASS) { if (p.id === 'heal') { if (S.hp < S.mh * .95 && !(S.pcm && S.pcm.noheal)) pool.push({ t: 'ps', id: 'heal' }); } else if (S.pass[p.id] < p.max) pool.push({ t: 'ps', id: p.id }); }
       if (!pool.length) break;
       const c = pool[Math.floor(Math.random() * pool.length)];
+      (S.skN || (S.skN = {}))[c.id] = S.t;
       if (c.t === 'sk') { if (S.sk[c.id]) S.sk[c.id].l++; else S.sk[c.id] = { l: 1, t: .5 }; got.push(SKM[c.id].nm + ' Lv ' + S.sk[c.id].l); }
       else if (c.id === 'heal') { S.hp = Math.min(S.mh, S.hp + S.mh * .3); S.heals = (S.heals || 0) + 1; got.push('거점 수리 +30%'); }
       else { S.pass[c.id]++; got.push(PSM[c.id].nm + ' ' + S.pass[c.id]); }
     }
     if (!got.length) return;
     Snd.lvup();
-    toast('LV.' + S.lv + (got.length > 1 ? ' · 스킬 2개! ' : ' · ') + got.join(' + '));
+    /* no text: the new / upgraded slots flash in the skill bar instead */
     updHud(true);
   }
   function choose(i) {
@@ -3418,15 +3429,16 @@ input { -webkit-user-select: text; user-select: text; }
     { const ok = canSkip(), b = $('bSkip'); b.hidden = !ok; if (ok) { b.disabled = S.t < SKIP_WAIT; b.innerHTML = S.t < SKIP_WAIT ? '스킵<br>' + Math.ceil(SKIP_WAIT - S.t) : '스킵'; } }
     $('bGold').innerHTML = '<span>' + I.coin + fmt(save.gold) + '</span><small>이번 판 +' + fmt(S.gold) + '</small>';
     $('bXp').style.width = clamp(S.xp / xpNeed(S.lv) * 100, 0, 100) + '%';
-    $('bWave').textContent = (S.ab ? '심연 ' + S.ab + '층 · ' : '') + '웨이브 ' + S.wave + '/' + S.maxW + (S.pcm && S.pcm.time ? ' · ⏳ ' + Math.max(0, Math.ceil(S.pcm.time - S.t)) + '초' : '') + (S.nm ? ' · 처치 중간 ' + S.nbK[1] + '/' + S.nmB.mid + (S.nmB.abs && S.wave >= 3 ? ' · ☠ 절대 보스' : '') : S.b40 ? ' · 보스 ' + S.bossKills + '/3' : S.nBoss > 1 ? ' · 보스 2마리!' : isBossStage(S.n) ? ' · 보스 스테이지' : S.nBoss ? ' · 보스 출현 예정!' : '') + (rep.tot > 1 ? ' · 연속 ' + (rep.tot - rep.left) + '/' + rep.tot : '');
+    $('bWave').textContent = (S.ab ? '심연 ' + S.ab + '층 · ' : '') + '웨이브 ' + S.wave + '/' + S.maxW + (S.pcm && S.pcm.time ? ' · ⏳ ' + Math.max(0, Math.ceil(S.pcm.time - S.t)) + '초' : '') + (S.nm ? ' · 처치 중간 ' + S.nbK[1] + '/' + (S.nmB.mid + (S.nmB.xm || 0)) + (S.nmB.abs && S.wave >= 3 ? ' · ☠ 절대 보스' : '') : S.b40 ? ' · 보스 ' + S.bossKills + '/3' : S.nBoss > 1 ? ' · 보스 2마리!' : isBossStage(S.n) ? ' · 보스 스테이지' : S.nBoss ? ' · 보스 출현 예정!' : '') + (rep.tot > 1 ? ' · 연속 ' + (rep.tot - rep.left) + '/' + rep.tot : '');
     $('bHp').style.width = clamp(S.hp / S.mh * 100, 0, 100) + '%';
     $('bHpT').textContent = fmt(Math.ceil(S.hp));
     const ks = Object.keys(S.sk);
     let h = '';
     /* skill bar split in two rows: active skills (5 slots) on top, every passive picked so far below (화력·빠른 손·급소 · 거점 수리 횟수) */
-    h += '<div class="bsr">'; for (let i = 0; i < 5; i++) h += ks[i] ? '<span class="bslot" title="' + SKM[ks[i]].nm + '">' + skillIcon(ks[i]) + '<em class="ol-s">' + S.sk[ks[i]].l + '</em></span>' : '<span class="bslot"></span>'; h += '</div>';
-    const pv = PASS.filter(p => p.id !== 'heal' && S.pass[p.id] > 0).map(p => '<span class="bslot sm" title="' + p.nm + '">' + skillIcon(p.id) + '<em class="ol-s">' + S.pass[p.id] + '</em></span>');
-    if (S.heals) pv.push('<span class="bslot sm" title="거점 수리">' + skillIcon('heal') + '<em class="ol-s">' + S.heals + '</em></span>');
+    h += '<div class="bsr">'; const nw = id => { const d = S.skN && S.skN[id] != null ? S.t - S.skN[id] : 9; return d < 1.6 ? ' nw" style="animation-delay:-' + d.toFixed(2) + 's' : ''; };
+    for (let i = 0; i < 5; i++) h += ks[i] ? '<span class="bslot' + nw(ks[i]) + '" title="' + SKM[ks[i]].nm + '">' + skillIcon(ks[i]) + '<em class="ol-s">' + S.sk[ks[i]].l + '</em></span>' : '<span class="bslot"></span>'; h += '</div>';
+    const pv = PASS.filter(p => p.id !== 'heal' && S.pass[p.id] > 0).map(p => '<span class="bslot sm' + nw(p.id) + '" title="' + p.nm + '">' + skillIcon(p.id) + '<em class="ol-s">' + S.pass[p.id] + '</em></span>');
+    if (S.heals) pv.push('<span class="bslot sm' + nw('heal') + '" title="거점 수리">' + skillIcon('heal') + '<em class="ol-s">' + S.heals + '</em></span>');
     h += '<div class="bsr">' + (pv.length ? pv.join('') : '<span class="bsl-empty ol-s">패시브 없음</span>') + '</div>';
     $('bSlots').innerHTML = h;
     $('bSpeed').innerHTML = '▶<br>X' + speed;
@@ -4338,7 +4350,7 @@ input { -webkit-user-select: text; user-select: text; }
     else rows.forEach(r => { if (r.id === me) r.d = rankPayload(); });
     rows.sort((a, b) => (+b.d.pw || 0) - (+a.d.pw || 0) || (+b.d.st || 0) - (+a.d.st || 0));
     const myRank = rows.findIndex(r => r.id === me || r.id === '__me') + 1;
-    let h = NET.mode !== 'none' ? '<div class="row"><span class="desc grow" style="color:#fff">' + (NET.syncErr ? '⚠ 내 정보 올리기 실패 (' + esc(NET.syncErr) + ') · 다시 시도 중' : NET.syncedAt ? '내 정보 올린 시각: ' + agoTxt(NET.syncedAt) : '내 정보 올리는 중…') + '</span><button class="btn c sm ol-s" data-act="frsync">새로고침</button></div>' : '';
+    let h = NET.mode !== 'none' ? '<div class="row"><span class="desc grow" style="color:#fff">' + (NET.quota() ? '⚠ 오늘 서버 사용량이 다 찼어요. 오후 5시에 풀려요 · 아래는 마지막으로 받은 랭킹이에요' : NET.syncErr ? '⚠ 내 정보 올리기 실패 (' + esc(NET.syncErr) + ') · 다시 시도 중' : NET.rankErr ? '⚠ 랭킹을 못 받았어요 (' + esc(NET.rankErr) + ') · 마지막으로 받은 랭킹이에요' : NET.syncedAt ? '내 정보 올린 시각: ' + agoTxt(NET.syncedAt) : '내 정보 올리는 중…') + '</span><button class="btn c sm ol-s" data-act="frsync">새로고침</button></div>' : '';
     if (NET.mode === 'none') h += '<p class="desc" style="color:#fff">랭킹은 공유된 찍먹메타에서 함께 접속했을 때 보여요. 지금은 내 정보만 보여요.</p>';
     if (rows.length > 1) h += '<div class="myrank ol-s">⚔ 전투력 순위 <b>' + myRank + '위</b> / ' + rows.length + '명</div>';
     rows.slice(0, 50).forEach((r, ri) => {
@@ -4433,6 +4445,10 @@ input { -webkit-user-select: text; user-select: text; }
   const NET = {
     mode: 'none', uid: null, names: {}, api: null, lastRank: '', lastHits: '', lastCloud: '', busy: false,
     nameOf(id) { return (id && this.names[id]) || ''; },
+    rankErr: '', quotaAt: 0,
+    /* Firestore free plan quota resets at 00:00 US Pacific (17:00 KST) */
+    quota() { return this.quotaAt && Date.now() - this.quotaAt < 3 * 3600000; },
+    noteErr(e) { const c = String((e && (e.code || e.message)) || ''); if (/resource-exhausted|quota/i.test(c)) this.quotaAt = Date.now(); return c || 'error'; },
     async init() {
       if (window.jmReady) return this.initFirebase();
       const cl = window.claude;
@@ -4467,8 +4483,8 @@ input { -webkit-user-select: text; user-select: text; }
       setInterval(() => this.sync(true), this.mode === 'firebase' ? 600000 : 180000);
       /* leaving (tab hidden / app closed): save locally and push to the account right away.
          coming back after 3+ minutes away: run the loading screen again (version, account save, ranking). */
-      const leave = () => { persist(true); this.hiddenAt = Date.now(); this.lastPres = ''; this.sync(true); };
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); else if (!S && Date.now() - (this.hiddenAt || Date.now()) > 60000) this.bootLoad('back'); else { this.presence(true); this.sync(true); } });
+      const leave = () => { persist(true); this.hiddenAt = Date.now(); this.lastPres = ''; if (Date.now() - (this.lastLeave || 0) > 120000) { this.lastLeave = Date.now(); this.sync(true); } };
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); else if (!S && Date.now() - (this.hiddenAt || Date.now()) > 600000) this.bootLoad('back'); else this.presence(true); });
       window.addEventListener('pagehide', leave);
       render();
     },
@@ -4556,9 +4572,10 @@ input { -webkit-user-select: text; user-select: text; }
     },
     lastPush: 0,
     /* push right after a run (at most every 20 s) so the other device always finds the latest progress */
-    pushSoon() { if (!this.api) return; const w = 20000 - (Date.now() - (this.lastPushRun || 0)); clearTimeout(this.pushT); if (w <= 0) { this.lastPushRun = Date.now(); this.sync(true); } else this.pushT = setTimeout(() => { this.lastPushRun = Date.now(); this.sync(true); }, w); },
+    pushSoon() { if (!this.api) return; const w = 300000 - (Date.now() - (this.lastPushRun || 0)); clearTimeout(this.pushT); if (w <= 0) { this.lastPushRun = Date.now(); this.sync(true); } else this.pushT = setTimeout(() => { this.lastPushRun = Date.now(); this.sync(true); }, w); },
     async sync(force) {
       if (!this.api) return;
+      if (this.quota() && !force) return;
       /* ordinary saves (every action calls persist) stay on this device; the server gets them on load, every 10 min and when leaving */
       if (!force) return;
       this.lastPush = Date.now();
@@ -4566,11 +4583,11 @@ input { -webkit-user-select: text; user-select: text; }
       this.busy = true; this.busyT = Date.now(); this.pending = false;
       try {
         const errs = [];
-        const step = async (nm, f) => { let tm; try { await Promise.race([f(), new Promise((_, rej) => { tm = setTimeout(() => rej({ code: '응답 없음' }), 15000); })]); } catch (e) { errs.push(nm + ': ' + ((e && (e.code || e.message)) || 'error')); } clearTimeout(tm); };
+        const step = async (nm, f) => { let tm; try { await Promise.race([f(), new Promise((_, rej) => { tm = setTimeout(() => rej({ code: '응답 없음' }), 15000); })]); } catch (e) { errs.push(nm + ': ' + this.noteErr(e)); } clearTimeout(tm); };
         const rp = rankPayload(), rk = JSON.stringify(Object.assign({}, rp, { t: 0 }));
         if (rk !== this.lastRank && (save.plays.some(Boolean) || save.name)) await step('친구 정보', async () => { await this.api.put('rank', rp); this.lastRank = rk; });
         if (this.choosing && popKind !== 'savepick') this.askSave();
-        if (!this.cloudOk || (!this.choosing && Date.now() - (this.lastCheck || 0) > 20000 && !(S && !S.over))) await step('계정 저장 확인', async () => { this.lastCheck = Date.now(); if (!(await this.loadCloud(8000))) throw { code: '서버 응답 없음' }; });
+        if (!this.cloudOk || (!this.choosing && Date.now() - (this.lastCheck || 0) > 600000 && !(S && !S.over))) await step('계정 저장 확인', async () => { this.lastCheck = Date.now(); if (!(await this.loadCloud(8000))) throw { code: '서버 응답 없음' }; });
         const j = JSON.stringify(save), myPlays = save.plays.reduce((a, b) => a + b, 0);
         if (j !== this.lastCloud && this.cloudOk && !this.choosing && (this.revOk || myPlays >= this.cloudPlays)) { const rv = save.rev; await step('진행 저장', async () => { await this.api.storeSave(j); this.lastCloud = j; this.cloudPlays = myPlays; save.base = rv; this.revOk = true; try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }); }
         if (errs.length) { this.syncErr = errs.join(', '); this.pending = true; } else { this.syncedAt = Date.now(); this.syncErr = ''; }
@@ -4607,12 +4624,13 @@ input { -webkit-user-select: text; user-select: text; }
         if (started) return; started = true;
         L.hidden = true; this.mode = 'firebase'; this.uid = u.id; this.names[u.id] = u.name;
         if (!save.name) save.name = String(u.name || '').slice(0, 10);
-        let presRaw = [];
+        let presRaw = []; const self = this;
+        try { const c = JSON.parse(localStorage.getItem('jm-rankc') || 'null'); if (Array.isArray(c)) rankDocs = c; } catch (e) {}
         this.api = {
           /* minimum server use: no live listeners and no presence pings; lists are read once when the game loads
              (and when 새로고침 is pressed), my ranking card is written on load, every 10 min if changed, and when leaving */
           subs: {}, sub(name, cb) { this.subs[name] = cb; },
-          async refresh() { for (const n in this.subs) { try { this.subs[n](await jm.list(n)); } catch (e) {} } },
+          async refresh() { if (self.quota()) return; for (const n in this.subs) { try { const L = await jm.list(n); self.rankErr = ''; this.subs[n](L); if (n === 'rank') try { localStorage.setItem('jm-rankc', JSON.stringify(L)); } catch (e) {} } catch (e) { self.rankErr = self.noteErr(e); } } },
           put(name, data) { return jm.put(name, u.id, data); },
           loadSave() { return jm.getSave(u.id); },
           storeSave(j) { return jm.setSave(u.id, { json: j, t: Date.now() }); },
@@ -4720,7 +4738,7 @@ input { -webkit-user-select: text; user-select: text; }
     mailget: el => { mailGet(el.dataset.id); refreshPop(mailBody()); },
     mailall: () => { for (const m of mailItems()) mailGet(m.id); refreshPop(mailBody()); },
     friends: () => { NET.sync(); openPop('랭킹', friendsBody(), 'friends'); },
-    frsync: () => { NET.lastRank = ''; NET.busy = false; NET.sync(true).then(async () => { if (NET.api && NET.api.refresh) await NET.api.refresh(); if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
+    frsync: () => { if (Date.now() - (NET.lastFr || 0) < 60000) { toast('새로고침은 1분에 한 번만 돼요 (서버 사용량 아끼기)'); return; } NET.lastFr = Date.now(); NET.lastRank = ''; NET.busy = false; NET.sync(true).then(async () => { if (NET.api && NET.api.refresh) await NET.api.refresh(); if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
     tab: el => setTab(el.dataset.t),
     enh: el => { enhance(el.dataset.k); if (popKind === 'fort') refreshPop(fortBody()); },
     fortOpen: () => { popBack = popKind === 'inv'; const tier = Math.min(5, Math.floor((save.hl + save.dl) / 10)); openPop('거점 · ' + FORT_N[tier], fortBody(), 'fort'); },
