@@ -554,7 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261117-1725';
+  const APP_VER = 'v.261117-1741';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -744,7 +744,12 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'atk', nm: '화력 강화', max: 5, c1: '#ff5a4a', c2: '#6a0e0a', d: '모든 공격력 +15%' },
     { id: 'spd', nm: '빠른 손', max: 5, c1: '#4ad0ff', c2: '#0a3a6a', d: '총잡이 공격 속도 +12%' },
     { id: 'crit', nm: '급소 조준', max: 5, c1: '#ffcf3f', c2: '#6a4a0a', d: '치명타 확률 +6%' },
-    { id: 'heal', nm: '거점 수리', max: 99, c1: '#7fe05a', c2: '#1a5a0e', d: '거점 체력을 30% 회복해요' }
+    { id: 'heal', nm: '거점 수리', max: 99, c1: '#7fe05a', c2: '#1a5a0e', d: '거점 체력을 30% 회복해요' },
+    /* 멘헤라 (차원 균열) only: 4 extra passives */
+    { id: 'cdm', mh: 1, nm: '처형 각인', max: 5, c1: '#ff3a6a', c2: '#5a0a1e', d: '치명타 피해 +20%' },
+    { id: 'giant', mh: 1, nm: '거인 사냥', max: 5, c1: '#c27bff', c2: '#2a0e5a', d: '보스 피해 +15%' },
+    { id: 'rift', mh: 1, nm: '균열 관통', max: 5, c1: '#5ad6c4', c2: '#0a3a3a', d: '특성 몹에게 주는 피해 +12%' },
+    { id: 'wall', mh: 1, nm: '철벽', max: 5, c1: '#9aa6b8', c2: '#2a3240', d: '거점이 받는 피해 -6%' }
   ];
   const PSM = {}; PASS.forEach(p => PSM[p.id] = p);
   const skNeed = lv => 75 * lv;
@@ -771,6 +776,10 @@ input { -webkit-user-select: text; user-select: text; }
       grav: '<path d="M28 28m-16 0a16 16 0 1 0 32 0 12 12 0 1 0-24 0 8 8 0 1 0 16 0 4 4 0 1 0-8 0" fill="none" stroke="#e8c8ff" stroke-width="3.2"/>',
       atk: '<path d="M14 42l20-20M30 14h12v12" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>',
       spd: '<path d="M10 28h22M18 18h24M18 38h24" stroke="#fff" stroke-width="5" stroke-linecap="round"/>',
+      cdm: '<path d="M28 8 34 22 48 22 37 31 41 46 28 37 15 46 19 31 8 22 22 22Z" fill="#fff" stroke="#5a0a1e" stroke-width="2.4"/>',
+      giant: '<path d="M10 44 28 10 46 44Z" fill="none" stroke="#fff" stroke-width="4"/><circle cx="28" cy="34" r="5" fill="#fff"/>',
+      rift: '<path d="M30 6 20 26h10l-6 24 16-28H30l6-16Z" fill="#fff" stroke="#0a3a3a" stroke-width="2.4"/>',
+      wall: '<path d="M10 16h36v14c0 10-8 16-18 20-10-4-18-10-18-20Z" fill="#fff" stroke="#2a3240" stroke-width="2.6"/>',
       crit: '<circle cx="28" cy="28" r="15" fill="none" stroke="#fff" stroke-width="4"/><circle cx="28" cy="28" r="5" fill="#fff"/><path d="M28 6v10M28 40v10M6 28h10M40 28h10" stroke="#fff" stroke-width="4"/>',
       heal: '<path d="M22 12h12v10h10v12H34v10H22V34H12V22h10Z" fill="#fff" stroke="#1a5a0e" stroke-width="2.6"/>',
       rapid: '<path d="M8 24h24v8H8Z M32 22h14v12H32Z" fill="#e8e8f0" stroke="#3a1a08" stroke-width="2.4"/><path d="M10 16h10M8 40h14M12 46h8" stroke="#fff6c8" stroke-width="3" stroke-linecap="round"/><circle cx="46" cy="28" r="4" fill="#ffe14a"/>',
@@ -883,6 +892,14 @@ input { -webkit-user-select: text; user-select: text; }
   function dismantleAll(opt) {
     opt = opt || {}; combineAll(); combineRingsAll();
     let d = 0, cnt = 0; const eqG = Object.values(save.gear);
+    /* full: grind everything that is not equipped and not enhanced (legend gear, hero+ rings, gloves, every belt) */
+    if (opt.full) {
+      for (const id of Object.keys(save.items)) { const it = save.items[id], g = iG(id), keep = eqG.includes(id) || it.lv > 1 || it.aw > 0 ? 1 : 0, k = it.n - keep; if (k > 0) { d += k * DUST[g]; cnt += k; it.n -= k; if (it.n <= 0) delete save.items[id]; } }
+      for (const id of Object.keys(save.rings)) { const it = save.rings[id], g = rG(id), keep = save.rslot.includes(id) || it.lv > 1 ? 1 : 0, k = it.n - keep; if (k > 0) { d += k * DUST[g]; cnt += k; it.n -= k; if (it.n <= 0) delete save.rings[id]; } }
+      for (const k0 of Object.keys(save.gl)) { const it = save.gl[k0], keep = k0 === save.gslot || it.lv > 1 ? 1 : 0, k = it.n - keep; if (k > 0) { d += k * GL_DIS[GLV[k0].t]; cnt += k; it.n -= k; if (it.n <= 0) delete save.gl[k0]; } }
+      for (const id of Object.keys(save.bl)) { const keep = id === save.bslot ? 1 : 0, k = save.bl[id] - keep; if (k > 0) { d += k * BL_DIS[bGr(id)]; cnt += k; save.bl[id] -= k; if (save.bl[id] <= 0) delete save.bl[id]; } }
+      save.dust = (save.dust || 0) + d; return { d, cnt };
+    }
     for (const id of Object.keys(save.items)) { const it = save.items[id], g = iG(id); let keep = eqG.includes(id) || g === 4 || it.lv > 1 || it.aw > 0 ? 1 : 0; if (g === 4 && !opt.legDup) keep = it.n; const k = it.n - keep; if (k > 0) { d += k * DUST[g]; cnt += k; it.n -= k; if (it.n <= 0) delete save.items[id]; } }
     for (const id of Object.keys(save.rings)) { const it = save.rings[id], g = rG(id); let keep = save.rslot.includes(id) || g >= 3 || it.lv > 1 ? 1 : 0; if (g === 4 && !opt.legDup) keep = it.n; const k = it.n - keep; if (k > 0) { d += k * DUST[g]; cnt += k; it.n -= k; if (it.n <= 0) delete save.rings[id]; } }
     for (const k in save.gl) { const it = save.gl[k]; if (it.n > 1) { d += (it.n - 1) * GL_DIS[GLV[k].t]; cnt += it.n - 1; it.n = 1; } }
@@ -1340,7 +1357,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.boss && typeof r.boss === 'object') for (const k of Object.keys(r.boss).slice(-6)) { const b = r.boss[k]; if (b && isFinite(+k)) s.boss[k] = { d: num(b.d, 0, 1e10, 0), u: Array.isArray(b.u) ? b.u.slice(0, 3) : null, n: num(b.n, 1, 3, 1), k: typeof b.k === 'string' ? b.k.slice(0, 200) : '' }; }
     s.bossClaim = Array.isArray(r.bossClaim) ? r.bossClaim.map(Number).filter(isFinite).slice(-20) : [];
     s.mail = { welcome: r.mail && r.mail.welcome ? 1 : 0 };
-    if (r.mail && typeof r.mail === 'object') for (const k in r.mail) if (/^n\d{6}[a-z]?$/.test(k) && r.mail[k]) s.mail[k] = 1;
+    if (r.mail && typeof r.mail === 'object') for (const k in r.mail) if (/^[a-z]\d{6}[a-z0-9]{0,6}$/.test(k) && r.mail[k]) s.mail[k] = 1;
     if (r.set) s.set = { sfx: r.set.sfx ? 1 : 0, bgm: r.set.bgm ? 1 : 0, vfx: r.set.vfx === 0 ? 0 : 1 };
     s.tut = r.tut ? 1 : 0; s.saved = num(r.saved, 0, 1e15, 0); s.rev = num(r.rev, 0, 1e12, 0); s.base = num(r.base, 0, 1e12, 0); s.kills = num(r.kills, 0, 1e12, 0); s.wins = num(r.wins, 0, 1e9, 0); s.bclr = num(r.bclr, 0, 1e9, 0);
     { const q = r.tq && typeof r.tq === 'object' ? r.tq : {}; s.tq = { st: num(q.st, 0, TITLES.length, 0), runs: num(q.runs, 0, 1e9, 0), kills: num(q.kills, 0, 1e12, 0), rare: num(q.rare, 0, 1e6, 0), eq: num(q.eq, -1, TITLES.length - 1, -1), er: num(q.er != null ? q.er : q.runs, 0, 1e9, 0), ar: num(q.ar, 0, 1e9, 0) }; }
@@ -2222,8 +2239,9 @@ input { -webkit-user-select: text; user-select: text; }
   function disBody() {
     return '<p class="desc" style="color:#fff">가방의 장비·반지·장갑을 정리해요. 먼저 <b>조합할 수 있는 건 모두 조합</b>하고, 남는 건 <b>가루</b>로 바꿔요.</p>' +
       '<p class="desc">남기는 것: 끼고 있는 것 · 전설 장비 · 영웅 이상 반지 종류별 1개 · 강화한 것 1개 · 장갑 종류별 1개 · 탄띠(조합용)<br>가루: 일반 1 · 고급 3 · 희귀 10 · 영웅 30 · 전설 100 · 여분 장갑 하급 20 · 상급 100 · 최상급 500</p>' +
-      '<p class="desc">가루는 <b>장갑 Lv30 이후 강화</b>에 써요.</p>' +
-      '<button class="btn r wide ol-s" data-act="disGo" data-l="0">🔨 분해 (전설 여분은 남기기)</button><button class="btn wide ol-s" data-act="disGo" data-l="1">전설 여분까지 분해</button>';
+      '<p class="desc">가루는 <b>장갑 Lv30 이후 강화 · 세트 장비 강화 · 히든 아이템 강화</b>에 써요. 「전부 분해」는 안 쓰는 전설 장비·영웅 이상 반지·장갑·탄띠까지 모두 갈아요(끼고 있거나 Lv2 이상 강화한 것만 남아요).</p>' +
+      '<button class="btn r wide ol-s" data-act="disGo" data-l="0">🔨 분해 (전설 여분은 남기기)</button><button class="btn wide ol-s" data-act="disGo" data-l="1">전설 여분까지 분해</button>' +
+      '<button class="btn wide ol-s" data-act="disAsk" style="background:#5a1a1a;color:#ffd0d0">🔥 전부 분해 (낀 것·강화한 것만 남기기)</button>';
   }
   function potBox(sl) {
     const P = save.pot[sl];
@@ -2956,7 +2974,7 @@ input { -webkit-user-select: text; user-select: text; }
     const G = gearAll(), mh = Math.round(baseHp(save.hl) * (1 + G.hp));
     S = {
       elite, n, P, sh, avg, g: G, aw, ab: abF, nm: nmF, minis: [], miniK: 0, nbK: [0, 0, 0, 0, 0], belts: [], aff: new Set(abF ? abAff(abF) : nmF ? nmAff(nmF) : []), maxW: abF ? 2 : 3 + (pcF && pon.wave ? pon.wave : 0), teamEl: new Set(units.filter(Boolean).flatMap(u => u.e)).size, rapid: 0, inv: 0, lastUsed: false, evt: evtFor(elite, n), lvb: lvBonus(), r: ringAll(), thT: 3, tstop: 0, fs: 1 - Math.min(.6, slowPct(save.sll) + ringAll().frost), hp: mh, mh, dr: (1 - defRed(save.dl)) * (1 - G.dr), t: 0, wave: 0, toSpawn: 0, spawnT: 0, spawnIv: 1, waveDone: 0, en: [], bul: [], fx: [], dn: [], parts: [],
-      clash, lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
+      clash, lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0, cdm: 0, giant: 0, rift: 0, wall: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
     S.tb = titleBonus(); S.r.cdm += S.tb.cdm; S.r.spd += S.tb.spd; S.r.boss += S.tb.boss || 0;
@@ -3078,7 +3096,8 @@ input { -webkit-user-select: text; user-select: text; }
       const CF = R.R.cf; a *= c ? CF[0] * (hn != null && T.ctr.includes(hn) ? CF[1] / CF[0] : 1) : CF[2];
       if (e.rt === 'armor' && !direct) a *= .1; else if (e.rt === 'spread' && !direct && !(e.pul > S.t)) a *= .5; else if (e.rt === 'ward' && !(els && els.ses && els.ses.includes(R.R.wel))) a *= .3;
       if (e.rt === 'ward' && c && els && els.ses && els.ses.includes(R.R.wel)) a *= CF[1] / CF[0];
-      if (R.pr > 0 && e.rt !== 'priest') a *= .2; }
+      if (R.pr > 0 && e.rt !== 'priest') a *= .2;
+      if (S.pass.rift) a *= 1 + .12 * S.pass.rift; }
     if (els && els.exe1 && e.hp < e.mh * .2) a *= 1 + els.exe1;
     if (els && els.bexe && e.k === 'boss' && (!els.rb || realB) && e.hp < e.mh * .2) a *= 1 + els.bexe;
     if (S.gle && els && els.length) { let gm = 0; for (const x of els) if (S.gle[x] > gm) gm = S.gle[x]; a *= 1 + gm; }
@@ -3422,19 +3441,21 @@ input { -webkit-user-select: text; user-select: text; }
   let choices = [], lvTimer = 0; // choices kept for old callers
   /* Level up: a random pick is applied right away, no pause. */
   /* level up: 1 or 2 random picks (50/50); profile Lv80+ always 2 */
+  /* 멘헤라 passives apply once per level picked */
+  function passFx(id) { if (id === 'cdm') S.r.cdm += .2; else if (id === 'giant') S.r.boss += .15; else if (id === 'wall') S.dr *= .94; }
   function openLevelUp() {
     S.picks--;
     const n = save.lv >= 148 ? 3 : save.lv >= 80 || Math.random() < .5 ? 2 : 1, got = []; /* 지존 50 (Lv148)+: 3 skills every level-up */
     for (let r = 0; r < n; r++) {
       const pool = [], act = Object.keys(S.sk).length;
       for (const s of SK) { if (!skUnlocked(s)) continue; const o = S.sk[s.id]; if (o ? o.l < 5 : act < 5) pool.push({ t: 'sk', id: s.id }); }
-      for (const p of PASS) { if (p.id === 'heal') { if (S.hp < S.mh * .95 && !(S.pcm && S.pcm.noheal)) pool.push({ t: 'ps', id: 'heal' }); } else if (S.pass[p.id] < p.max) pool.push({ t: 'ps', id: p.id }); }
+      for (const p of PASS) { if (p.id === 'heal') { if (S.hp < S.mh * .95 && !(S.pcm && S.pcm.noheal)) pool.push({ t: 'ps', id: 'heal' }); } else if ((!p.mh || S.rift) && S.pass[p.id] < p.max) pool.push({ t: 'ps', id: p.id }); }
       if (!pool.length) break;
       const c = pool[Math.floor(Math.random() * pool.length)];
       (S.skN || (S.skN = {}))[c.id] = S.t;
       if (c.t === 'sk') { if (S.sk[c.id]) S.sk[c.id].l++; else S.sk[c.id] = { l: 1, t: .5 }; got.push(SKM[c.id].nm + ' Lv ' + S.sk[c.id].l); }
       else if (c.id === 'heal') { S.hp = Math.min(S.mh, S.hp + S.mh * .3); S.heals = (S.heals || 0) + 1; got.push('거점 수리 +30%'); }
-      else { S.pass[c.id]++; got.push(PSM[c.id].nm + ' ' + S.pass[c.id]); }
+      else { S.pass[c.id]++; passFx(c.id); got.push(PSM[c.id].nm + ' ' + S.pass[c.id]); }
     }
     if (!got.length) return;
     Snd.lvup();
@@ -3446,7 +3467,7 @@ input { -webkit-user-select: text; user-select: text; }
     const c = choices[i]; if (!c) return;
     if (c.t === 'sk') { if (S.sk[c.id]) S.sk[c.id].l++; else S.sk[c.id] = { l: 1, t: .5 }; }
     else if (c.id === 'heal') S.hp = Math.min(S.mh, S.hp + S.mh * .3);
-    else S.pass[c.id]++;
+    else { S.pass[c.id]++; passFx(c.id); }
     $('bpop').hidden = true; S.pause = false; Snd.click();
     updHud(true);
   }
@@ -4942,7 +4963,8 @@ input { -webkit-user-select: text; user-select: text; }
     blEq: el => { const id = el.dataset.id; if (id && !save.bl[id]) return; save.bslot = id || ''; Snd.click(); persist(); refreshPop(beltBody()); },
     blComb: () => { const m = combineBelts(); if (!m.length) return; Snd.lvup(); toast('탄띠 조합 ' + m.length + '번 · ' + m.map(beltName).slice(-3).join(' · ')); persist(); refreshPop(beltBody()); },
     disOpen: () => { popBack = popKind === 'inv'; openPop('🔨 일괄 분해', (popBack ? invBackBtn() : '') + disBody(), 'dis'); },
-    disGo: el => { const r = dismantleAll({ legDup: el.dataset.l === '1' }); Snd.lvup(); toast(r.cnt ? '분해 ' + fmt(r.cnt) + '개 · 가루 +' + fmt(r.d) + ' (지금 ' + fmt(save.dust) + ')' : '조합만 하고 분해할 건 없었어요'); persist(); invTab = 'bag'; openPop('장비창', invBody(), 'inv'); },
+    disAsk: () => openPop('🔥 전부 분해', '<p class="desc" style="color:#fff;text-align:center">끼고 있거나 <b>Lv2 이상 강화</b>한 것만 남기고 장비·반지·장갑·탄띠를 <b>모두 가루로</b> 바꿔요.<br>전설 장비, 영웅·전설 반지, 안 쓰는 장갑, 모든 탄띠(낀 것 제외)도 포함돼요. 되돌릴 수 없어요.</p><button class="btn r wide ol-s" data-act="disGo" data-l="2">🔥 정말 전부 분해</button><button class="btn wide ol-s" data-act="invOpen">취소</button>', 'dis'),
+    disGo: el => { const r = dismantleAll({ legDup: el.dataset.l === '1', full: el.dataset.l === '2' }); Snd.lvup(); toast(r.cnt ? '분해 ' + fmt(r.cnt) + '개 · 가루 +' + fmt(r.d) + ' (지금 ' + fmt(save.dust) + ')' : '조합만 하고 분해할 건 없었어요'); persist(); invTab = 'bag'; openPop('장비창', invBody(), 'inv'); },
     adisTog: () => { save.adis = save.adis ? 0 : 1; persist(); toast(save.adis ? '자동 분해 ON · 판이 끝날 때마다 조합하고 남는 건 가루로 바꿔요 (전설·영웅 반지·끼고 있는 건 남겨요)' : '자동 분해 OFF'); refreshPop(invBody()); },
     eliteBuy: () => { if (save.elOn || !eliteReq().every(r => r.ok)) return; save.gold -= ELITE.cost; save.elOn = 1; save.mode = 'e'; Snd.win(); toast('정예 모드 해금!'); persist(true); closePop(); },
     stageinfo: () => openPop('스테이지 정보', stageInfoBody(), 'info'),
@@ -5197,7 +5219,7 @@ input { -webkit-user-select: text; user-select: text; }
   NET.init();
   setTimeout(showDisNote, 2500);
   if (!window.jmReady && !(window.claude && window.claude.use)) setTimeout(repResume, 1500);
-  window.__G = { get MYB() { return MYB; }, rf: { riftStage, riftCtr, RT, SETS, sgCount, sgAdd, hidAll, rOpenK, starOdds: (u, p) => starOdds(u, p), starCostU, protOK, protMul, get mode() { return riftMode; } }, sale: { saleOn, starCostU, enhCost, skCost, glCost, petCost, pot: () => [POT_COST[0], POT_COST[3]], aw: () => [SK7(AW_G0), SK7(AW_M0)] }, pc: { PACTS, pactWind, pactHeat, pactBody, capeV, get mode() { return pactMode; } }, draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
+  window.__G = { get MYB() { return MYB; }, rf: { dismantleAll, addBelt, addGlove, dropItems, bkey, riftStage, riftCtr, RT, SETS, sgCount, sgAdd, hidAll, rOpenK, starOdds: (u, p) => starOdds(u, p), starCostU, protOK, protMul, get mode() { return riftMode; } }, sale: { saleOn, starCostU, enhCost, skCost, glCost, petCost, pot: () => [POT_COST[0], POT_COST[3]], aw: () => [SK7(AW_G0), SK7(AW_M0)] }, pc: { PACTS, pactWind, pactHeat, pactBody, capeV, get mode() { return pactMode; } }, draw: () => draw(), updHud: () => updHud(), repResume, repSaveForUpdate, get rep() { return rep; }, nm: { dismantleAll, gloveAll, beltOn, nmAff, rollGlove, rollBelt, addBelt, addGlove, hstat, isNm, nmOpen, combineBelts }, myDraw: { drawMythic, mySpirit, myGear, myAura, drawEnemy, setA: a => { MYA = a; } }, forceRare() { rareForce = true; }, get rankDocs() { return rankDocs; }, set rankDocs(v) { rankDocs = v; }, NET, get save() { return save; }, set save(v) { save = v; }, get S() { return S; }, startRun, update, endRun, params, power, recPower, hstat, choose, get choices() { return choices; }, render, setTab, ACT, petPull, dropItems, combineAll, gearAll, itemStats, fmt, ringTxt, dropRings, ringAll, ringPow, RINGS, RODDS, starOdds };
 })();
 </script>
 <script type="module">
