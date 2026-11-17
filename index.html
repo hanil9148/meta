@@ -554,7 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261117-0805';
+  const APP_VER = 'v.261117-1725';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -787,7 +787,7 @@ input { -webkit-user-select: text; user-select: text; }
      3 copies of the same kind+grade combine into 1 of the next grade (the new one starts at Lv1).
      Level is separate and costs gold. Item id = kind + grade, e.g. 'rv0'. */
   const RAR = [{ nm: '일반', c: '#b4bfcc' }, { nm: '고급', c: '#5bd16a' }, { nm: '희귀', c: '#3fa9f5' }, { nm: '영웅', c: '#c27bff' }, { nm: '전설', c: '#ffb72e' }];
-  const SLOTN = { w: '총', h: '모자', n: '목걸이' };
+  const SLOTN = { w: '총', h: '모자', n: '목걸이', r0: '1번 반지', r1: '2번 반지', r2: '3번 반지' };
   const GMAX = [10, 15, 20, 25, 99];
   /* stats grow the same way up to the old caps (x3 at 10/15/20/25/30); legend keeps that slope past 30 up to Lv99 */
   const GREF = [10, 15, 20, 25, 30];
@@ -903,10 +903,12 @@ input { -webkit-user-select: text; user-select: text; }
   const POT_OPEN = 10000000, POT_C0 = [5000000, 25000000, 120000000, 500000000], POT_COST = new Proxy(POT_C0, { get: (t, k) => typeof t[k] === 'number' ? SK7(t[k]) : t[k] }), POT_UP = [.08, .03, .01], POT_CEIL = [50, 150, 400];
   function potLine(t, i) { const W = POT.reduce((a, o) => a + o.w, 0); let r = Math.random() * W, k = 0; for (; k < POT.length - 1; k++) { r -= POT[k].w; if (r < 0) break; } const lt = i > 0 && t > 0 && Math.random() < .25 ? t - 1 : t; return [k, lt]; }
   function potRoll(sl) { const P = save.pot[sl]; if (!P || P.t < 0) return false; let up = false; if (P.t < 3) { P.f = (P.f || 0) + 1; if (P.f >= POT_CEIL[P.t] || Math.random() < POT_UP[P.t]) { P.t++; P.f = 0; up = true; } } const pr = save.pc && save.pc.prot > 0; if (pr) save.pc.prot--; P.l = [0, 1, 2].map(i => pr ? potLine(P.t, 0) : potLine(P.t, i)); return up; }
+  /* potential slots: gear w/h/n + the 3 ring slots (ring potential stays with the slot, like gear) */
+  const POT_SL = ['w', 'h', 'n', 'r0', 'r1', 'r2'];
   function potOpen(sl) { save.pot[sl] = { t: 0, f: 0, l: [0, 1, 2].map(i => potLine(0, i)) }; }
   const potVal = ln => POT[ln[0]].v[ln[1]];
   const potLineTxt = ln => { const o = POT[ln[0]], v = potVal(ln); return o.nm + ' ' + (o.neg ? '-' : '+') + (Math.round(v * 1000) / 10) + '%'; };
-  function potAll() { const o = { atk: 0, crit: 0, cdm: 0, spd: 0, boss: 0, el: 0, se: 0, hp: 0, cd: 0 }; for (const sl of ['w', 'h', 'n']) { const P = save.pot[sl]; if (P && P.t >= 0) for (const ln of P.l) o[POT[ln[0]].k] += potVal(ln); } o.cd = Math.min(.5, o.cd); return o; }
+  function potAll() { const o = { atk: 0, crit: 0, cdm: 0, spd: 0, boss: 0, el: 0, se: 0, hp: 0, cd: 0 }; for (const sl of POT_SL) { const P = save.pot[sl]; if (P && P.t >= 0) for (const ln of P.l) o[POT[ln[0]].k] += potVal(ln); } o.cd = Math.min(.5, o.cd); return o; }
 
   /* ================= 계약의 지옥 (pact mode) =================
      opens after clearing nightmare 30. Base fight = nightmare 40 (bosses x2). The player stacks contracts; their 열기 (heat) raises the
@@ -995,15 +997,24 @@ input { -webkit-user-select: text; user-select: text; }
   /* hidden items: the 5 remaining parts. Each monster kill has a 0.001% chance to drop one you don't have yet */
   const HID_P = .00001, HD_MAX = 20, hdUpCost = lv => 300 * (lv + 1);
   const HID = [
-    { k: 'EMBLEM', nm: '멘헤라의 문장', ic: '💠', c: '#ff3a6a', d: l => '모든 피해 +' + (10 + l) + '%' },
-    { k: 'FACE', nm: '미소 가면', ic: '🎭', c: '#ffcf3f', d: l => '치명 피해 +' + (30 + 3 * l) + '%' },
-    { k: 'BADGE', nm: '불멸 배지', ic: '🎖', c: '#7ad8ff', d: l => '거점이 받는 피해 -' + (10 + l * .5) + '%' },
-    { k: 'POCKET', nm: '황금 주머니', ic: '👛', c: '#ffb72e', d: l => '골드 +' + (30 + 3 * l) + '%' },
-    { k: 'EYE', nm: '심연의 눈', ic: '👁', c: '#c27bff', d: l => '보스 피해 +' + (20 + 2 * l) + '%' },
+    { k: 'EMBLEM', nm: '멘헤라의 문장', ic: '💠', c: '#ff3a6a', key: 'dmg', v0: .1, vl: .01, lab: '모든 피해 +' },
+    { k: 'FACE', nm: '미소 가면', ic: '🎭', c: '#ffcf3f', key: 'cdm', v0: .3, vl: .03, lab: '치명 피해 +' },
+    { k: 'BADGE', nm: '불멸 배지', ic: '🎖', c: '#7ad8ff', key: 'dr', v0: .1, vl: .005, lab: '거점이 받는 피해 -' },
+    { k: 'POCKET', nm: '황금 주머니', ic: '👛', c: '#ffb72e', key: 'gold', v0: .3, vl: .03, lab: '골드 +' },
+    { k: 'EYE', nm: '심연의 눈', ic: '👁', c: '#c27bff', key: 'boss', v0: .2, vl: .02, lab: '보스 피해 +' },
   ];
+  /* hidden item grades: 히든 → 유니크 → 레전더리 → 미스틱. Grade-up parts drop only in 멘헤라:
+     유니크 파츠 from 균열 일반 and up, 레전더리 파츠 from 균열 정예 and up, 미스틱 파츠 only in 균열 악몽. */
+  const HGR = [{ nm: '히든', c: '#9aa6b8', m: 1 }, { nm: '유니크', c: '#ffcf3f', m: 1.5 }, { nm: '레전더리', c: '#5bd16a', m: 2.2 }, { nm: '미스틱', c: '#ff3a6a', m: 3.2 }];
+  const HG_NEED = [0, 3, 5, 10];
+  /* per rift win: chance for [유니크, 레전더리, 미스틱] parts by rift tier (x2 on 군주 stages) */
+  const HP_DROP = { n: [.08, 0, 0], e: [.12, .04, 0], m: [.15, .06, .02] };
+  const hdGr = k => save.hg[k] || 0;
+  const hidVal = (H, l, g) => { const v = (H.v0 + H.vl * l) * HGR[g].m; return H.key === 'dr' ? Math.min(.6, v) : v; };
+  const hdTxt = (H, l, g) => H.lab + (Math.round(hidVal(H, l, g) * 1000) / 10) + '%';
+
   const hdLv = k => (save.hd[k] || 0) - 1; /* -1 = not owned */
-  function hidAll() { const o = { dmg: 0, cdm: 0, dr: 0, gold: 0, boss: 0 }, L = k => hdLv(k);
-    if (L('EMBLEM') >= 0) o.dmg = .1 + .01 * L('EMBLEM'); if (L('FACE') >= 0) o.cdm = .3 + .03 * L('FACE'); if (L('BADGE') >= 0) o.dr = .1 + .005 * L('BADGE'); if (L('POCKET') >= 0) o.gold = .3 + .03 * L('POCKET'); if (L('EYE') >= 0) o.boss = .2 + .02 * L('EYE'); return o; }
+  function hidAll() { const o = { dmg: 0, cdm: 0, dr: 0, gold: 0, boss: 0 }; for (const H of HID) { const l = hdLv(H.k); if (l >= 0) o[H.key] = hidVal(H, l, hdGr(H.k)); } return o; }
   function sgApply(sh) { const { c, k } = sgCount();
     for (const x of sh) { if (!x.u) continue; const n = x.u.n, st = x.st; st.el = Object.assign(st.el.slice(), st.el); st.el.hn = n; st.el.ses = [x.u.se, x.u.xb];
       const s = SETS.findIndex(S0 => S0.h === n); if (s < 0 || c[s] < 2) continue; const K = k[s], b4 = c[s] >= 4, E = st.el;
@@ -1253,7 +1264,7 @@ input { -webkit-user-select: text; user-select: text; }
       unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), items: {}, gear: { w: null, h: null, n: null }, pity: 0, pcoll: [], pid: 0, pbroken: [], pslot: [null, null, null, null], rings: {}, rslot: [null, null, null], claim: Array(STAGES).fill(0), mode: 'n', elOn: 0, el: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) },
       coll: [], capBuy: 0, slots: [null, null, null, null], hl: 0, dl: 0, sll: 0, kbl: 0, sk: {}, q: { hour: 0, m: {} }, shop: { day: '', free: 0, card: 0, en: 0 },
       boss: {}, bossClaim: [], mail: { welcome: 0 }, set: { sfx: 1, bgm: 0, vfx: 1 }, tut: 0, saved: 0, kills: 0, wins: 0, bclr: 0, ab: { fl: 1, best: 0, next: 0, got: {}, pend: 0 }, tq: { st: 0, runs: 0, kills: 0, rare: 0, eq: -1, er: 0, ar: 0 },
-      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, pc: { on: {}, cap: 10, best: 0, seal: 0, ms: {}, prot: 0, frag: 0, plays: 0, wins: 0 }, rf: { k: 'n', n: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) }, e: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) }, m: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) } }, sg: { own: {}, eq: [-1, -1, -1, -1], sh: 0, lv: {} }, hd: {}, ach: { c: {}, eq: 'lv', bk: 0, cube: 0, ge: 0, pf: 0, abs: 0, v2: 1 }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
+      nm: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0), claim: Array(STAGES).fill(0) }, pc: { on: {}, cap: 10, best: 0, seal: 0, ms: {}, prot: 0, frag: 0, plays: 0, wins: 0 }, rf: { k: 'n', n: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) }, e: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) }, m: { unlocked: 1, cur: 1, plays: Array(STAGES).fill(0), best: Array(STAGES).fill(0), reach: Array(STAGES).fill(0) } }, sg: { own: {}, eq: [-1, -1, -1, -1], sh: 0, lv: {} }, hd: {}, hg: {}, hpt: [0, 0, 0], ach: { c: {}, eq: 'lv', bk: 0, cube: 0, ge: 0, pf: 0, abs: 0, v2: 1 }, pot: {}, gl: {}, gslot: -1, bl: {}, bslot: '', dust: 0, adis: 0, dis1: 0
     };
   }
   const ukey = u => u.n + '|' + u.e.join('') + (u.m ? '|m' + u.se : '');
@@ -1332,7 +1343,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (r.mail && typeof r.mail === 'object') for (const k in r.mail) if (/^n\d{6}[a-z]?$/.test(k) && r.mail[k]) s.mail[k] = 1;
     if (r.set) s.set = { sfx: r.set.sfx ? 1 : 0, bgm: r.set.bgm ? 1 : 0, vfx: r.set.vfx === 0 ? 0 : 1 };
     s.tut = r.tut ? 1 : 0; s.saved = num(r.saved, 0, 1e15, 0); s.rev = num(r.rev, 0, 1e12, 0); s.base = num(r.base, 0, 1e12, 0); s.kills = num(r.kills, 0, 1e12, 0); s.wins = num(r.wins, 0, 1e9, 0); s.bclr = num(r.bclr, 0, 1e9, 0);
-    { const q = r.tq && typeof r.tq === 'object' ? r.tq : {}; s.tq = { st: num(q.st, 0, 5, 0), runs: num(q.runs, 0, 1e9, 0), kills: num(q.kills, 0, 1e12, 0), rare: num(q.rare, 0, 1e6, 0), eq: num(q.eq, -1, 4, -1), er: num(q.er != null ? q.er : q.runs, 0, 1e9, 0), ar: num(q.ar, 0, 1e9, 0) }; }
+    { const q = r.tq && typeof r.tq === 'object' ? r.tq : {}; s.tq = { st: num(q.st, 0, TITLES.length, 0), runs: num(q.runs, 0, 1e9, 0), kills: num(q.kills, 0, 1e12, 0), rare: num(q.rare, 0, 1e6, 0), eq: num(q.eq, -1, TITLES.length - 1, -1), er: num(q.er != null ? q.er : q.runs, 0, 1e9, 0), ar: num(q.ar, 0, 1e9, 0) }; }
     { const a = r.ab && typeof r.ab === 'object' ? r.ab : {}; s.ab = { fl: num(a.fl, 1, 9999, 1), best: num(a.best, 0, 9999, 0), next: num(a.next, 0, 1e15, 0), got: {}, pend: num(a.pend, 0, 9999, 0) }; if (a.got && typeof a.got === 'object') for (const k in a.got) if (/^\d+$/.test(k)) s.ab.got[k] = 1; }
     /* abyss runs started counting after the abyss opened: floors already cleared count at least once */
     s.tq.ar = Math.max(s.tq.ar, s.ab.best);
@@ -1341,13 +1352,15 @@ input { -webkit-user-select: text; user-select: text; }
     s.gslot = num(r.gslot, -1, GLV.length - 1, -1); if (s.gslot >= 0 && !s.gl[s.gslot]) s.gslot = -1;
     if (r.bl && typeof r.bl === 'object') for (const id in r.bl) if (validBid(id) && r.bl[id] >= 1) s.bl[id] = num(r.bl[id], 1, 1e6, 1);
     s.bslot = validBid(r.bslot) && s.bl[r.bslot] ? r.bslot : '';
-    if (r.pot && typeof r.pot === 'object') for (const sl of ['w', 'h', 'n']) { const P = r.pot[sl]; if (P && Array.isArray(P.l) && P.l.length === 3) { const t = num(P.t, 0, 3, 0); s.pot[sl] = { t, f: num(P.f, 0, 999, 0), l: P.l.map(ln => [num(ln && ln[0], 0, POT.length - 1, 0), num(ln && ln[1], 0, t, t)]) }; } }
+    if (r.pot && typeof r.pot === 'object') for (const sl of POT_SL) { const P = r.pot[sl]; if (P && Array.isArray(P.l) && P.l.length === 3) { const t = num(P.t, 0, 3, 0); s.pot[sl] = { t, f: num(P.f, 0, 999, 0), l: P.l.map(ln => [num(ln && ln[0], 0, POT.length - 1, 0), num(ln && ln[1], 0, t, t)]) }; } }
     { const a = r.ach && typeof r.ach === 'object' ? r.ach : {}; s.ach = { c: {}, eq: ACH.some(A => A.id === a.eq) ? a.eq : '', bk: num(a.bk, 0, 1e12, 0), cube: num(a.cube, 0, 1e9, 0), ge: num(a.ge, 0, 1e16, 0), pf: num(a.pf, 0, 1e9, 0), abs: num(a.abs, 0, 1e9, 0), v2: a.v2 ? 1 : 0 };
       if (a.c && typeof a.c === 'object') for (const A of ACH) s.ach.c[A.id] = num(a.c[A.id], 0, A.g.length, 0); }
     { const a = r.pc && typeof r.pc === 'object' ? r.pc : {}; s.pc = { on: {}, cap: num(a.cap, 10, 60, 10), best: num(a.best, 0, 200, 0), seal: num(a.seal, 0, 1e9, 0), ms: {}, prot: num(a.prot, 0, 1e6, 0), frag: num(a.frag, 0, 1e6, 0), plays: num(a.plays, 0, 1e9, 0), wins: num(a.wins, 0, 1e9, 0) };
       { const R0 = r.rf && typeof r.rf === 'object' ? r.rf : {}, T = (e, mx) => { e = e && typeof e === 'object' ? e : {}; const t = { unlocked: num(e.unlocked, 1, mx, 1), cur: 1, plays: arr(e.plays, 1e6), best: arr(e.best, 100), reach: arr(e.reach, 7) }; t.cur = num(e.cur, 1, t.unlocked, 1); return t; };
         s.rf = { k: ['n', 'e', 'm'].includes(R0.k) ? R0.k : 'n', n: T(R0.n || (R0.unlocked ? R0 : null), 50), e: T(R0.e, 50), m: T(R0.m, 30) }; }
-      { const h = r.hd && typeof r.hd === 'object' ? r.hd : {}; s.hd = {}; for (const H of HID) { const v = num(h[H.k], 0, HD_MAX + 1, 0); if (v) s.hd[H.k] = v; } }
+      { const h = r.hd && typeof r.hd === 'object' ? r.hd : {}; s.hd = {}; for (const H of HID) { const v = num(h[H.k], 0, HD_MAX + 1, 0); if (v) s.hd[H.k] = v; }
+        const hg = r.hg && typeof r.hg === 'object' ? r.hg : {}; s.hg = {}; for (const H of HID) { const v = num(hg[H.k], 0, 3, 0); if (v && s.hd[H.k]) s.hg[H.k] = v; }
+        s.hpt = [0, 1, 2].map(i => num(Array.isArray(r.hpt) ? r.hpt[i] : 0, 0, 1e6, 0)); }
       { const g = r.sg && typeof r.sg === 'object' ? r.sg : {}; s.sg = { own: {}, eq: [-1, -1, -1, -1], sh: num(g.sh, 0, 1e9, 0), lv: {} }; if (g.own && typeof g.own === 'object') for (let a0 = 0; a0 < 8; a0++) for (let p = 0; p < 4; p++) { const v = num(g.own[a0 + '-' + p], 0, SG_MAX + 1, 0); if (v) s.sg.own[a0 + '-' + p] = v; } if (g.lv && typeof g.lv === 'object') for (const k0 in g.lv) if (s.sg.own[k0]) { const v = num(g.lv[k0], 0, SG_LV, 0); if (v) s.sg.lv[k0] = v; } if (Array.isArray(g.eq)) for (let p = 0; p < 4; p++) { const v = num(g.eq[p], -1, 7, -1); s.sg.eq[p] = v >= 0 && s.sg.own[v + '-' + p] ? v : -1; } }
       if (a.on && typeof a.on === 'object') for (const P of PACTS) { const v = num(a.on[P.id], 0, P.r.length, 0); if (v) s.pc.on[P.id] = v; }
       if (a.ms && typeof a.ms === 'object') for (const m of PACT_MS) if (a.ms[m]) s.pc.ms[m] = 1; }
@@ -1611,13 +1624,19 @@ input { -webkit-user-select: text; user-select: text; }
     { nm: '현상금 사냥꾼', c: '#5bd16a', gem: 5000, b: { crit: .02, dmg: .01 }, req: [['er', 200], ['ar', 20], ['rare', 2], ['abyss', 5]] },
     { nm: '보안관', c: '#3fa9f5', gem: 8000, b: { crit: .03, spd: .02, dmg: .02 }, req: [['er', 300], ['ar', 30], ['pet10', 1], ['gear99', 1], ['abyss', 10]] },
     { nm: '무법자 왕', c: '#c27bff', gem: 12000, b: { crit: .05, cdm: .05, spd: .03, dmg: .03 }, req: [['er', 400], ['ar', 40], ['myth20', 1], ['elite', 46], ['abyss', 15]] },
-    { nm: '황야의 전설', c: '#ffb72e', gem: 0, b: { crit: .1, cdm: .1, spd: .05, dmg: .05, se: .03 }, req: [['er', 500], ['ar', 50], ['kills', 200000], ['elite', 51], ['abyss', 20], ['myths', 3]] }
+    { nm: '황야의 전설', c: '#ffb72e', gem: 20000, b: { crit: .1, cdm: .1, spd: .05, dmg: .05, se: .03 }, req: [['er', 500], ['ar', 50], ['kills', 200000], ['elite', 51], ['abyss', 20], ['myths', 3]] },
+    /* 6th stage: break through 심연의 탑 100층 */
+    { nm: '심연의 지배자', c: '#b14bff', gem: 30000, b: { crit: .15, cdm: .25, spd: .08, dmg: .12, se: .05, boss: .1 }, req: [['abyss', 100]] },
+    /* 멘헤라 titles */
+    { nm: '균열 방랑자', c: '#ff6a3d', gem: 40000, b: { crit: .15, cdm: .3, spd: .1, dmg: .15, se: .06, boss: .12 }, req: [['rfn', 50]] },
+    { nm: '균열 정복자', c: '#ff2a4a', gem: 60000, b: { crit: .18, cdm: .4, spd: .12, dmg: .2, se: .08, boss: .15 }, req: [['rfe', 50]] },
+    { nm: '멘헤라의 왕', c: '#ff0a6a', gem: 100000, b: { crit: .2, cdm: .5, spd: .15, dmg: .3, se: .1, boss: .2 }, req: [['rfm', 30]] }
   ];
-  const TQ_NM = { er: v => '정예 ' + v + '판', ar: v => '심연의 탑 ' + v + '판', runs: v => '정예·심연 ' + v + '판', kills: v => '몬스터 ' + v.toLocaleString() + '마리 처치', elite: v => '정예 ' + (v - 1) + '단계 클리어', rare: v => '희귀 보스 ' + v + '마리 처치', abyss: v => '심연의 탑 ' + v + '층 정복', pet10: () => '★10 펫 1마리', gear99: () => '전설 장비 Lv99 1개', myth20: () => '신화 ★20 이상 1명', myths: v => '신화 ' + v + '명 보유' };
+  const TQ_NM = { er: v => '정예 ' + v + '판', ar: v => '심연의 탑 ' + v + '판', runs: v => '정예·심연 ' + v + '판', kills: v => '몬스터 ' + v.toLocaleString() + '마리 처치', elite: v => '정예 ' + (v - 1) + '단계 클리어', rare: v => '희귀 보스 ' + v + '마리 처치', abyss: v => '심연의 탑 ' + v + '층 정복', rfn: v => '균열 일반 ' + v + '단계 클리어', rfe: v => '균열 정예 ' + v + '단계 클리어', rfm: v => '균열 악몽 ' + v + '단계 클리어', pet10: () => '★10 펫 1마리', gear99: () => '전설 장비 Lv99 1개', myth20: () => '신화 ★20 이상 1명', myths: v => '신화 ' + v + '명 보유' };
   function tqVal(k) {
     const q = save.tq;
     if (k === 'runs') return q.runs; if (k === 'er') return q.er; if (k === 'ar') return q.ar; if (k === 'kills') return q.kills; if (k === 'rare') return q.rare;
-    if (k === 'elite') return save.elOn ? save.el.unlocked + (save.el.reach[ESTAGES - 1] & 1 ? 1 : 0) : 0; if (k === 'abyss') return save.ab.best;
+    if (k === 'elite') return save.elOn ? save.el.unlocked + (save.el.reach[ESTAGES - 1] & 1 ? 1 : 0) : 0; if (k === 'abyss') return save.ab.best; if (k === 'rfn' || k === 'rfe' || k === 'rfm') { const t = save.rf[k[2]]; return t.reach.slice(0, RK[k[2]].max).filter(x => x & 1).length; }
     if (k === 'pet10') return save.pcoll.some(x => x.s >= 10) ? 1 : 0;
     if (k === 'gear99') return Object.keys(save.items).some(id => iG(id) === 4 && save.items[id].lv >= 99) ? 1 : 0;
     if (k === 'myth20') return save.coll.some(u => u.m && u.s >= 20) ? 1 : 0;
@@ -1627,8 +1646,8 @@ input { -webkit-user-select: text; user-select: text; }
   const tqReady = () => save.tq.st < TITLES.length && TITLES[save.tq.st].req.every(([k, v]) => tqVal(k) >= v);
   /* titles are items: every cleared title is owned, one goes in the TITLE slot of the equipment window and only that one's bonus counts */
   const titleNm = () => save.tq.eq >= 0 && save.tq.eq < save.tq.st ? TITLES[save.tq.eq].nm : '';
-  const titleBonus = () => Object.assign({ crit: 0, cdm: 0, spd: 0, dmg: 0, se: 0 }, save.tq.eq >= 0 && save.tq.eq < save.tq.st ? TITLES[save.tq.eq].b : {});
-  const tbTxt = b => [b.crit && '치명타 +' + Math.round(b.crit * 100) + '%', b.cdm && '치명타 피해 +' + Math.round(b.cdm * 100) + '%', b.spd && '공격 속도 +' + Math.round(b.spd * 100) + '%', b.dmg && '피해 +' + Math.round(b.dmg * 100) + '%', b.se && '강속성 +' + Math.round(b.se * 100) + '%'].filter(Boolean).join(' · ');
+  const titleBonus = () => Object.assign({ crit: 0, cdm: 0, spd: 0, dmg: 0, se: 0, boss: 0 }, save.tq.eq >= 0 && save.tq.eq < save.tq.st ? TITLES[save.tq.eq].b : {});
+  const tbTxt = b => [b.crit && '치명타 +' + Math.round(b.crit * 100) + '%', b.cdm && '치명타 피해 +' + Math.round(b.cdm * 100) + '%', b.spd && '공격 속도 +' + Math.round(b.spd * 100) + '%', b.dmg && '피해 +' + Math.round(b.dmg * 100) + '%', b.se && '강속성 +' + Math.round(b.se * 100) + '%', b.boss && '보스 피해 +' + Math.round(b.boss * 100) + '%'].filter(Boolean).join(' · ');
   function giveR(r) {
     const out = [];
     if (r.gold) { save.gold += r.gold; out.push(fmt(r.gold) + ' 골드'); }
@@ -1663,6 +1682,8 @@ input { -webkit-user-select: text; user-select: text; }
       out.push(NMS[n] + ' 2강속 신화 ★' + nu.s); }
     /* gift: one pet { p, g, s } */
     if (r.pet) { const x = addPet(r.pet.p, r.pet.g); if (x) { x.s = r.pet.s; out.push(PGR[r.pet.g].nm + ' 펫 ' + PETN[r.pet.p] + ' ★' + x.s); } }
+    /* compensation: gems per 차원 균열 run played (rift runs paid normal-stage gems before v.261117-1723) */
+    if (r.rfComp) { const n = Math.min(300, ['n', 'e', 'm'].reduce((a, k) => a + save.rf[k].plays.reduce((x, y) => x + y, 0), 0)); const g = n * r.rfComp; save.gem += g; out.push('균열 ' + n + '판 × ' + fmt(r.rfComp) + ' = 젬 ' + fmt(g)); }
     if (r.maxGear) { let k = 0; for (const sl of ['w', 'h', 'n']) { const id = save.gear[sl], d = id && save.items[id]; if (d) { d.lv = GMAX[iG(id)]; k++; } } out.push('장착 장비 ' + k + '개 최대 레벨'); }
     if (r.maxPet) { let k = 0; for (const pid of save.pslot) { const x = pid && save.pcoll.find(q => q.id === pid); if (x) { x.s = PET_MAX; k++; } } out.push('장착 펫 ' + k + '마리 ★' + PET_MAX); }
     if (r.runs) { const k = r.runs; let it = dropItems(k, ODDS.eliteWin).length + dropItems(6 * k, ODDS.eliteBoss).length + dropItems(Math.round(k * .03), ODDS.rare).length;
@@ -1808,7 +1829,7 @@ input { -webkit-user-select: text; user-select: text; }
     const hb = (act, ic, nm, sub, bang) => '<button data-act="' + act + '" style="position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:6px 10px;border:3px solid var(--ink);border-radius:12px;background:linear-gradient(180deg,#2c3c58,#1e2a3f);color:#fff;text-align:left;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3)"><span style="font-size:22px;flex:none">' + ic + '</span><span style="min-width:0;display:grid;line-height:1.15"><b class="ol-s" style="font-family:var(--display);font-size:15px">' + nm + '</b><small style="font-size:11px;color:#cfe0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sub + '</small></span>' + (bang ? '<span class="bang" style="right:-6px;top:-8px">!</span>' : '') + '</button>';
     const tn = titleNm(), MT = achAll();
     $('screen').innerHTML = '<div class="home' + (RFm ? ' mh' : '') + '">' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' + hb('titles', '🏅', '칭호', tn ? '「' + tn + '」' : '퀘스트 ' + save.tq.st + '/5단계', qr) + hb('achOpen', '🎖', '훈장', MT.tiers + '/' + ACH.reduce((a, A) => a + A.g.length, 0) + '단계', achClaimable()) + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' + hb('titles', '🏅', '칭호', tn ? '「' + tn + '」' : '퀘스트 ' + save.tq.st + '/' + TITLES.length + '단계', qr) + hb('achOpen', '🎖', '훈장', MT.tiers + '/' + ACH.reduce((a, A) => a + A.g.length, 0) + '단계', achClaimable()) + '</div>' +
       '<div class="home-row"><div class="sides">' +
         '<button class="side sm" data-act="friends"><span class="ic">' + I.friends + '</span><span class="ol-s">랭킹</span></button>' +
         '</div>' +
@@ -1899,15 +1920,15 @@ input { -webkit-user-select: text; user-select: text; }
   }
   function titlesBody() {
     const st = save.tq.st;
-    let h = '<p class="desc" style="color:#fff">칭호 퀘스트는 <b>5단계</b>예요. 단계의 조건을 모두 채우면 <b>칭호 아이템</b>과 보상을 받아요. 칭호는 장비창 <b>TITLE</b> 칸에 껴야 효과가 나요. <b>정예 판</b>과 <b>심연 판</b>(포기 제외)은 따로 세고 단계마다 정예 100판·심연 10판씩 늘어나요. 처치·희귀 보스도 퀘스트를 시작한 뒤부터 세요. 마지막 <b style="color:#ffb72e">「황야의 전설」</b>은 <b>치명타 +10% · 치명타 피해 +10% · 공격 속도 +5% · 피해 +5% · 강속성 +3%</b>예요.</p>';
+    let h = '<p class="desc" style="color:#fff">칭호 퀘스트는 <b>' + TITLES.length + '단계</b>예요. 단계의 조건을 모두 채우면 <b>칭호 아이템</b>과 보상을 받아요. 칭호는 장비창 <b>TITLE</b> 칸에 껴야 효과가 나요. <b>정예 판</b>과 <b>심연 판</b>(포기 제외)은 따로 세고 단계마다 정예 100판·심연 10판씩 늘어나요. 처치·희귀 보스도 퀘스트를 시작한 뒤부터 세요. 마지막 <b style="color:#ffb72e">「황야의 전설」</b>은 <b>치명타 +10% · 치명타 피해 +10% · 공격 속도 +5% · 피해 +5% · 강속성 +3%</b>예요.</p>';
     TITLES.forEach((T, i) => {
       const done = i < st, cur = i === st, ok = cur && tqReady();
-      h += '<div class="card ' + (cur ? '' : 'dark') + '" style="margin:6px 0;border-color:' + T.c + ';opacity:' + (i > st ? .55 : 1) + '"><div class="row"><h3 class="ol grow" style="color:' + T.c + '">' + (done ? '✅ ' : cur ? '▶ ' : '🔒 ') + (i + 1) + '단계 「' + T.nm + '」</h3><span class="desc" style="color:#fff">' + (T.gem ? '젬 ' + fmt(T.gem) : '최종 칭호') + '</span></div><p class="desc" style="margin:0 0 4px;color:' + T.c + '">칭호 효과: ' + tbTxt(T.b) + '</p>';
+      h += '<div class="card ' + (cur ? '' : 'dark') + '" style="margin:6px 0;border-color:' + T.c + ';opacity:' + (i > st ? .55 : 1) + '"><div class="row"><h3 class="ol grow" style="color:' + T.c + '">' + (done ? '✅ ' : cur ? '▶ ' : '🔒 ') + (i + 1) + '단계 「' + T.nm + '」</h3><span class="desc" style="color:#fff">' + (i === TITLES.length - 1 ? '최종 칭호 · ' : '') + (T.gem ? '젬 ' + fmt(T.gem) : '') + '</span></div><p class="desc" style="margin:0 0 4px;color:' + T.c + '">칭호 효과: ' + tbTxt(T.b) + '</p>';
       if (!done) h += T.req.map(([k, v]) => { const cv = tqVal(k), p = Math.min(1, cv / v); return '<div style="margin:4px 0"><div class="row"><span class="desc grow" style="color:#fff">' + TQ_NM[k](v) + '</span><b class="ol-s" style="font-size:13px;color:' + (p >= 1 ? 'var(--ok)' : '#fff') + '">' + (['elite'].includes(k) ? Math.max(0, cv - 1) + '/' + (v - 1) : fmt(Math.min(cv, v)) + '/' + fmt(v)) + '</b></div><div class="bar" style="height:8px;background:#1a2638;border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.round(p * 100) + '%;background:' + (p >= 1 ? '#5bd16a' : T.c) + '"></i></div></div>'; }).join('');
       if (ok) h += '<button class="btn y wide ol-s" data-act="tqClaim" style="margin-top:6px">🏅 「' + T.nm + '」 칭호 받기</button>';
       h += '</div>';
     });
-    if (st >= TITLES.length) h += '<div class="msg ok">「황야의 전설」 달성! 장비창 TITLE 칸에 끼면 최종 효과가 적용돼요.</div>';
+    if (st >= TITLES.length) h += '<div class="msg ok">「' + TITLES[TITLES.length - 1].nm + '」 달성! 장비창 TITLE 칸에 끼면 최종 효과가 적용돼요.</div>';
     return h;
   }
   const SE_HELP = '<div class="card dark" style="margin-top:8px;border-color:#ff9ad8"><h3 class="ol" style="font-size:17px">★ 강속성이란? <span class="desc" style="color:#ff9ad8">(신화 전용)</span></h3>' +
@@ -2262,13 +2283,15 @@ input { -webkit-user-select: text; user-select: text; }
       '<p class="desc" style="text-align:center;margin:4px 0 0">🔥 차원 균열은 위의 <b>멘헤라</b> 스위치로 들어가요' + (RIFT_OPEN() ? '' : ' (평온 악몽 ' + NSTAGES + ' 클리어)') + '</p>'; }
   function ivHid(k) { const H = HID.find(h => h.k === k), l = hdLv(k);
     if (l < 0) return '<div class="ivs e" data-act="hdOpen" data-k="' + k + '" role="button" style="cursor:pointer"><u>' + k + ' ?</u></div>';
-    return '<div class="ivs it" style="--g:' + H.c + '" data-act="hdOpen" data-k="' + k + '" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">' + H.ic + '</span><b class="lv" style="font-size:9px">+' + l + '</b><em class="on">E</em></div>'; }
-  function hdBody(k) { const H = HID.find(h => h.k === k), l = hdLv(k);
-    if (l < 0) return '<p class="desc" style="color:#fff;text-align:center">❓ <b>히든 아이템 자리 (' + k + ')</b><br><br>어떤 몬스터든 잡을 때마다 <b>0.001%</b> 확률로 아직 없는 히든 아이템이 떨어져요. 무엇이 나올지는 비밀이에요.</p>';
-    const c = hdUpCost(l), mx = l >= HD_MAX;
-    return '<div class="card dark" style="text-align:center;gap:6px"><span style="font-size:48px">' + H.ic + '</span><b class="ol" style="font-size:20px;color:' + H.c + '">' + H.nm + ' +' + l + '</b><p class="desc" style="color:#fff;margin:0">' + H.d(l) + (mx ? ' · 최대 강화' : '<br>다음 +' + (l + 1) + ': ' + H.d(l + 1)) + '</p></div>' +
+    const g = hdGr(k); return '<div class="ivs it" style="--g:' + HGR[g].c + '" data-act="hdOpen" data-k="' + k + '" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">' + H.ic + '</span><b class="lv" style="font-size:9px">' + HGR[g].nm + ' +' + l + '</b><em class="on">E</em></div>'; }
+  function hdBody(k) { const H = HID.find(h => h.k === k), l = hdLv(k), g = hdGr(k);
+    const parts = '<p class="desc" style="text-align:center;margin:0">보유 파츠 · ' + [0, 1, 2].map(j => '<b style="color:' + HGR[j + 1].c + '">' + HGR[j + 1].nm + ' ' + save.hpt[j] + '</b>').join(' · ') + '</p>';
+    if (l < 0) return '<p class="desc" style="color:#fff;text-align:center">❓ <b>히든 아이템 자리 (' + k + ')</b><br><br>어떤 몬스터든 잡을 때마다 <b>0.001%</b> 확률로 아직 없는 히든 아이템이 떨어져요. 무엇이 나올지는 비밀이에요.</p>' + parts;
+    const c = hdUpCost(l), mx = l >= HD_MAX, ng = g < 3 ? g + 1 : -1, need = ng > 0 ? HG_NEED[ng] : 0, have = ng > 0 ? save.hpt[ng - 1] : 0;
+    return '<div class="card dark" style="text-align:center;gap:6px;border-color:' + HGR[g].c + '"><span style="font-size:48px">' + H.ic + '</span><b class="ol" style="font-size:20px;color:' + HGR[g].c + '">[' + HGR[g].nm + '] ' + H.nm + ' +' + l + '</b><p class="desc" style="color:#fff;margin:0">' + hdTxt(H, l, g) + (mx ? ' · 최대 강화' : '<br>다음 +' + (l + 1) + ': ' + hdTxt(H, l + 1, g)) + '</p></div>' +
       (mx ? '' : '<button class="btn y wide ol-s" data-act="hdUp" data-k="' + k + '"' + ((save.dust || 0) >= c ? '' : ' disabled') + '>✨ 강화 · 가루 ' + fmt(c) + ' (보유 ' + fmt(save.dust || 0) + ')</button>') +
-      '<p class="desc" style="text-align:center">히든 아이템은 골드·젬 대신 <b>가루</b>로 강화해요. 가루는 장비창 가방의 「일괄 분해」로 얻어요. 강화는 실패하지 않아요.</p>'; }
+      (ng > 0 ? '<button class="btn p wide ol-s" data-act="hdGrade" data-k="' + k + '"' + (have >= need ? '' : ' disabled') + ' style="margin-top:6px">⬆ <span style="color:' + HGR[ng].c + '">' + HGR[ng].nm + '</span> 승급 · ' + HGR[ng].nm + ' 파츠 ' + have + '/' + need + '<br><span style="font-size:12px">효과 ×' + HGR[ng].m + ' → ' + hdTxt(H, l, ng) + '</span></button>' : '<p class="desc" style="text-align:center;color:' + HGR[3].c + '"><b>미스틱 · 최고 등급</b></p>') + parts +
+      '<p class="desc" style="text-align:center">등급: 히든 ×1 → 유니크 ×1.5 → 레전더리 ×2.2 → 미스틱 ×3.2 (승급 파츠 3 · 5 · 10개). 파츠는 <b>멘헤라</b>에서만 나와요: 유니크는 균열 일반부터, 레전더리는 균열 정예부터, 미스틱은 균열 악몽에서. 강화(+)는 가루로 하고, 승급해도 강화 단계는 그대로예요.</p>'; }
   function ivCape() { return capeOn() ? '<div class="ivs it" style="--g:#d080ff" data-act="pcOpen" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">🧥</span><b class="lv" style="font-size:9px">열기 ' + save.pc.best + '</b><em class="on">E</em></div>' : '<div class="ivs e" data-act="pcOpen" role="button" style="cursor:pointer"><u>CAPE</u></div>'; }
   let pcTab = 'pact';
   function pactBody() {
@@ -2372,6 +2395,7 @@ input { -webkit-user-select: text; user-select: text; }
         (g < 4 ? '<button class="btn sm ol-s" data-act="ringCb1" data-id="' + id + '"' + (d.n >= 3 ? '' : ' disabled') + '>조합 ' + Math.min(d.n, 3) + '/3</button>' : '') + '</div></div>';
     }
     if (cur && (!ringFocus || cur === ringFocus)) h += '<button class="btn r sm ol-s" data-act="ringOff">장착 해제</button>';
+    if (!ringFocus || cur === ringFocus) h += potBox('r' + i);
     return h;
   }
   /* element awakening panel under a Lv99 legend item */
@@ -2672,6 +2696,9 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'g261117rfc', need: 'rift', t: '🎁 균열 젬 보상', s: '균열 젬이 덜 들어가던 버그 보상 · 지금까지 돌린 균열 판수 × 젬 6,500 (최대 300판)', r: { rfComp: 6500 }, until: Date.UTC(2026, 10, 18, 15, 0) },
+    { id: 'n261117hg', t: '🧩 히든 아이템 등급 오픈', s: '히든 → 유니크 → 레전더리 → 미스틱 (효과 ×1.5 · ×2.2 · ×3.2). 승급 파츠는 멘헤라에서만: 유니크 균열 일반~, 레전더리 균열 정예~, 미스틱 균열 악몽.', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
+    { id: 'g261117jw', to: '류한일', t: '🎁 운영자 선물', s: '재원 짝꿍 전설 펫 「현성」 ★10', r: { pet: { p: 3, g: 3, s: 10 } }, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261117mh', t: '🔥 멘헤라 세계 오픈!', s: '평온 악몽 50을 깨면 홈 스위치로 「멘헤라」에 들어가요. 차원 균열 일반 50 · 정예 50 · 악몽 30. 판마다 특성 몹이 섞여 나오니 조합을 바꿔 가며 깨 보세요. 세트 장비(상의·하의·신발·숄더 8세트), 히든 아이템 5종(0.001%), 가루 강화, 25성부터 파괴 방지(50배)!', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
     { id: 'g261117jm', to: '류한일', t: '🎁 운영자 선물', s: '진명 2강속 신화 ★24 + 진명 짝꿍 전설 펫 ★10', r: { myu: { n: 4, s: 24 }, pet: { p: 5, g: 3, s: 10 } }, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261116p', t: '🔥 새 모드 「계약의 지옥」', s: '악몽 30을 깨면 열려요. 악몽 40급 판에 계약을 직접 쌓아 난이도를 올리고, 열기 1마다 보상 +8%. 30분마다 바뀌는 역풍 계약은 열기 2배. 열기 20부터 최종 보스 「계약자」 등장. 인장으로 강속성 재설정권·전설 탄띠·무법자의 손 조각을 사요. 최고 열기 30이면 「계약자의 망토」(최고 열기만큼 성장)!', r: {}, until: Date.UTC(2026, 10, 23, 15, 0) },
@@ -2681,7 +2708,7 @@ input { -webkit-user-select: text; user-select: text; }
   const leftTxt = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간' : h ? h + '시간 ' + m + '분' : m + '분'; };
   function mailItems() {
     const out = [];
-    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until && (!n.to || [].concat(n.to).some(x => String(save.name || '').replace(/\s/g, '') === x))) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
+    for (const n of NOTICES) if (!save.mail[n.id] && Date.now() < n.until && (!n.to || [].concat(n.to).some(x => String(save.name || '').replace(/\s/g, '') === x)) && (!n.need || (n.need === 'rift' && RIFT_OPEN()))) out.push({ id: n.id, notice: 1, t: n.t, s: n.s + ' · ' + leftTxt(n.until - Date.now()) + ' 뒤 사라져요', r: n.r });
     if (!save.mail.welcome) out.push({ id: 'welcome', t: '찍먹메타에 오신 걸 환영해요!', s: '시작 선물 · 1,000골드 + 젬 50', r: { gold: 1000, gem: 50 } });
     return out;
   }
@@ -2913,7 +2940,7 @@ input { -webkit-user-select: text; user-select: text; }
     const rfF = !abF && !pcF && riftMode && RIFT_OPEN(), RF = rfF ? riftStage(rTrk().cur) : null;
     const nmF = pcF ? 40 : rfF ? 50 : !abF && isNm() ? trk().cur : 0;
     PACT_NG = !!(pcF && pon.gear);
-    const elite = abF ? true : isElite(), n = abF ? AB_UNLOCK : nmF ? ESTAGES : trk().cur, P = abF ? abParams(abF) : nmF ? nmParams(nmF) : eParams(n, elite);
+    const elite = abF || nmF ? true : isElite(), /* nightmare-based runs (pact, rift) always count as elite, even from another home mode */ n = abF ? AB_UNLOCK : nmF ? ESTAGES : trk().cur, P = abF ? abParams(abF) : nmF ? nmParams(nmF) : eParams(n, elite);
     const units = save.slots.map(getUnit);
     if (pcF && pon.mseal) { let bi = -1; units.forEach((u, i) => { if (u && u.m && (bi < 0 || u.s > units[bi].s)) bi = i; }); if (bi >= 0) units[bi] = null; }
     if (rfF) { P.hpm *= RF.hpm; P.dm *= RF.am; }
@@ -2932,7 +2959,7 @@ input { -webkit-user-select: text; user-select: text; }
       clash, lv: 1, xp: 0, sk: {}, pass: { atk: 0, spd: 0, crit: 0 }, picks: 0, kills: 0, gold: 0, boss: null, bosses: [], bossKills: 0, bossK: false, alert: 0, banner: null,
       hit: 0, took: 0, pause: false, over: false, shake: 0, domeHit: 0, robo: { x: 364, y: 150, cd: 0 }, drones: []
     };
-    S.tb = titleBonus(); S.r.cdm += S.tb.cdm; S.r.spd += S.tb.spd;
+    S.tb = titleBonus(); S.r.cdm += S.tb.cdm; S.r.spd += S.tb.spd; S.r.boss += S.tb.boss || 0;
     S.kbIv = kbIv(save.kbl || 0); S.kbT = 3;
     { const Q = potAll(); S.r.cdm += Q.cdm; S.tb.se += Q.se; S.pcd = Q.cd; }
     { const M = achAll(); S.md = M; S.tb.dmg += M.dmg; S.r.boss += M.boss; S.r.spd += M.spd; S.tb.se += M.se; S.r.cdm += M.cdm; S.tb.crit += M.crit; S.pcd = Math.min(.5, S.pcd + M.cd); S.dr *= 1 - Math.min(.5, M.dr); }
@@ -3498,7 +3525,8 @@ input { -webkit-user-select: text; user-select: text; }
     /* rift: set gear drops (60% on a clear, 2 guaranteed on every 10th stage), first clear gems */
     let rfRes = null; if (S.rift && win) { rfRes = { got: [], gem: 0 }; const RK0 = S.rift.R.k, k = (S.rift.R.lord ? (RK0 === 'm' ? 3 : 2) : RK0 === 'm' ? 1 + (Math.random() < .3 ? 1 : 0) : Math.random() < (RK0 === 'e' ? .7 : .5) ? 1 : 0);
       for (let j = 0; j < k; j++) { const s = Math.floor(Math.random() * 8), p = Math.floor(Math.random() * 4), r = sgAdd(s, p); rfRes.got.push({ s, p, r }); }
-      if (!(tk.reach[i] & 1)) { rfRes.gem = S.rift.R.g * 1000 * (S.rift.R.lord ? 3 : 1); save.gem += rfRes.gem; } }
+      if (!(tk.reach[i] & 1)) { rfRes.gem = S.rift.R.g * 1000 * (S.rift.R.lord ? 3 : 1); save.gem += rfRes.gem; }
+      rfRes.hp = [0, 0, 0]; HP_DROP[RK0].forEach((c, j) => { if (Math.random() < c * (S.rift.R.lord ? 2 : 1)) { save.hpt[j]++; rfRes.hp[j]++; } }); }
     let pcRes = null; if (S.pcm && !gaveUp) { const P = save.pc, h = S.pcm.heat; P.plays++; if (win) { P.wins++; P.seal += h; const nb = h > P.best; P.best = Math.max(P.best, h); let capUp = false; if (h >= P.cap && P.cap < 60) { P.cap = Math.min(60, P.cap + 3); capUp = true; } const ms = []; for (const m of PACT_MS) if (h >= m && !P.ms[m]) { P.ms[m] = 1; save.gem += m * 1000; P.seal += m * 10; ms.push(m); } pcRes = { h, nb, capUp, ms }; } }
     const abGem = win && S.ab ? Math.round(100 * AF * (1 + (S.md ? S.md.ag : 0)) * (1 + GE)) : 0; save.gem += abGem;
     let abUp = false; if (win && S.ab) { qAdd('boss'); save.ab.best = Math.max(save.ab.best, S.ab); if (S.ab === save.ab.fl) { save.ab.fl++; save.ab.next = Date.now() + abWait(); abUp = true; } if (S.ab % 10 === 0 && !save.ab.got[S.ab]) save.ab.pend = S.ab; }
@@ -3537,7 +3565,7 @@ input { -webkit-user-select: text; user-select: text; }
       (S.ab && win ? '<p class="desc" style="text-align:center;color:#b98cff;font-size:15px"><b>🕳 심연 ' + S.ab + '층 정복!</b> · 젬 +' + abGem + (AF > 1 ? ' · 특성 보상 ×' + AF : '') + (abUp ? (abWait() ? '<br>다음 층은 2분 뒤에 열려요' : '<br>다음 층이 바로 열렸어요') : '') + '</p>' + (save.ab.pend ? '<button class="btn p wide ol-s" data-act="abPickOpen">🎁 ' + save.ab.pend + '층 보상 고르기</button>' : '') : '') +
       (S.pcm ? '<p class="desc" style="text-align:center;color:#ffb070;font-size:15px"><b>🔥 계약의 지옥 · 열기 ' + S.pcm.heat + ' · 보상 ×' + S.pcm.mul.toFixed(2).replace(/0$/, '') + '</b>' + (pcRes ? '<br>계약 인장 +' + pcRes.h + (pcRes.nb ? ' · <b style="color:var(--yel)">최고 열기 갱신!</b>' : '') + (pcRes.capUp ? ' · 열기 상한 ' + save.pc.cap + '으로 상승' : '') + (pcRes.ms.length ? '<br>🏆 이정표 열기 ' + pcRes.ms.join('·') + ' 달성 · 젬 +' + fmt(pcRes.ms.reduce((a, m) => a + m * 1000, 0)) : '') : '') + '</p>' : '') +
       (S.hdGot ? '<p class="desc" style="text-align:center;font-size:16px;color:#ff8ad0"><b>🎁 히든 아이템!! ' + S.hdGot.map(k => { const H = HID.find(h => h.k === k); return H.ic + ' ' + H.nm; }).join(' · ') + '</b></p>' : '') +
-      (rfRes ? '<p class="desc" style="text-align:center;color:#7ad8ff;font-size:14px"><b>🌀 ' + rNm(S.rift.R.k, rfS) + ' 클리어</b> · 보상 ×' + NMF.toFixed(2) + (rfRes.gem ? ' · 첫 클리어 젬 +' + fmt(rfRes.gem) : '') + (rfRes.got.length ? '<br>' + rfRes.got.map(g => SPIC[g.p] + ' <b style="color:' + SETS[g.s].c + '">' + SETS[g.s].nm + ' ' + SPART[g.p] + '</b> ' + (g.r === 'new' ? 'NEW!' : g.r === 'up' ? '★' + sgStar(g.s, g.p) : '→ 균열 조각 +5')).join(' · ') : '<br>이번엔 세트 장비가 안 나왔어요') + '</p>' : '') +
+      (rfRes ? '<p class="desc" style="text-align:center;color:#7ad8ff;font-size:14px"><b>🌀 ' + rNm(S.rift.R.k, rfS) + ' 클리어</b> · 보상 ×' + NMF.toFixed(2) + (rfRes.gem ? ' · 첫 클리어 젬 +' + fmt(rfRes.gem) : '') + (rfRes.got.length ? '<br>' + rfRes.got.map(g => SPIC[g.p] + ' <b style="color:' + SETS[g.s].c + '">' + SETS[g.s].nm + ' ' + SPART[g.p] + '</b> ' + (g.r === 'new' ? 'NEW!' : g.r === 'up' ? '★' + sgStar(g.s, g.p) : '→ 균열 조각 +5')).join(' · ') : '<br>이번엔 세트 장비가 안 나왔어요') + (rfRes.hp && rfRes.hp.some(x => x) ? '<br>🧩 ' + rfRes.hp.map((x, j) => x ? '<b style="color:' + HGR[j + 1].c + '">' + HGR[j + 1].nm + ' 파츠 +' + x + '</b>' : '').filter(Boolean).join(' · ') : '') + '</p>' : '') +
       (nmS && !S.pcm && !S.rift ? '<p class="desc" style="text-align:center;color:#ff8aa0"><b>😈 악몽 ' + nmS + '단계</b> · 정예 50 보상 ×' + NMF.toFixed(2).replace(/0$/, '') + ' · 처치: 일반 보스 ' + S.nbK[0] + ' · 중간 보스 ' + S.nbK[1] + ' · 메인 보스 ' + S.nbK[2] + (S.nmB && S.nmB.abs ? ' · <b style="color:#ff4a4a">절대 보스 등장</b>' : '') + '</p>' : '') +
       (gdrop >= 0 ? '<p class="desc" style="text-align:center;color:' + GLT[GLV[gdrop].t].c + ';font-size:15px"><b>🧤 ' + GLT[GLV[gdrop].t].nm + ' 장갑 · ' + GLV[gdrop].nm + (gNew ? ' NEW' : ' +1') + '</b></p>' : '') +
       (bdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0a0"><b>🎗 탄띠 · ' + bdrops.map(b => '<span style="color:' + BG3[bGr(b)].c + '">' + beltName(b) + '</span>').join(' · ') + '</b></p>' : '') +
@@ -4864,10 +4892,10 @@ input { -webkit-user-select: text; user-select: text; }
     next: () => { const t = trk(); if (t.cur < t.unlocked) { t.cur++; persist(); render(); } },
     mode: el => { const m = el.dataset.m; if (m === 'e' && !save.elOn) return; if (m === 'm' && !nmOpen()) return; save.mode = m === 'e' || m === 'm' ? m : 'n'; persist(); render(); toast(isNm() ? '😈 악몽 모드 · 중간 보스 떼와 저주가 기다려요' : isElite() ? '정예 모드 · 몬스터 체력 ' + fmt(ELITE.hp) + '배!' : '일반 모드'); },
     nmLock: () => toast('🔒 정예 50단계를 클리어하면 악몽 모드가 열려요'),
-    potOpen: el => { const sl = el.dataset.s; if (save.pot[sl] || save.gold < POT_OPEN) return; save.gold -= POT_OPEN; potOpen(sl); Snd.lvup(); toast('🔮 ' + SLOTN[sl] + ' 잠재능력 열림 · ' + save.pot[sl].l.map(potLineTxt).join(' / ')); persist(); topbar(); refreshPop(gearBody()); },
+    potOpen: el => { const sl = el.dataset.s; if (save.pot[sl] || save.gold < POT_OPEN) return; save.gold -= POT_OPEN; potOpen(sl); Snd.lvup(); toast('🔮 ' + SLOTN[sl] + ' 잠재능력 열림 · ' + save.pot[sl].l.map(potLineTxt).join(' / ')); persist(); topbar(); refreshPop(sl[0] === 'r' ? ringBody() : gearBody()); },
     potRoll: el => { const sl = el.dataset.s, P = save.pot[sl]; if (!P) return; const c = POT_COST[P.t]; if (save.gold < c) return; save.gold -= c; const up = potRoll(sl); save.ach.cube++;
       if (up) { Snd.win(); legendFlash('<span style="font-size:60px">🔮</span>', PTIER[P.t].nm + ' 달성!', SLOTN[sl] + ' 잠재능력 등급 업'); } else Snd.click();
-      toast((up ? '⬆ ' + PTIER[P.t].nm + '! ' : '') + P.l.map(potLineTxt).join(' / ')); persist(); topbar(); refreshPop(gearBody()); },
+      toast((up ? '⬆ ' + PTIER[P.t].nm + '! ' : '') + P.l.map(potLineTxt).join(' / ')); persist(); topbar(); refreshPop(sl[0] === 'r' ? ringBody() : gearBody()); },
     achOpen: () => { popBack = popKind === 'inv'; openPop('🎖 훈장', achBody(), 'ach'); },
     achEq: el => { const id = el.dataset.id || ''; const A = ACH.find(x => x.id === id); if (id && (!A || !achLv(A))) return; save.ach.eq = id; Snd.click(); persist(); refreshPop(achBody()); },
     achClaim: el => { const only = el && el.dataset && el.dataset.id; let g = 0, n = 0; for (const A of ACH) { if (only && A.id !== only) continue; const k = achLv(A), c = save.ach.c[A.id] || 0; for (let i = c; i < k; i++) { g += achGem(i); n++; } save.ach.c[A.id] = k; } if (!n) return; save.gem += g; Snd.lvup(); toast('🎖 훈장 ' + n + '단계 성장 · 젬 +' + fmt(g)); persist(true); topbar(); refreshPop(achBody()); render(); },
@@ -4875,6 +4903,7 @@ input { -webkit-user-select: text; user-select: text; }
     modeSel: el => { const m = el.dataset.m; if (m === 'r') { const k = el.dataset.k || 'n'; if (!rOpenK(k)) return; save.mode = 'r'; save.rf.k = k; persist(); closePop(); render(); toast('🔥 멘헤라 · 균열 ' + RK[k].nm); return; } closePop(); ACT.mode(el); },
     wld: el => { if (el.dataset.w === 'm') { if (save.mode === 'r') return; if (!RIFT_OPEN()) { ACT.rfLock(); return; } lastCalm = save.mode; save.mode = 'r'; if (!rOpenK(save.rf.k)) save.rf.k = 'n'; Snd.lvup(); toast('🔥 멘헤라 · 차원 균열'); } else { if (save.mode !== 'r') return; save.mode = lastCalm === 'e' || lastCalm === 'm' ? lastCalm : 'n'; toast('🌿 평온'); } persist(); render(); },
     hdOpen: el => { const k = el.dataset.k; hdSel = k; popBack = popKind === 'inv'; openPop('히든 아이템', hdBody(k), 'hd'); },
+    hdGrade: el => { const k = el.dataset.k, g = hdGr(k); if (hdLv(k) < 0 || g >= 3) return; const need = HG_NEED[g + 1]; if (save.hpt[g] < need) return; save.hpt[g] -= need; save.hg[k] = g + 1; const H = HID.find(h => h.k === k); Snd.win(); legendFlash('<span style="font-size:60px">' + H.ic + '</span>', HGR[g + 1].nm + ' 승급!', H.nm + ' · ' + hdTxt(H, hdLv(k), g + 1)); persist(); refreshPop(hdBody(k)); },
     hdUp: el => { const k = el.dataset.k, l = hdLv(k); if (l < 0 || l >= HD_MAX) return; const c = hdUpCost(l); if ((save.dust || 0) < c) return; save.dust -= c; save.hd[k]++; Snd.lvup(); persist(); refreshPop(hdBody(k)); },
     sgUp: el => { const s = +el.dataset.s, p = +el.dataset.p, key = sgKey(s, p); if (sgStar(s, p) < 0) return; const l = save.sg.lv[key] || 0; if (l >= SG_LV) return; const c = sgUpCost(l); if ((save.dust || 0) < c) return; save.dust -= c; save.sg.lv[key] = l + 1; Snd.lvup(); persist(); refreshPop(invBody()); },
     rfLock: () => toast(!RIFT_OPEN() ? '🔒 평온 악몽 ' + NSTAGES + '단계를 클리어하면 「멘헤라」가 열려요' : '🔒 앞 단계 균열 50을 클리어하면 열려요'),
