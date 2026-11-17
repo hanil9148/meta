@@ -554,7 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261117-2100';
+  const APP_VER = 'v.261118-0629';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -2717,6 +2717,7 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
+    { id: 'g261118gd', to: '류한일', t: '🎁 운영자 선물', s: '골드 10조', r: { gold: 1e13 }, until: Date.UTC(2026, 10, 25, 15, 0) },
     { id: 'g261117rfc', need: 'rift', t: '🎁 멘헤라 젬 보상', s: '멘헤라 젬이 덜 들어가던 버그 보상 · 지금까지 돌린 멘헤라 판수 × 젬 6,500 (최대 300판)', r: { rfComp: 6500 }, until: Date.UTC(2026, 10, 18, 15, 0) },
     { id: 'n261117hg', t: '🧩 히든 아이템 등급 오픈', s: '히든 → 유니크 → 레전더리 → 미스틱 (효과 ×1.5 · ×2.2 · ×3.2). 승급 파츠는 멘헤라에서만: 유니크 멘헤라 일반~, 레전더리 멘헤라 정예~, 미스틱 멘헤라 악몽.', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
     { id: 'g261117jw', to: '류한일', t: '🎁 운영자 선물', s: '재원 짝꿍 전설 펫 「현성」 ★10', r: { pet: { p: 3, g: 3, s: 10 } }, until: Date.UTC(2026, 10, 23, 15, 0) },
