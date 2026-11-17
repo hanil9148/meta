@@ -554,7 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261117-1741';
+  const APP_VER = 'v.261117-1750';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -4596,7 +4596,7 @@ input { -webkit-user-select: text; user-select: text; }
     else rows.forEach(r => { if (r.id === me) r.d = rankPayload(); });
     rows.sort((a, b) => (+b.d.pw || 0) - (+a.d.pw || 0) || (+b.d.st || 0) - (+a.d.st || 0));
     const myRank = rows.findIndex(r => r.id === me || r.id === '__me') + 1;
-    let h = NET.mode !== 'none' ? '<div class="row"><span class="desc grow" style="color:#fff">' + (NET.quota() ? '⚠ 오늘 서버 사용량이 다 찼어요. 오후 5시에 풀려요 · 아래는 마지막으로 받은 랭킹이에요' : NET.syncErr ? '⚠ 내 정보 올리기 실패 (' + esc(NET.syncErr) + ') · 다시 시도 중' : NET.rankErr ? '⚠ 랭킹을 못 받았어요 (' + esc(NET.rankErr) + ') · 마지막으로 받은 랭킹이에요' : NET.syncedAt ? '내 정보 올린 시각: ' + agoTxt(NET.syncedAt) : '내 정보 올리는 중…') + '</span><button class="btn c sm ol-s" data-act="frsync">새로고침</button></div>' : '';
+    let h = NET.mode !== 'none' ? '<div class="row"><span class="desc grow" style="color:#fff">' + (NET.quota() ? '⚠ 서버 사용량이 다 찼어요. 오후 5시에 저절로 다시 연결돼요 · 아래는 마지막으로 받은 랭킹이에요' : NET.syncErr ? '⚠ 내 정보 올리기 실패 (' + esc(NET.syncErr) + ') · 다시 시도 중' : NET.rankErr ? '⚠ 랭킹을 못 받았어요 (' + esc(NET.rankErr) + ') · 마지막으로 받은 랭킹이에요' : NET.syncedAt ? '내 정보 올린 시각: ' + agoTxt(NET.syncedAt) : '내 정보 올리는 중…') + '</span><button class="btn c sm ol-s" data-act="frsync">새로고침</button></div>' : '';
     if (NET.mode === 'none') h += '<p class="desc" style="color:#fff">랭킹은 공유된 찍먹메타에서 함께 접속했을 때 보여요. 지금은 내 정보만 보여요.</p>';
     if (rows.length > 1) h += '<div class="myrank ol-s">⚔ 전투력 순위 <b>' + myRank + '위</b> / ' + rows.length + '명</div>';
     rows.slice(0, 50).forEach((r, ri) => {
@@ -4693,8 +4693,9 @@ input { -webkit-user-select: text; user-select: text; }
     nameOf(id) { return (id && this.names[id]) || ''; },
     rankErr: '', quotaAt: 0,
     /* Firestore free plan quota resets at 00:00 US Pacific (17:00 KST) */
-    quota() { return this.quotaAt && Date.now() - this.quotaAt < 3 * 3600000; },
-    noteErr(e) { const c = String((e && (e.code || e.message)) || ''); if (/resource-exhausted|quota/i.test(c)) this.quotaAt = Date.now(); return c || 'error'; },
+    /* the block lasts only until the daily reset (08:00 UTC = 17:00 KST), then everything retries by itself */
+    quota() { if (this.quotaAt && Date.now() >= this.quotaAt) { this.quotaAt = 0; this.rankErr = ''; setTimeout(() => { if (this.api) { this.api.refresh().then(() => { if (popKind === 'friends') refreshPop(friendsBody()); }); this.sync(true); } }, 50); } return !!this.quotaAt; },
+    noteErr(e) { const c = String((e && (e.code || e.message)) || ''); if (/resource-exhausted|quota/i.test(c)) { const d = new Date(); d.setUTCHours(8, 0, 30, 0); if (d.getTime() <= Date.now()) d.setUTCDate(d.getUTCDate() + 1); this.quotaAt = d.getTime(); } return c || 'error'; },
     async init() {
       if (window.jmReady) return this.initFirebase();
       const cl = window.claude;
@@ -5004,7 +5005,7 @@ input { -webkit-user-select: text; user-select: text; }
     mailget: el => { mailGet(el.dataset.id); refreshPop(mailBody()); },
     mailall: () => { for (const m of mailItems()) mailGet(m.id); refreshPop(mailBody()); },
     friends: () => { NET.sync(); openPop('랭킹', friendsBody(), 'friends'); },
-    frsync: () => { if (Date.now() - (NET.lastFr || 0) < 60000) { toast('새로고침은 1분에 한 번만 돼요 (서버 사용량 아끼기)'); return; } NET.lastFr = Date.now(); NET.lastRank = ''; NET.busy = false; NET.sync(true).then(async () => { if (NET.api && NET.api.refresh) await NET.api.refresh(); if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
+    frsync: () => { if (Date.now() - (NET.lastFr || 0) < 60000) { toast('새로고침은 1분에 한 번만 돼요 (서버 사용량 아끼기)'); return; } NET.lastFr = Date.now(); NET.quotaAt = 0; NET.rankErr = ''; NET.lastRank = ''; NET.busy = false; NET.sync(true).then(async () => { if (NET.api && NET.api.refresh) await NET.api.refresh(); if (popKind === 'friends') refreshPop(friendsBody()); }); toast('내 정보를 다시 올리고 랭킹을 새로 받았어요'); },
     tab: el => setTab(el.dataset.t),
     enh: el => { enhance(el.dataset.k); if (popKind === 'fort') refreshPop(fortBody()); },
     fortOpen: () => { popBack = popKind === 'inv'; const tier = Math.min(5, Math.floor((save.hl + save.dl) / 10)); openPop('거점 · ' + FORT_N[tier], fortBody(), 'fort'); },
