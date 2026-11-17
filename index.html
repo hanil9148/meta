@@ -554,7 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const INK = '#14202f';
-  const APP_VER = 'v.261117-1750';
+  const APP_VER = 'v.261117-1916';
 
   /* ---------- icons (inline SVG, ink outlines) ---------- */
   const I = {
@@ -745,10 +745,10 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'spd', nm: '빠른 손', max: 5, c1: '#4ad0ff', c2: '#0a3a6a', d: '총잡이 공격 속도 +12%' },
     { id: 'crit', nm: '급소 조준', max: 5, c1: '#ffcf3f', c2: '#6a4a0a', d: '치명타 확률 +6%' },
     { id: 'heal', nm: '거점 수리', max: 99, c1: '#7fe05a', c2: '#1a5a0e', d: '거점 체력을 30% 회복해요' },
-    /* 멘헤라 (차원 균열) only: 4 extra passives */
+    /* 멘헤라 (멘헤라) only: 4 extra passives */
     { id: 'cdm', mh: 1, nm: '처형 각인', max: 5, c1: '#ff3a6a', c2: '#5a0a1e', d: '치명타 피해 +20%' },
     { id: 'giant', mh: 1, nm: '거인 사냥', max: 5, c1: '#c27bff', c2: '#2a0e5a', d: '보스 피해 +15%' },
-    { id: 'rift', mh: 1, nm: '균열 관통', max: 5, c1: '#5ad6c4', c2: '#0a3a3a', d: '특성 몹에게 주는 피해 +12%' },
+    { id: 'rift', mh: 1, nm: '멘헤라 관통', max: 5, c1: '#5ad6c4', c2: '#0a3a3a', d: '특성 몹에게 주는 피해 +12%' },
     { id: 'wall', mh: 1, nm: '철벽', max: 5, c1: '#9aa6b8', c2: '#2a3240', d: '거점이 받는 피해 -6%' }
   ];
   const PSM = {}; PASS.forEach(p => PSM[p.id] = p);
@@ -958,14 +958,14 @@ input { -webkit-user-select: text; user-select: text; }
   const pactMul = h => 1 + .08 * h;
   const capeOn = () => save.pc.best >= 30, capeV = () => capeOn() ? .003 * save.pc.best : 0;
   let PACT_NG = false;
-  /* ---------- 차원 균열 (rift): opens after nightmare 50. Each stage mixes 2~3 monster traits; each trait has counter gunslingers.
+  /* ---------- 멘헤라 (rift): opens after nightmare 50. Each stage mixes 2~3 monster traits; each trait has counter gunslingers.
      Countered trait: its monsters take x1.6 damage (x2.5 from the counter gunslinger). Not countered: they take only x0.35, so raw power can still brute-force it. */
-  /* 멘헤라 world = 차원 균열 in three tiers: 일반 50 · 정예 50 · 악몽 30. 균열 일반 1 = 평온 악몽 50. */
+  /* 멘헤라 world = 멘헤라 in three tiers: 일반 50 · 정예 50 · 악몽 30. 멘헤라 일반 1 = 평온 악몽 50. */
   const RK = { n: { nm: '일반', max: 50, base: 0 }, e: { nm: '정예', max: 50, base: 50 }, m: { nm: '악몽', max: 30, base: 100 } };
   const RSTAGES = 50, RIFT_OPEN = () => !!(save.nm.reach[NSTAGES - 1] & 1);
   const rOpenK = k => k === 'e' ? !!(save.rf.n.reach[49] & 1) : k === 'm' ? !!(save.rf.e.reach[49] & 1) : RIFT_OPEN();
   const rTrk = k => save.rf[k || save.rf.k];
-  const rNm = (k, st) => '균열 ' + RK[k].nm + ' ' + st + '단계';
+  const rNm = (k, st) => '멘헤라 ' + RK[k].nm + ' ' + st + '단계';
   /* damage taken by trait monsters: [countered team, from the counter gunslinger itself, not countered] */
   const RCF = { n: [1.3, 2, .15], e: [1.2, 1.8, .1], m: [1.1, 1.6, .06] };
   const RT = [
@@ -974,7 +974,7 @@ input { -webkit-user-select: text; user-select: text; }
     { id: 'rush', nm: '질주병', ic: '💨', c: '#6ab8f2', ctr: [4, 5], d: '이동 속도 2.2배', tip: '동결·슬로우 · 진명·해천' },
     { id: 'regen', nm: '재생체', ic: '💚', c: '#5ad67a', ctr: [4, 5], d: '초당 체력 5% 회복 (화상·재생 불가 중엔 멈춤)', tip: '화상·재생 불가 · 진명·해천' },
     { id: 'spread', nm: '산개 부대', ic: '🌀', c: '#5ad6c4', ctr: [6], d: '광역·연쇄 피해 50% 감소 (회오리에 끌리면 풀려요)', tip: '끌어모으기 · 정욱' },
-    { id: 'priest', nm: '수호 사제', ic: '✝', c: '#f2d65a', ctr: [0], d: '사제가 살아 있으면 다른 균열 몹 피해 80% 감소', tip: '1인 몹 저격 · 한일' },
+    { id: 'priest', nm: '수호 사제', ic: '✝', c: '#f2d65a', ctr: [0], d: '사제가 살아 있으면 다른 멘헤라 몹 피해 80% 감소', tip: '1인 몹 저격 · 한일' },
     { id: 'ward', nm: '속성 갑주', ic: '🔮', c: '#c27bff', ctr: [], d: '지정 속성이 강속성인 총잡이 말고는 피해 70% 감소', tip: '그 속성이 강속성인 신화' },
   ];
   const riftRng = st => { let x = (st * 2654435761) >>> 0; return () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; };
@@ -1021,7 +1021,7 @@ input { -webkit-user-select: text; user-select: text; }
     { k: 'EYE', nm: '심연의 눈', ic: '👁', c: '#c27bff', key: 'boss', v0: .2, vl: .02, lab: '보스 피해 +' },
   ];
   /* hidden item grades: 히든 → 유니크 → 레전더리 → 미스틱. Grade-up parts drop only in 멘헤라:
-     유니크 파츠 from 균열 일반 and up, 레전더리 파츠 from 균열 정예 and up, 미스틱 파츠 only in 균열 악몽. */
+     유니크 파츠 from 멘헤라 일반 and up, 레전더리 파츠 from 멘헤라 정예 and up, 미스틱 파츠 only in 멘헤라 악몽. */
   const HGR = [{ nm: '히든', c: '#9aa6b8', m: 1 }, { nm: '유니크', c: '#ffcf3f', m: 1.5 }, { nm: '레전더리', c: '#5bd16a', m: 2.2 }, { nm: '미스틱', c: '#ff3a6a', m: 3.2 }];
   const HG_NEED = [0, 3, 5, 10];
   /* per rift win: chance for [유니크, 레전더리, 미스틱] parts by rift tier (x2 on 군주 stages) */
@@ -1645,11 +1645,11 @@ input { -webkit-user-select: text; user-select: text; }
     /* 6th stage: break through 심연의 탑 100층 */
     { nm: '심연의 지배자', c: '#b14bff', gem: 30000, b: { crit: .15, cdm: .25, spd: .08, dmg: .12, se: .05, boss: .1 }, req: [['abyss', 100]] },
     /* 멘헤라 titles */
-    { nm: '균열 방랑자', c: '#ff6a3d', gem: 40000, b: { crit: .15, cdm: .3, spd: .1, dmg: .15, se: .06, boss: .12 }, req: [['rfn', 50]] },
-    { nm: '균열 정복자', c: '#ff2a4a', gem: 60000, b: { crit: .18, cdm: .4, spd: .12, dmg: .2, se: .08, boss: .15 }, req: [['rfe', 50]] },
+    { nm: '멘헤라 방랑자', c: '#ff6a3d', gem: 40000, b: { crit: .15, cdm: .3, spd: .1, dmg: .15, se: .06, boss: .12 }, req: [['rfn', 50]] },
+    { nm: '멘헤라 정복자', c: '#ff2a4a', gem: 60000, b: { crit: .18, cdm: .4, spd: .12, dmg: .2, se: .08, boss: .15 }, req: [['rfe', 50]] },
     { nm: '멘헤라의 왕', c: '#ff0a6a', gem: 100000, b: { crit: .2, cdm: .5, spd: .15, dmg: .3, se: .1, boss: .2 }, req: [['rfm', 30]] }
   ];
-  const TQ_NM = { er: v => '정예 ' + v + '판', ar: v => '심연의 탑 ' + v + '판', runs: v => '정예·심연 ' + v + '판', kills: v => '몬스터 ' + v.toLocaleString() + '마리 처치', elite: v => '정예 ' + (v - 1) + '단계 클리어', rare: v => '희귀 보스 ' + v + '마리 처치', abyss: v => '심연의 탑 ' + v + '층 정복', rfn: v => '균열 일반 ' + v + '단계 클리어', rfe: v => '균열 정예 ' + v + '단계 클리어', rfm: v => '균열 악몽 ' + v + '단계 클리어', pet10: () => '★10 펫 1마리', gear99: () => '전설 장비 Lv99 1개', myth20: () => '신화 ★20 이상 1명', myths: v => '신화 ' + v + '명 보유' };
+  const TQ_NM = { er: v => '정예 ' + v + '판', ar: v => '심연의 탑 ' + v + '판', runs: v => '정예·심연 ' + v + '판', kills: v => '몬스터 ' + v.toLocaleString() + '마리 처치', elite: v => '정예 ' + (v - 1) + '단계 클리어', rare: v => '희귀 보스 ' + v + '마리 처치', abyss: v => '심연의 탑 ' + v + '층 정복', rfn: v => '멘헤라 일반 ' + v + '단계 클리어', rfe: v => '멘헤라 정예 ' + v + '단계 클리어', rfm: v => '멘헤라 악몽 ' + v + '단계 클리어', pet10: () => '★10 펫 1마리', gear99: () => '전설 장비 Lv99 1개', myth20: () => '신화 ★20 이상 1명', myths: v => '신화 ' + v + '명 보유' };
   function tqVal(k) {
     const q = save.tq;
     if (k === 'runs') return q.runs; if (k === 'er') return q.er; if (k === 'ar') return q.ar; if (k === 'kills') return q.kills; if (k === 'rare') return q.rare;
@@ -1699,8 +1699,8 @@ input { -webkit-user-select: text; user-select: text; }
       out.push(NMS[n] + ' 2강속 신화 ★' + nu.s); }
     /* gift: one pet { p, g, s } */
     if (r.pet) { const x = addPet(r.pet.p, r.pet.g); if (x) { x.s = r.pet.s; out.push(PGR[r.pet.g].nm + ' 펫 ' + PETN[r.pet.p] + ' ★' + x.s); } }
-    /* compensation: gems per 차원 균열 run played (rift runs paid normal-stage gems before v.261117-1723) */
-    if (r.rfComp) { const n = Math.min(300, ['n', 'e', 'm'].reduce((a, k) => a + save.rf[k].plays.reduce((x, y) => x + y, 0), 0)); const g = n * r.rfComp; save.gem += g; out.push('균열 ' + n + '판 × ' + fmt(r.rfComp) + ' = 젬 ' + fmt(g)); }
+    /* compensation: gems per 멘헤라 run played (rift runs paid normal-stage gems before v.261117-1723) */
+    if (r.rfComp) { const n = Math.min(300, ['n', 'e', 'm'].reduce((a, k) => a + save.rf[k].plays.reduce((x, y) => x + y, 0), 0)); const g = n * r.rfComp; save.gem += g; out.push('멘헤라 ' + n + '판 × ' + fmt(r.rfComp) + ' = 젬 ' + fmt(g)); }
     if (r.maxGear) { let k = 0; for (const sl of ['w', 'h', 'n']) { const id = save.gear[sl], d = id && save.items[id]; if (d) { d.lv = GMAX[iG(id)]; k++; } } out.push('장착 장비 ' + k + '개 최대 레벨'); }
     if (r.maxPet) { let k = 0; for (const pid of save.pslot) { const x = pid && save.pcoll.find(q => q.id === pid); if (x) { x.s = PET_MAX; k++; } } out.push('장착 펫 ' + k + '마리 ★' + PET_MAX); }
     if (r.runs) { const k = r.runs; let it = dropItems(k, ODDS.eliteWin).length + dropItems(6 * k, ODDS.eliteBoss).length + dropItems(Math.round(k * .03), ODDS.rare).length;
@@ -2275,7 +2275,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (s < 0 || sgStar(s, p) < 0) return '<div class="ivs e" data-act="sgOpen" role="button" style="cursor:pointer"><u>' + SPK[p] + '</u></div>';
     return '<div class="ivs it" style="--g:' + SETS[s].c + '" data-act="sgOpen" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">' + SPIC[p] + '</span><b class="lv" style="font-size:9px">' + SETS[s].nm + '</b><i class="n">★' + sgStar(s, p) + '</i><em class="on">E</em></div>'; }
   function setBody() { const { c, k } = sgCount();
-    let h = '<p class="desc" style="color:#14202f;margin:0 0 6px"><b>세트 장비</b>는 <b>차원 균열</b>에서만 나와요. 상의·하의·신발·숄더 4칸은 모든 총잡이가 같이 써요. 같은 세트 <b>2개 → 2세트 효과</b>, <b>4개 → 4세트 효과</b>(2+2로 두 세트를 같이 켤 수도 있어요). 낀 장비마다 모든 피해 +3% (★당 +1%, 강화 +1당 +0.5%). 강화는 골드·젬 대신 <b>가루</b>로 해요(보유 ' + fmt(save.dust || 0) + '). 세트 효과는 ★ 평균 1당 +10% 세져요. 같은 부위가 또 나오면 ★가 올라가고(최대 ★' + SG_MAX + '), 그 뒤엔 균열 조각 +5. 조각 30개로 없는 부위를 만들 수 있어요. 보유 조각 <b>' + save.sg.sh + '</b></p>';
+    let h = '<p class="desc" style="color:#14202f;margin:0 0 6px"><b>세트 장비</b>는 <b>멘헤라</b>에서만 나와요. 상의·하의·신발·숄더 4칸은 모든 총잡이가 같이 써요. 같은 세트 <b>2개 → 2세트 효과</b>, <b>4개 → 4세트 효과</b>(2+2로 두 세트를 같이 켤 수도 있어요). 낀 장비마다 모든 피해 +3% (★당 +1%, 강화 +1당 +0.5%). 강화는 골드·젬 대신 <b>가루</b>로 해요(보유 ' + fmt(save.dust || 0) + '). 세트 효과는 ★ 평균 1당 +10% 세져요. 같은 부위가 또 나오면 ★가 올라가고(최대 ★' + SG_MAX + '), 그 뒤엔 멘헤라 조각 +5. 조각 30개로 없는 부위를 만들 수 있어요. 보유 조각 <b>' + save.sg.sh + '</b></p>';
     h += '<div class="ivg" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">' + [0, 1, 2, 3].map(ivSet).join('') + '</div>';
     SETS.forEach((S0, s) => { const on2 = c[s] >= 2, on4 = c[s] >= 4;
       h += '<div style="border:3px solid ' + (on2 ? S0.c : '#14202f33') + ';border-radius:12px;padding:6px 8px;margin:0 0 6px;background:#fff8">' +
@@ -2287,18 +2287,18 @@ input { -webkit-user-select: text; user-select: text; }
         '<p class="desc" style="margin:0;color:' + (on2 ? '#14202f' : '#506070') + ';font-size:12px">' + (on2 ? '✅' : '▫') + ' <b>2세트</b> ' + S0.b2 + '<br>' + (on4 ? '✅' : '▫') + ' <b>4세트</b> ' + S0.b4 + (on2 ? ' · 세기 ×' + k[s].toFixed(1) : '') + '</p></div>'; });
     return h; }
   function riftInfoBody() { const n = rTrk().cur, R = riftStage(n);
-    let h = '<p class="desc" style="color:#fff"><b>멘헤라</b>는 평온 악몽 50을 깨면 열리는 <b>차원 균열</b> 세계예요. <b>균열 일반 50 → 균열 정예 50 → 균열 악몽 30</b> 순서로 열려요. 균열 일반 1단계가 평온 악몽 50과 같은 세기이고 단계마다 체력 +6%·공격 +3%. 균열 정예는 일반 50의 체력 3배·공격 1.5배에서 시작해 단계마다 +5%·+2.5%, 균열 악몽은 정예 50의 3배·1.5배에서 시작해 +6%·+3%씩 세져요. <b>특성 몹</b>: 일반 1~15 2종 · 16~50 3종 · 정예 1~29 3종 · 30~ 4종 · 악몽 4종. 정예·악몽은 맞는 총잡이 보너스가 줄고, 못 맞추면 거의 안 녹아요.<br><br>' +
-      '특성마다 <b>잘 맞는 총잡이</b>가 있어요. 누가 맞는지는 알려주지 않아요. 직접 조합을 바꿔 가며 찾아보세요. 맞는 총잡이를 데려가면 그 특성 몹이 훨씬 잘 녹고, 못 맞추면 그 몹은 피해를 거의 안 받아서 압도적인 전투력이 있어야 깰 수 있어요.<br><br>10·20·30단계는 마지막에 <b>👑 균열 군주</b>가 나와 6초마다 이 판의 특성을 돌아가며 바꿔요.<br><br>보상: 악몽 50 보상 ×1.3 (균열 단계마다 ×1.03, 일반→정예→악몽 이어서), <b>세트 장비</b> 일반 50% · 정예 70% · 악몽 1개 확정+30% (군주 단계 2개, 악몽 3개), 첫 클리어 젬 (균열 통산 단계)×1,000 (군주 ×3).</p>';
+    let h = '<p class="desc" style="color:#fff"><b>멘헤라</b>는 평온 악몽 50을 깨면 열리는 <b>멘헤라</b> 세계예요. <b>멘헤라 일반 50 → 멘헤라 정예 50 → 멘헤라 악몽 30</b> 순서로 열려요. 멘헤라 일반 1단계가 평온 악몽 50과 같은 세기이고 단계마다 체력 +6%·공격 +3%. 멘헤라 정예는 일반 50의 체력 3배·공격 1.5배에서 시작해 단계마다 +5%·+2.5%, 멘헤라 악몽은 정예 50의 3배·1.5배에서 시작해 +6%·+3%씩 세져요. <b>특성 몹</b>: 일반 1~15 2종 · 16~50 3종 · 정예 1~29 3종 · 30~ 4종 · 악몽 4종. 정예·악몽은 맞는 총잡이 보너스가 줄고, 못 맞추면 거의 안 녹아요.<br><br>' +
+      '특성마다 <b>잘 맞는 총잡이</b>가 있어요. 누가 맞는지는 알려주지 않아요. 직접 조합을 바꿔 가며 찾아보세요. 맞는 총잡이를 데려가면 그 특성 몹이 훨씬 잘 녹고, 못 맞추면 그 몹은 피해를 거의 안 받아서 압도적인 전투력이 있어야 깰 수 있어요.<br><br>10·20·30단계는 마지막에 <b>👑 멘헤라 군주</b>가 나와 6초마다 이 판의 특성을 돌아가며 바꿔요.<br><br>보상: 악몽 50 보상 ×1.3 (멘헤라 단계마다 ×1.03, 일반→정예→악몽 이어서), <b>세트 장비</b> 일반 50% · 정예 70% · 악몽 1개 확정+30% (군주 단계 2개, 악몽 3개), 첫 클리어 젬 (멘헤라 통산 단계)×1,000 (군주 ×3).</p>';
     h += '<div class="card dark" style="gap:4px"><b class="ol-s" style="font-family:var(--display);font-size:16px">🌀 ' + rNm(save.rf.k, n) + ' 특성</b>' + R.tr.map(id => { const T = RT.find(t => t.id === id); return '<div class="prow" style="padding:6px 10px"><span><b style="color:' + T.c + '">' + T.ic + ' ' + T.nm + '</b><br><span class="desc">' + T.d + (id === 'ward' ? ' · 이번 속성: <b>' + ENM[R.wel] + '</b>' : '') + '</span></span></div>'; }).join('') + '</div>';
     return h; }
   function modeBody() { const row = (ic, nm, d, act, extra, lock, on) => '<button class="prow" ' + (lock ? 'data-act="' + lock + '"' : 'data-act="' + act + '"' + (extra || '')) + ' style="width:100%;text-align:left;justify-content:flex-start;gap:12px;padding:10px 12px;margin:0 0 6px;border:3px solid ' + (on ? 'var(--yel)' : 'var(--ink)') + ';opacity:' + (lock ? .6 : 1) + '"><span style="font-size:26px">' + ic + '</span><span style="flex:1;min-width:0"><b class="ol-s" style="font-family:var(--display);font-size:17px">' + nm + (on ? ' · 선택됨' : '') + '</b><br><span class="desc">' + d + '</span></span></button>';
-    if (save.mode === 'r' && RIFT_OPEN()) return '<p class="desc" style="color:#ffb0a0;text-align:center;margin:0 0 6px">🔥 멘헤라 · 차원 균열</p>' + ['n', 'e', 'm'].map(k => { const t = save.rf[k], op = rOpenK(k);
-        return row(k === 'n' ? '🌀' : k === 'e' ? '🌪' : '🩸', '균열 ' + RK[k].nm, op ? '1~' + RK[k].max + '단계 · 진행 ' + t.unlocked + '/' + RK[k].max : '🔒 균열 ' + (k === 'e' ? '일반' : '정예') + ' 50 클리어', 'modeSel', ' data-m="r" data-k="' + k + '"', op ? '' : 'rfLock', save.rf.k === k); }).join('');
+    if (save.mode === 'r' && RIFT_OPEN()) return '<p class="desc" style="color:#ffb0a0;text-align:center;margin:0 0 6px">🔥 멘헤라</p>' + ['n', 'e', 'm'].map(k => { const t = save.rf[k], op = rOpenK(k);
+        return row(k === 'n' ? '🌀' : k === 'e' ? '🌪' : '🩸', '멘헤라 ' + RK[k].nm, op ? '1~' + RK[k].max + '단계 · 진행 ' + t.unlocked + '/' + RK[k].max : '🔒 멘헤라 ' + (k === 'e' ? '일반' : '정예') + ' 50 클리어', 'modeSel', ' data-m="r" data-k="' + k + '"', op ? '' : 'rfLock', save.rf.k === k); }).join('');
     return '<p class="desc" style="color:#cfe0f0;text-align:center;margin:0 0 6px">🌿 평온</p>' + row('🏜', '일반', '스테이지 1~' + STAGES + ' · 기본 진행', 'modeSel', ' data-m="n"', '', !isElite()) +
       row('⚔', '정예', save.elOn ? '정예 1~' + ESTAGES + ' · 몬스터 체력 ' + fmt(ELITE.hp) + '배' : '🔒 일반 ' + STAGES + '단계 클리어', 'modeSel', ' data-m="e"', save.elOn ? '' : 'elite', isElite() && !isNm()) +
       row('😈', '악몽', nmOpen() ? '악몽 1~' + NSTAGES + ' · 보스 떼와 저주' : '🔒 정예 ' + ESTAGES + '단계 클리어', 'modeSel', ' data-m="m"', save.elOn && nmOpen() ? '' : 'nmLock', isNm()) +
       row('🔥', '계약의 지옥', PACT_OPEN() ? '계약을 골라 열기를 올리는 도전 · 최고 열기 ' + save.pc.best : '🔒 악몽 30 클리어', 'pcOpen', '', '', false) +
-      '<p class="desc" style="text-align:center;margin:4px 0 0">🔥 차원 균열은 위의 <b>멘헤라</b> 스위치로 들어가요' + (RIFT_OPEN() ? '' : ' (평온 악몽 ' + NSTAGES + ' 클리어)') + '</p>'; }
+      '<p class="desc" style="text-align:center;margin:4px 0 0">🔥 멘헤라는 위의 <b>멘헤라</b> 스위치로 들어가요' + (RIFT_OPEN() ? '' : ' (평온 악몽 ' + NSTAGES + ' 클리어)') + '</p>'; }
   function ivHid(k) { const H = HID.find(h => h.k === k), l = hdLv(k);
     if (l < 0) return '<div class="ivs e" data-act="hdOpen" data-k="' + k + '" role="button" style="cursor:pointer"><u>' + k + ' ?</u></div>';
     const g = hdGr(k); return '<div class="ivs it" style="--g:' + HGR[g].c + '" data-act="hdOpen" data-k="' + k + '" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">' + H.ic + '</span><b class="lv" style="font-size:9px">' + HGR[g].nm + ' +' + l + '</b><em class="on">E</em></div>'; }
@@ -2309,7 +2309,7 @@ input { -webkit-user-select: text; user-select: text; }
     return '<div class="card dark" style="text-align:center;gap:6px;border-color:' + HGR[g].c + '"><span style="font-size:48px">' + H.ic + '</span><b class="ol" style="font-size:20px;color:' + HGR[g].c + '">[' + HGR[g].nm + '] ' + H.nm + ' +' + l + '</b><p class="desc" style="color:#fff;margin:0">' + hdTxt(H, l, g) + (mx ? ' · 최대 강화' : '<br>다음 +' + (l + 1) + ': ' + hdTxt(H, l + 1, g)) + '</p></div>' +
       (mx ? '' : '<button class="btn y wide ol-s" data-act="hdUp" data-k="' + k + '"' + ((save.dust || 0) >= c ? '' : ' disabled') + '>✨ 강화 · 가루 ' + fmt(c) + ' (보유 ' + fmt(save.dust || 0) + ')</button>') +
       (ng > 0 ? '<button class="btn p wide ol-s" data-act="hdGrade" data-k="' + k + '"' + (have >= need ? '' : ' disabled') + ' style="margin-top:6px">⬆ <span style="color:' + HGR[ng].c + '">' + HGR[ng].nm + '</span> 승급 · ' + HGR[ng].nm + ' 파츠 ' + have + '/' + need + '<br><span style="font-size:12px">효과 ×' + HGR[ng].m + ' → ' + hdTxt(H, l, ng) + '</span></button>' : '<p class="desc" style="text-align:center;color:' + HGR[3].c + '"><b>미스틱 · 최고 등급</b></p>') + parts +
-      '<p class="desc" style="text-align:center">등급: 히든 ×1 → 유니크 ×1.5 → 레전더리 ×2.2 → 미스틱 ×3.2 (승급 파츠 3 · 5 · 10개). 파츠는 <b>멘헤라</b>에서만 나와요: 유니크는 균열 일반부터, 레전더리는 균열 정예부터, 미스틱은 균열 악몽에서. 강화(+)는 가루로 하고, 승급해도 강화 단계는 그대로예요.</p>'; }
+      '<p class="desc" style="text-align:center">등급: 히든 ×1 → 유니크 ×1.5 → 레전더리 ×2.2 → 미스틱 ×3.2 (승급 파츠 3 · 5 · 10개). 파츠는 <b>멘헤라</b>에서만 나와요: 유니크는 멘헤라 일반부터, 레전더리는 멘헤라 정예부터, 미스틱은 멘헤라 악몽에서. 강화(+)는 가루로 하고, 승급해도 강화 단계는 그대로예요.</p>'; }
   function ivCape() { return capeOn() ? '<div class="ivs it" style="--g:#d080ff" data-act="pcOpen" role="button"><span class="ic" style="font-size:24px;display:grid;place-items:center">🧥</span><b class="lv" style="font-size:9px">열기 ' + save.pc.best + '</b><em class="on">E</em></div>' : '<div class="ivs e" data-act="pcOpen" role="button" style="cursor:pointer"><u>CAPE</u></div>'; }
   let pcTab = 'pact';
   function pactBody() {
@@ -2714,10 +2714,10 @@ input { -webkit-user-select: text; user-select: text; }
   }
   /* mail sent to everyone: each one can be claimed once per account until it expires */
   const NOTICES = [
-    { id: 'g261117rfc', need: 'rift', t: '🎁 균열 젬 보상', s: '균열 젬이 덜 들어가던 버그 보상 · 지금까지 돌린 균열 판수 × 젬 6,500 (최대 300판)', r: { rfComp: 6500 }, until: Date.UTC(2026, 10, 18, 15, 0) },
-    { id: 'n261117hg', t: '🧩 히든 아이템 등급 오픈', s: '히든 → 유니크 → 레전더리 → 미스틱 (효과 ×1.5 · ×2.2 · ×3.2). 승급 파츠는 멘헤라에서만: 유니크 균열 일반~, 레전더리 균열 정예~, 미스틱 균열 악몽.', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
+    { id: 'g261117rfc', need: 'rift', t: '🎁 멘헤라 젬 보상', s: '멘헤라 젬이 덜 들어가던 버그 보상 · 지금까지 돌린 멘헤라 판수 × 젬 6,500 (최대 300판)', r: { rfComp: 6500 }, until: Date.UTC(2026, 10, 18, 15, 0) },
+    { id: 'n261117hg', t: '🧩 히든 아이템 등급 오픈', s: '히든 → 유니크 → 레전더리 → 미스틱 (효과 ×1.5 · ×2.2 · ×3.2). 승급 파츠는 멘헤라에서만: 유니크 멘헤라 일반~, 레전더리 멘헤라 정예~, 미스틱 멘헤라 악몽.', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
     { id: 'g261117jw', to: '류한일', t: '🎁 운영자 선물', s: '재원 짝꿍 전설 펫 「현성」 ★10', r: { pet: { p: 3, g: 3, s: 10 } }, until: Date.UTC(2026, 10, 23, 15, 0) },
-    { id: 'n261117mh', t: '🔥 멘헤라 세계 오픈!', s: '평온 악몽 50을 깨면 홈 스위치로 「멘헤라」에 들어가요. 차원 균열 일반 50 · 정예 50 · 악몽 30. 판마다 특성 몹이 섞여 나오니 조합을 바꿔 가며 깨 보세요. 세트 장비(상의·하의·신발·숄더 8세트), 히든 아이템 5종(0.001%), 가루 강화, 25성부터 파괴 방지(50배)!', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
+    { id: 'n261117mh', t: '🔥 멘헤라 세계 오픈!', s: '평온 악몽 50을 깨면 홈 스위치로 「멘헤라」에 들어가요. 멘헤라 일반 50 · 정예 50 · 악몽 30. 판마다 특성 몹이 섞여 나오니 조합을 바꿔 가며 깨 보세요. 세트 장비(상의·하의·신발·숄더 8세트), 히든 아이템 5종(0.001%), 가루 강화, 25성부터 파괴 방지(50배)!', r: {}, until: Date.UTC(2026, 10, 24, 15, 0) },
     { id: 'g261117jm', to: '류한일', t: '🎁 운영자 선물', s: '진명 2강속 신화 ★24 + 진명 짝꿍 전설 펫 ★10', r: { myu: { n: 4, s: 24 }, pet: { p: 5, g: 3, s: 10 } }, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261116p', t: '🔥 새 모드 「계약의 지옥」', s: '악몽 30을 깨면 열려요. 악몽 40급 판에 계약을 직접 쌓아 난이도를 올리고, 열기 1마다 보상 +8%. 30분마다 바뀌는 역풍 계약은 열기 2배. 열기 20부터 최종 보스 「계약자」 등장. 인장으로 강속성 재설정권·전설 탄띠·무법자의 손 조각을 사요. 최고 열기 30이면 「계약자의 망토」(최고 열기만큼 성장)!', r: {}, until: Date.UTC(2026, 10, 23, 15, 0) },
     { id: 'n261114e3', t: '🔥 오늘 밤 22시 이벤트!', s: '22:00~23:00 (1시간) 정예 1~4단계 + 일반 40~50단계 보상(골드·젬) 4배! 시작할 때 이벤트 시간이면 적용돼요. 10시 이벤트 잘 즐기세요!', r: {}, until: Date.UTC(2026, 10, 14, 14, 0) },
@@ -3018,7 +3018,7 @@ input { -webkit-user-select: text; user-select: text; }
     /* elite: two independent 30% rolls for extra bosses (max 2 bosses; boss stages keep their fixed boss) */
     if (S.nm) { const B = S.nmB, w = S.wave, last = w === S.maxW, mid = last ? B.mid - 2 * Math.floor(B.mid * .3) : w <= 2 ? Math.floor(B.mid * .3) : 0, nor = last ? B.nor - 2 * Math.floor(B.nor / 3) : w <= 2 ? Math.floor(B.nor / 3) : 0;
       spawnNB(0, nor); spawnNB(1, mid); if (S.nm >= 31) { spawnNB(1, 4); B.xm = (B.xm || 0) + 4; }
-      if (last) { if (S.pcm && S.pcm.heat >= 20) { spawnNB(4, 1); S.banner = { t: 3.5, s: '🔥 계약자 출현! 네가 건 계약이 곧 내 힘이다' }; } else if (S.rift && S.rift.R.lord) { const k0 = S.en.length; spawnNB(2, 1); const L = S.en[k0]; if (L) { L.hp = L.mh = L.mh * 3; L.lord = 1; L.lt = 0; L.rt = S.rift.R.tr[0]; L.dnm = '균열 군주'; } S.banner = { t: 3.5, s: '👑 균열 군주 출현! 6초마다 특성이 바뀌어요' }; } else spawnNB(2, B.main || 1); if (B.abs) { save.ach.abs++; spawnNB(3, 1); S.alert = 5; S.banner = { t: 5, s: '☠ 절대 보스 출현! 이 판은 버티기 어려워요' }; Snd.boss(); S.shake = 1.2; } else { S.alert = 3.2; S.banner = { t: 3.2, s: '메인 보스 출현! ' + S.boss.dnm + (mid ? ' · 중간 보스 ' + mid : '') }; Snd.boss(); } }
+      if (last) { if (S.pcm && S.pcm.heat >= 20) { spawnNB(4, 1); S.banner = { t: 3.5, s: '🔥 계약자 출현! 네가 건 계약이 곧 내 힘이다' }; } else if (S.rift && S.rift.R.lord) { const k0 = S.en.length; spawnNB(2, 1); const L = S.en[k0]; if (L) { L.hp = L.mh = L.mh * 3; L.lord = 1; L.lt = 0; L.rt = S.rift.R.tr[0]; L.dnm = '멘헤라 군주'; } S.banner = { t: 3.5, s: '👑 멘헤라 군주 출현! 6초마다 특성이 바뀌어요' }; } else spawnNB(2, B.main || 1); if (B.abs) { save.ach.abs++; spawnNB(3, 1); S.alert = 5; S.banner = { t: 5, s: '☠ 절대 보스 출현! 이 판은 버티기 어려워요' }; Snd.boss(); S.shake = 1.2; } else { S.alert = 3.2; S.banner = { t: 3.2, s: '메인 보스 출현! ' + S.boss.dnm + (mid ? ' · 중간 보스 ' + mid : '') }; Snd.boss(); } }
       else if ((mid || nor) && !(S.rift && w === 1)) S.banner = { t: 2.4, s: (S.rift ? rNm(S.rift.R.k, S.rift.st).replace(/단계$/, '') : '악몽 ' + S.nm) + '단계 · 웨이브 ' + w + '/' + S.maxW + (mid ? ' · 중간 보스 ' + mid : '') + (nor ? ' · 일반 보스 ' + nor : '') };
     }
     if (S.b40 && S.wave === 1) spawnBosses(2, 0, '보스 2마리 출현! ');
@@ -3586,7 +3586,7 @@ input { -webkit-user-select: text; user-select: text; }
       (S.ab && win ? '<p class="desc" style="text-align:center;color:#b98cff;font-size:15px"><b>🕳 심연 ' + S.ab + '층 정복!</b> · 젬 +' + abGem + (AF > 1 ? ' · 특성 보상 ×' + AF : '') + (abUp ? (abWait() ? '<br>다음 층은 2분 뒤에 열려요' : '<br>다음 층이 바로 열렸어요') : '') + '</p>' + (save.ab.pend ? '<button class="btn p wide ol-s" data-act="abPickOpen">🎁 ' + save.ab.pend + '층 보상 고르기</button>' : '') : '') +
       (S.pcm ? '<p class="desc" style="text-align:center;color:#ffb070;font-size:15px"><b>🔥 계약의 지옥 · 열기 ' + S.pcm.heat + ' · 보상 ×' + S.pcm.mul.toFixed(2).replace(/0$/, '') + '</b>' + (pcRes ? '<br>계약 인장 +' + pcRes.h + (pcRes.nb ? ' · <b style="color:var(--yel)">최고 열기 갱신!</b>' : '') + (pcRes.capUp ? ' · 열기 상한 ' + save.pc.cap + '으로 상승' : '') + (pcRes.ms.length ? '<br>🏆 이정표 열기 ' + pcRes.ms.join('·') + ' 달성 · 젬 +' + fmt(pcRes.ms.reduce((a, m) => a + m * 1000, 0)) : '') : '') + '</p>' : '') +
       (S.hdGot ? '<p class="desc" style="text-align:center;font-size:16px;color:#ff8ad0"><b>🎁 히든 아이템!! ' + S.hdGot.map(k => { const H = HID.find(h => h.k === k); return H.ic + ' ' + H.nm; }).join(' · ') + '</b></p>' : '') +
-      (rfRes ? '<p class="desc" style="text-align:center;color:#7ad8ff;font-size:14px"><b>🌀 ' + rNm(S.rift.R.k, rfS) + ' 클리어</b> · 보상 ×' + NMF.toFixed(2) + (rfRes.gem ? ' · 첫 클리어 젬 +' + fmt(rfRes.gem) : '') + (rfRes.got.length ? '<br>' + rfRes.got.map(g => SPIC[g.p] + ' <b style="color:' + SETS[g.s].c + '">' + SETS[g.s].nm + ' ' + SPART[g.p] + '</b> ' + (g.r === 'new' ? 'NEW!' : g.r === 'up' ? '★' + sgStar(g.s, g.p) : '→ 균열 조각 +5')).join(' · ') : '<br>이번엔 세트 장비가 안 나왔어요') + (rfRes.hp && rfRes.hp.some(x => x) ? '<br>🧩 ' + rfRes.hp.map((x, j) => x ? '<b style="color:' + HGR[j + 1].c + '">' + HGR[j + 1].nm + ' 파츠 +' + x + '</b>' : '').filter(Boolean).join(' · ') : '') + '</p>' : '') +
+      (rfRes ? '<p class="desc" style="text-align:center;color:#7ad8ff;font-size:14px"><b>🌀 ' + rNm(S.rift.R.k, rfS) + ' 클리어</b> · 보상 ×' + NMF.toFixed(2) + (rfRes.gem ? ' · 첫 클리어 젬 +' + fmt(rfRes.gem) : '') + (rfRes.got.length ? '<br>' + rfRes.got.map(g => SPIC[g.p] + ' <b style="color:' + SETS[g.s].c + '">' + SETS[g.s].nm + ' ' + SPART[g.p] + '</b> ' + (g.r === 'new' ? 'NEW!' : g.r === 'up' ? '★' + sgStar(g.s, g.p) : '→ 멘헤라 조각 +5')).join(' · ') : '<br>이번엔 세트 장비가 안 나왔어요') + (rfRes.hp && rfRes.hp.some(x => x) ? '<br>🧩 ' + rfRes.hp.map((x, j) => x ? '<b style="color:' + HGR[j + 1].c + '">' + HGR[j + 1].nm + ' 파츠 +' + x + '</b>' : '').filter(Boolean).join(' · ') : '') + '</p>' : '') +
       (nmS && !S.pcm && !S.rift ? '<p class="desc" style="text-align:center;color:#ff8aa0"><b>😈 악몽 ' + nmS + '단계</b> · 정예 50 보상 ×' + NMF.toFixed(2).replace(/0$/, '') + ' · 처치: 일반 보스 ' + S.nbK[0] + ' · 중간 보스 ' + S.nbK[1] + ' · 메인 보스 ' + S.nbK[2] + (S.nmB && S.nmB.abs ? ' · <b style="color:#ff4a4a">절대 보스 등장</b>' : '') + '</p>' : '') +
       (gdrop >= 0 ? '<p class="desc" style="text-align:center;color:' + GLT[GLV[gdrop].t].c + ';font-size:15px"><b>🧤 ' + GLT[GLV[gdrop].t].nm + ' 장갑 · ' + GLV[gdrop].nm + (gNew ? ' NEW' : ' +1') + '</b></p>' : '') +
       (bdrops.length ? '<p class="desc" style="text-align:center;color:#ffd0a0"><b>🎗 탄띠 · ' + bdrops.map(b => '<span style="color:' + BG3[bGr(b)].c + '">' + beltName(b) + '</span>').join(' · ') + '</b></p>' : '') +
@@ -3637,7 +3637,7 @@ input { -webkit-user-select: text; user-select: text; }
     if (S && S.ab) return '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button><button class="btn p grow ol-s" data-act="abBack">🕳 심연으로</button></div>';
     return (rep.left > 0 ? '<div class="msg ok" id="repMsg">연속 전투 ' + (rep.tot - rep.left) + '/' + rep.tot + ' 끝 · 잠시 뒤 다음 판을 시작해요</div><button class="btn r wide ol-s" data-act="rstop">연속 전투 멈추기</button>'
         : (rep.tot > 1 && rep.done > 1 ? '<div class="msg ok">연속 전투 ' + rep.done + '/' + rep.tot + '판 끝 · 총 ' + fmt(rep.gold) + '골드 · 젬 ' + fmt(rep.gem) + (rep.bonus ? '<br><b>🎁 끝까지 완주 보너스 +' + Math.round(rep.bonus.pc * 100) + '% · 골드 +' + fmt(rep.bonus.bg) + ' · 젬 +' + fmt(rep.bonus.bm) + '</b>' : REP_BONUS[rep.tot] ? '<br>중간에 멈춰서 완주 보너스는 없어요' : '') + '</div>' : '') +
-          '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button>' + (n < trk().unlocked ? '<button class="btn g grow ol-s" data-act="bnext">다음 ▶</button>' : '') + '</div>' +
+          '<div class="row"><button class="btn grow ol-s" data-act="bhome">홈</button>' + (S && !S.pcm && n < (S.rift ? save.rf[S.rift.R.k].unlocked : trk().unlocked) ? '<button class="btn g grow ol-s" data-act="bnext">다음 ▶</button>' : '') + '</div>' +
           '<div class="row"><span class="ol-s" style="font-family:var(--display);white-space:nowrap">다시 ' + I.bolt.replace('<svg', '<svg style="width:18px;height:18px;vertical-align:-3px"') + '</span>' +
           [30, 50, 100].map(c => '<button class="btn y sm grow ol-s" data-act="again" data-c="' + c + '"' + (save.en < RUN_COST ? ' disabled' : '') + '>' + c + '회</button>').join('') + '</div>');
   }
@@ -4922,13 +4922,13 @@ input { -webkit-user-select: text; user-select: text; }
     achEq: el => { const id = el.dataset.id || ''; const A = ACH.find(x => x.id === id); if (id && (!A || !achLv(A))) return; save.ach.eq = id; Snd.click(); persist(); refreshPop(achBody()); },
     achClaim: el => { const only = el && el.dataset && el.dataset.id; let g = 0, n = 0; for (const A of ACH) { if (only && A.id !== only) continue; const k = achLv(A), c = save.ach.c[A.id] || 0; for (let i = c; i < k; i++) { g += achGem(i); n++; } save.ach.c[A.id] = k; } if (!n) return; save.gem += g; Snd.lvup(); toast('🎖 훈장 ' + n + '단계 성장 · 젬 +' + fmt(g)); persist(true); topbar(); refreshPop(achBody()); render(); },
     modePick: () => openPop('모드 선택', modeBody(), 'mode'),
-    modeSel: el => { const m = el.dataset.m; if (m === 'r') { const k = el.dataset.k || 'n'; if (!rOpenK(k)) return; save.mode = 'r'; save.rf.k = k; persist(); closePop(); render(); toast('🔥 멘헤라 · 균열 ' + RK[k].nm); return; } closePop(); ACT.mode(el); },
-    wld: el => { if (el.dataset.w === 'm') { if (save.mode === 'r') return; if (!RIFT_OPEN()) { ACT.rfLock(); return; } lastCalm = save.mode; save.mode = 'r'; if (!rOpenK(save.rf.k)) save.rf.k = 'n'; Snd.lvup(); toast('🔥 멘헤라 · 차원 균열'); } else { if (save.mode !== 'r') return; save.mode = lastCalm === 'e' || lastCalm === 'm' ? lastCalm : 'n'; toast('🌿 평온'); } persist(); render(); },
+    modeSel: el => { const m = el.dataset.m; if (m === 'r') { const k = el.dataset.k || 'n'; if (!rOpenK(k)) return; save.mode = 'r'; save.rf.k = k; persist(); closePop(); render(); toast('🔥 멘헤라 ' + RK[k].nm); return; } closePop(); ACT.mode(el); },
+    wld: el => { if (el.dataset.w === 'm') { if (save.mode === 'r') return; if (!RIFT_OPEN()) { ACT.rfLock(); return; } lastCalm = save.mode; save.mode = 'r'; if (!rOpenK(save.rf.k)) save.rf.k = 'n'; Snd.lvup(); toast('🔥 멘헤라'); } else { if (save.mode !== 'r') return; save.mode = lastCalm === 'e' || lastCalm === 'm' ? lastCalm : 'n'; toast('🌿 평온'); } persist(); render(); },
     hdOpen: el => { const k = el.dataset.k; hdSel = k; popBack = popKind === 'inv'; openPop('히든 아이템', hdBody(k), 'hd'); },
     hdGrade: el => { const k = el.dataset.k, g = hdGr(k); if (hdLv(k) < 0 || g >= 3) return; const need = HG_NEED[g + 1]; if (save.hpt[g] < need) return; save.hpt[g] -= need; save.hg[k] = g + 1; const H = HID.find(h => h.k === k); Snd.win(); legendFlash('<span style="font-size:60px">' + H.ic + '</span>', HGR[g + 1].nm + ' 승급!', H.nm + ' · ' + hdTxt(H, hdLv(k), g + 1)); persist(); refreshPop(hdBody(k)); },
     hdUp: el => { const k = el.dataset.k, l = hdLv(k); if (l < 0 || l >= HD_MAX) return; const c = hdUpCost(l); if ((save.dust || 0) < c) return; save.dust -= c; save.hd[k]++; Snd.lvup(); persist(); refreshPop(hdBody(k)); },
     sgUp: el => { const s = +el.dataset.s, p = +el.dataset.p, key = sgKey(s, p); if (sgStar(s, p) < 0) return; const l = save.sg.lv[key] || 0; if (l >= SG_LV) return; const c = sgUpCost(l); if ((save.dust || 0) < c) return; save.dust -= c; save.sg.lv[key] = l + 1; Snd.lvup(); persist(); refreshPop(invBody()); },
-    rfLock: () => toast(!RIFT_OPEN() ? '🔒 평온 악몽 ' + NSTAGES + '단계를 클리어하면 「멘헤라」가 열려요' : '🔒 앞 단계 균열 50을 클리어하면 열려요'),
+    rfLock: () => toast(!RIFT_OPEN() ? '🔒 평온 악몽 ' + NSTAGES + '단계를 클리어하면 「멘헤라」가 열려요' : '🔒 앞 단계 멘헤라 50을 클리어하면 열려요'),
     rfPrev: () => { if (rTrk().cur > 1) { rTrk().cur--; persist(); render(); } },
     rfNext: () => { if (rTrk().cur < rTrk().unlocked) { rTrk().cur++; persist(); render(); } },
     rfInfo: () => openPop('🌀 ' + rNm(save.rf.k, rTrk().cur), riftInfoBody(), 'info'),
@@ -4937,7 +4937,7 @@ input { -webkit-user-select: text; user-select: text; }
     rfGo: el => { if (!RIFT_OPEN() || !rOpenK(save.rf.k)) return; const c = +el.dataset.c || 1; pactMode = false; riftMode = true; closePop(); repStart(c); startRun(); if (!S) riftMode = false; },
     sgOpen: () => { invTab = 'set'; if (popKind === 'inv') refreshPop(invBody()); else { popBack = false; openPop('장비창', invBody(), 'inv'); } },
     sgEq: el => { const s = +el.dataset.s, p = +el.dataset.p; if (sgStar(s, p) < 0) return; save.sg.eq[p] = save.sg.eq[p] === s ? -1 : s; Snd.click(); persist(); refreshPop(invBody()); },
-    sgAll: el => { const s = +el.dataset.s; let k = 0; for (let p = 0; p < 4; p++) if (sgStar(s, p) >= 0) { save.sg.eq[p] = s; k++; } if (!k) { toast('이 세트는 아직 없어요 · 차원 균열에서 나와요'); return; } Snd.click(); persist(); refreshPop(invBody()); },
+    sgAll: el => { const s = +el.dataset.s; let k = 0; for (let p = 0; p < 4; p++) if (sgStar(s, p) >= 0) { save.sg.eq[p] = s; k++; } if (!k) { toast('이 세트는 아직 없어요 · 멘헤라에서 나와요'); return; } Snd.click(); persist(); refreshPop(invBody()); },
     sgCraft: el => { const s = +el.dataset.s, p = +el.dataset.p; if (save.sg.sh < 30 || sgStar(s, p) >= 0) return; save.sg.sh -= 30; sgAdd(s, p); Snd.coin(); toast(SPIC[p] + ' ' + SETS[s].nm + ' ' + SPART[p] + ' 제작!'); persist(); refreshPop(invBody()); },
     pcOpen: () => { if (!PACT_OPEN()) { toast('🔒 악몽 30단계를 클리어하면 「계약의 지옥」이 열려요'); return; } popBack = popKind === 'inv'; openPop('🔥 계약의 지옥', pactBody(), 'pact'); },
     pcTab: el => { pcTab = el.dataset.t; refreshPop(pactBody()); },
@@ -5139,7 +5139,7 @@ input { -webkit-user-select: text; user-select: text; }
     bhome: () => { leaveBattle(); setTab('home'); },
     rstop: () => { repStop(); toast('연속 전투를 멈췄어요'); if (S && S.over && $('resBtns')) $('resBtns').innerHTML = resButtons(S.n); },
     again: el => { repStart(+(el && el.dataset.c) || 1); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } },
-    bnext: () => { repStart(1); const t = trk(); if (t.cur < t.unlocked) t.cur++; persist(); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } }
+    bnext: () => { repStart(1); const wasRift = !!(S && S.rift), wasPact = !!(S && S.pcm); riftMode = wasRift; pactMode = wasPact; const t = wasRift ? rTrk() : trk(); if (!wasPact && t.cur < t.unlocked) t.cur++; persist(); $('bpop').hidden = true; S = null; startRun(); if (!S) { $('battle').hidden = true; render(); } }
   };
   /* secret: hold a mythic gunslinger for 5 seconds to see its hidden strong element */
   let lpT = 0, lpFired = false;
